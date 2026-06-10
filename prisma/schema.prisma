@@ -1,0 +1,537 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  ENGINEER
+  RECEPTIONIST
+}
+
+enum EquipmentType {
+  PRINTER
+  COPIER
+  LAPTOP
+  DESKTOP_COMPUTER
+  PROJECTOR
+  CCTV_SYSTEM
+  OTHER
+}
+
+enum ServiceType {
+  REPAIR
+  MAINTENANCE
+  UPGRADE
+  REFURBISHMENT
+  INSTALLATION
+  INSPECTION
+}
+
+enum JobStatus {
+  RECEIVED
+  DIAGNOSING
+  WAITING_SPARE_PARTS
+  WAITING_CUSTOMER_APPROVAL
+  REPAIRING
+  TESTING
+  READY_FOR_COLLECTION
+  DELIVERED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+}
+
+enum TransactionType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  CONVERTED
+  EXPIRED
+}
+
+enum PartCategory {
+  TONER
+  DRUM
+  DEVELOPER
+  FUSER
+  MAINTENANCE_KIT
+  ROLLER
+  LAPTOP_PART
+  DESKTOP_PART
+  CCTV_PART
+  PROJECTOR_PART
+  GENERAL
+}
+
+enum ContractType {
+  SERVICE_CONTRACT
+  MAINTENANCE_AGREEMENT
+  WARRANTY_DOCUMENT
+  OTHER
+}
+
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+// ─── Core Models ──────────────────────────────────────────────────────────────
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  address   String?
+  phone     String?
+  email     String?
+  logoUrl   String?
+  stampUrl  String?  // company stamp image embedded in PDF footer
+  website   String?
+  kraPin    String?
+  vatPercent Decimal @default(16) @db.Decimal(5,2)
+  currency  String   @default("KES")
+  timezone  String   @default("Africa/Nairobi")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  customers      Customer[]
+  branches       CustomerBranch[]
+  equipment      Equipment[]
+  serviceJobs    ServiceJob[]
+  quotations     Quotation[]
+  spareParts     SparePart[]
+  purchaseOrders PurchaseOrder[]
+  contracts      CustomerContract[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  companyId    String
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  signatureUrl String?  // engineer's drawn/uploaded signature for PDF sign-off
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  assignedJobs          ServiceJob[]           @relation("AssignedEngineer")
+  createdJobs           ServiceJob[]           @relation("CreatedBy")
+  jobPhotos             JobPhoto[]
+  repairReports         RepairReport[]
+  statusLogs            JobStatusLog[]
+  inventoryTransactions InventoryTransaction[]
+  purchaseOrders        PurchaseOrder[]
+  createdQuotations     Quotation[]
+  createdContracts      CustomerContract[]
+  equipmentPhotos       EquipmentPhoto[]
+  meterReadings         MeterReading[]
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  companyId   String
+  code        String   @unique
+  name        String
+  companyName String?
+  phone       String
+  email       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company          @relation(fields: [companyId], references: [id])
+  branches    CustomerBranch[]
+  equipment   Equipment[]
+  serviceJobs ServiceJob[]
+  quotations  Quotation[]
+  contracts   CustomerContract[]
+}
+
+// Branches or project sites that belong to a customer
+model CustomerBranch {
+  id            String   @id @default(uuid())
+  companyId     String
+  customerId    String
+  name          String   // e.g. "KL HQ", "PJ Branch", "Setia Alam Site"
+  address       String?
+  phone         String?
+  contactPerson String?
+  isPrimary     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company     Company      @relation(fields: [companyId], references: [id])
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  equipment   Equipment[]
+  serviceJobs ServiceJob[]
+  quotations  Quotation[]
+  contracts   CustomerContract[]
+}
+
+model Equipment {
+  id             String        @id @default(uuid())
+  companyId      String
+  customerId     String
+  branchId       String?       // optional: which branch/site this device is located at
+  serialNumber   String        @unique
+  assetNumber    String?       // optional: internal asset tag (e.g. ASSET-0042)
+  brand          String
+  model          String
+  type           EquipmentType
+  purchaseDate   DateTime?
+  warrantyExpiry DateTime?     // manufacturer warranty expiry date
+  notes          String?       // free-text specs (type-specific template in UI)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  company      Company         @relation(fields: [companyId], references: [id])
+  customer     Customer        @relation(fields: [customerId], references: [id])
+  branch       CustomerBranch? @relation(fields: [branchId], references: [id])
+  serviceJobs  ServiceJob[]
+  quotations   Quotation[]
+  photos       EquipmentPhoto[]
+  meterReadings MeterReading[]
+}
+
+model ServiceJob {
+  id              String      @id @default(uuid())
+  jobNumber       String      @unique
+  companyId       String
+  customerId      String
+  branchId        String?     // optional: which branch/site the job is for
+  equipmentId     String
+  quotationId     String?     @unique  // set when this job was created from a quotation
+  serviceType     ServiceType
+  assignedToId    String
+  createdById     String
+  status          JobStatus   @default(RECEIVED)
+  priority        Priority    @default(NORMAL)
+  problemDesc     String
+  technicianNotes String?     // raw field notes from engineer; used as AI report input
+  receivedDate    DateTime    @default(now())
+  dueDate         DateTime?
+  completedAt     DateTime?
+  meterBlack      Int?        // page counter – shown only for PRINTER / COPIER
+  meterColor      Int?
+  warrantyPeriod  Int?        // days; set at DELIVERED
+  warrantyExpires DateTime?   // computed: completedAt + warrantyPeriod
+  labourCost      Decimal     @default(0) @db.Decimal(10, 2)
+  partsCost       Decimal     @default(0) @db.Decimal(10, 2)
+  totalCost       Decimal     @default(0) @db.Decimal(10, 2)
+  signatureUrl    String?
+  signedAt        DateTime?
+  internalNotes   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  company    Company          @relation(fields: [companyId], references: [id])
+  customer   Customer         @relation(fields: [customerId], references: [id])
+  branch     CustomerBranch?  @relation(fields: [branchId], references: [id])
+  equipment  Equipment        @relation(fields: [equipmentId], references: [id])
+  assignedTo User             @relation("AssignedEngineer", fields: [assignedToId], references: [id])
+  createdBy  User             @relation("CreatedBy", fields: [createdById], references: [id])
+  quotation  Quotation?       @relation("QuotationConversion", fields: [quotationId], references: [id])
+
+  photos                JobPhoto[]
+  report                RepairReport?
+  statusLogs            JobStatusLog[]
+  inventoryTransactions InventoryTransaction[]
+  meterReadings         MeterReading[]
+}
+
+model Quotation {
+  id              String          @id @default(uuid())
+  quotationNumber String          @unique  // Q-YYYY-NNNN
+  companyId       String
+  customerId      String
+  branchId        String?
+  equipmentId     String?         // may be added after initial enquiry
+  serviceType     ServiceType
+  status          QuotationStatus @default(DRAFT)
+  validUntil      DateTime?
+  problemDesc     String
+  labourCost      Decimal         @default(0) @db.Decimal(10, 2)
+  partsCost       Decimal         @default(0) @db.Decimal(10, 2)
+  diagnosisFee    Decimal         @default(0) @db.Decimal(10, 2)
+  transportFee    Decimal         @default(0) @db.Decimal(10, 2)
+  vatPercent      Decimal         @default(0) @db.Decimal(5, 2)
+  discountAmount  Decimal         @default(0) @db.Decimal(10, 2)
+  totalCost       Decimal         @default(0) @db.Decimal(10, 2)
+  remarks         String?         // customer-facing remarks on quotation
+  internalNotes   String?
+  createdById     String
+  approvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  company      Company          @relation(fields: [companyId], references: [id])
+  customer     Customer         @relation(fields: [customerId], references: [id])
+  branch       CustomerBranch?  @relation(fields: [branchId], references: [id])
+  equipment    Equipment?       @relation(fields: [equipmentId], references: [id])
+  createdBy    User             @relation(fields: [createdById], references: [id])
+
+  items        QuotationItem[]
+  convertedJob ServiceJob?     @relation("QuotationConversion")
+}
+
+model QuotationItem {
+  id          String   @id @default(uuid())
+  quotationId String
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+}
+
+model JobPhoto {
+  id           String    @id @default(uuid())
+  jobId        String
+  photoType    PhotoType
+  fileUrl      String
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  caption      String?
+  uploadedById String
+  createdAt    DateTime  @default(now())
+
+  job        ServiceJob @relation(fields: [jobId], references: [id])
+  uploadedBy User       @relation(fields: [uploadedById], references: [id])
+}
+
+model RepairReport {
+  id              String   @id @default(uuid())
+  jobId           String   @unique
+  writtenById     String
+  diagnosis       String
+  workDone        String
+  partsUsed       String?
+  recommendations String?
+  labourCost      Decimal  @default(0) @db.Decimal(10, 2)
+  partsCost       Decimal  @default(0) @db.Decimal(10, 2)
+  rawInput        String?  // technician notes passed to AI for report generation
+  isAiGenerated   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  job       ServiceJob @relation(fields: [jobId], references: [id])
+  writtenBy User       @relation(fields: [writtenById], references: [id])
+  parts     JobPart[]
+}
+
+model JobPart {
+  id        String   @id @default(uuid())
+  reportId  String
+  partId    String?
+  partName  String
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  subtotal  Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  report RepairReport @relation(fields: [reportId], references: [id])
+  part   SparePart?   @relation(fields: [partId], references: [id])
+}
+
+model JobStatusLog {
+  id          String   @id @default(uuid())
+  jobId       String
+  changedById String
+  fromStatus  String
+  toStatus    String
+  note        String?
+  createdAt   DateTime @default(now())
+
+  job       ServiceJob @relation(fields: [jobId], references: [id])
+  changedBy User       @relation(fields: [changedById], references: [id])
+}
+
+// ─── Spare Parts Inventory ────────────────────────────────────────────────────
+
+model SparePart {
+  id             String       @id @default(uuid())
+  companyId      String
+  partNumber     String       @unique
+  name           String
+  description    String?
+  category       PartCategory @default(GENERAL)
+  brand          String?
+  compatibleWith String?      // e.g. "HP LaserJet Pro, Canon iR"
+  unit           String       // "pcs", "box", "roll", "set"
+  unitPrice      Decimal      @db.Decimal(10, 2)
+  reorderLevel   Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  company            Company                @relation(fields: [companyId], references: [id])
+  stock              InventoryStock?
+  transactions       InventoryTransaction[]
+  jobParts           JobPart[]
+  purchaseOrderItems PurchaseOrderItem[]
+}
+
+model InventoryStock {
+  id          String    @id @default(uuid())
+  partId      String    @unique
+  quantity    Int       @default(0)
+  location    String?
+  lastCounted DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  part SparePart @relation(fields: [partId], references: [id])
+}
+
+model InventoryTransaction {
+  id            String          @id @default(uuid())
+  companyId     String
+  partId        String
+  jobId         String?
+  type          TransactionType
+  quantity      Int
+  unitPrice     Decimal?        @db.Decimal(10, 2)
+  reference     String?
+  performedById String
+  createdAt     DateTime        @default(now())
+
+  part        SparePart   @relation(fields: [partId], references: [id])
+  job         ServiceJob? @relation(fields: [jobId], references: [id])
+  performedBy User        @relation(fields: [performedById], references: [id])
+}
+
+model PurchaseOrder {
+  id           String              @id @default(uuid())
+  companyId    String
+  poNumber     String              @unique
+  supplierName String
+  status       PurchaseOrderStatus @default(DRAFT)
+  orderedDate  DateTime?
+  expectedDate DateTime?
+  totalAmount  Decimal             @default(0) @db.Decimal(10, 2)
+  notes        String?
+  createdById  String
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  company   Company             @relation(fields: [companyId], references: [id])
+  createdBy User                @relation(fields: [createdById], references: [id])
+  items     PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id               String   @id @default(uuid())
+  poId             String
+  partId           String
+  quantityOrdered  Int
+  quantityReceived Int      @default(0)
+  unitPrice        Decimal  @db.Decimal(10, 2)
+  createdAt        DateTime @default(now())
+
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
+  part          SparePart     @relation(fields: [partId], references: [id])
+}
+
+// ─── Customer Contracts ────────────────────────────────────────────────────────
+
+model CustomerContract {
+  id            String         @id @default(uuid())
+  companyId     String
+  customerId    String
+  branchId      String?        // optional: contract scoped to a specific branch
+  title         String
+  contractType  ContractType
+  status        ContractStatus @default(ACTIVE)
+  startDate     DateTime?
+  endDate       DateTime?
+  fileUrl       String?        // stored PDF/document path
+  fileName      String?
+  fileSizeBytes Int?
+  notes         String?
+  createdById   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  company   Company         @relation(fields: [companyId], references: [id])
+  customer  Customer        @relation(fields: [customerId], references: [id])
+  branch    CustomerBranch? @relation(fields: [branchId], references: [id])
+  createdBy User            @relation(fields: [createdById], references: [id])
+}
+
+// ─── Equipment Photo Gallery ───────────────────────────────────────────────────
+
+model EquipmentPhoto {
+  id           String   @id @default(uuid())
+  equipmentId  String
+  fileUrl      String
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  caption      String?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  equipment  Equipment @relation(fields: [equipmentId], references: [id])
+  uploadedBy User      @relation(fields: [uploadedById], references: [id])
+}
+
+// ─── Printer / Copier Meter History ───────────────────────────────────────────
+
+model MeterReading {
+  id           String    @id @default(uuid())
+  equipmentId  String
+  jobId        String?   // set when reading is captured at job intake
+  readingDate  DateTime  @default(now())
+  blackPages   Int?
+  colorPages   Int?
+  recordedById String
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  equipment  Equipment   @relation(fields: [equipmentId], references: [id])
+  job        ServiceJob? @relation(fields: [jobId], references: [id])
+  recordedBy User        @relation(fields: [recordedById], references: [id])
+}

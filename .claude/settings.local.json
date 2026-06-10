@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install *)",
+      "PowerShell(npx prisma init --datasource-provider postgresql)",
+      "PowerShell(npx prisma validate 2>&1)",
+      "PowerShell(npx prisma generate 2>&1)",
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(npx prisma migrate dev --name init 2>&1)"
+    ]
+  }
+}

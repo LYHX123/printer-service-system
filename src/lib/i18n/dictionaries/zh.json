@@ -1,0 +1,40 @@
+{
+  "common": {
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "loading": "Loading…",
+    "actions": "Actions"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "quotations": "Quotations",
+    "customers": "Customers",
+    "equipment": "Equipment",
+    "jobs": "Jobs",
+    "inventory": "Inventory",
+    "reports": "Reports",
+    "productivity": "Productivity",
+    "users": "Users",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Company Settings",
+    "subtitle": "Manage your company profile, branding, and regional preferences.",
+    "companyName": "Company Name",
+    "logo": "Logo",
+    "address": "Address",
+    "phone": "Phone Number",
+    "email": "Email",
+    "website": "Website",
+    "kraPin": "KRA PIN",
+    "vatPercent": "VAT Percentage",
+    "currency": "Currency",
+    "timezone": "Timezone"
+  }
+}
