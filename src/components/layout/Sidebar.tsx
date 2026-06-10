@@ -56,7 +56,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Reports",
     items: [
       { href: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-      { href: "/reports/engineers", label: "Productivity", icon: TrendingUp, module: "reports" },
+      { href: "/reports/engineers", label: "Productivity", icon: TrendingUp, module: "productivity" },
     ],
   },
   {

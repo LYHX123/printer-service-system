@@ -19,6 +19,7 @@ export type Module =
   | "jobs"
   | "quotations"
   | "reports"
+  | "productivity"
   | "inventory"
   | "users"
   | "settings"
@@ -30,6 +31,7 @@ const MODULE_ACCESS: Record<Module, Role[]> = {
   jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   quotations: ["ADMIN", "MANAGER", "RECEPTIONIST"],
   reports: ["ADMIN", "MANAGER"],
+  productivity: ["ADMIN", "MANAGER", "ENGINEER"],
   inventory: ["ADMIN", "MANAGER", "ENGINEER"],
   users: ["ADMIN"],
   settings: ["ADMIN"],
@@ -84,4 +86,9 @@ export const canEditInventory = canManageInventory
 /** Admin and Manager can view reports. */
 export function canViewReports(role: Role): boolean {
   return canAccess(role, "reports")
+}
+
+/** Admin and Manager can view productivity for all engineers; Engineers see only their own. */
+export function canViewAllProductivity(role: Role): boolean {
+  return role === "ADMIN" || role === "MANAGER"
 }
