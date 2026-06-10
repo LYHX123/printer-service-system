@@ -153,6 +153,11 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
                       {...register(`parts.${index}.partName`)}
                       error={errors.parts?.[index]?.partName?.message}
                     />
+                    {!watchedParts?.[index]?.partId && (
+                      <p className="text-xs text-amber-600">
+                        Not linked to inventory — stock will not be deducted automatically.
+                      </p>
+                    )}
                   </div>
                   <div className="col-span-4 sm:col-span-2">
                     <Input

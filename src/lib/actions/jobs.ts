@@ -161,10 +161,17 @@ export async function updateJobStatus(jobId: string, data: StatusUpdateInput) {
       })
 
       if (parsed.data.toStatus === "DELIVERED") {
-        const usedParts = await tx.jobPart.findMany({
-          where: { report: { jobId }, partId: { not: null } },
-          select: { partId: true, quantity: true },
+        const alreadyDeducted = await tx.inventoryTransaction.findFirst({
+          where: { jobId, type: "OUT" },
+          select: { id: true },
         })
+
+        const usedParts = alreadyDeducted
+          ? []
+          : await tx.jobPart.findMany({
+              where: { report: { jobId }, partId: { not: null } },
+              select: { partId: true, quantity: true },
+            })
 
         for (const usedPart of usedParts) {
           const partId = usedPart.partId!

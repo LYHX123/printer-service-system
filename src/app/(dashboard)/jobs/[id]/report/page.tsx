@@ -195,7 +195,14 @@ export default async function JobReportPage({
                     <tbody className="divide-y divide-slate-50">
                       {job.report.parts.map((p) => (
                         <tr key={p.id}>
-                          <td className="py-2">{p.partName}</td>
+                          <td className="py-2">
+                            {p.partName}
+                            {!p.partId && (
+                              <span className="block text-xs text-amber-600">
+                                Not linked to inventory — stock not deducted
+                              </span>
+                            )}
+                          </td>
                           <td className="py-2 text-right">{p.quantity}</td>
                           <td className="py-2 text-right">{formatCurrency(Number(p.unitPrice))}</td>
                           <td className="py-2 text-right">{formatCurrency(Number(p.subtotal))}</td>
