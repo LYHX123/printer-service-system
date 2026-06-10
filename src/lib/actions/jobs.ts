@@ -119,7 +119,7 @@ export async function updateJobStatus(jobId: string, data: StatusUpdateInput) {
   try {
     const job = await prisma.serviceJob.findFirst({
       where: { id: jobId, companyId },
-      select: { status: true, signatureUrl: true },
+      select: { status: true, signatureUrl: true, jobNumber: true },
     })
     if (!job) return { error: "Job not found" }
 
@@ -138,29 +138,65 @@ export async function updateJobStatus(jobId: string, data: StatusUpdateInput) {
         ? new Date(completedAt.getTime() + parsed.data.warrantyPeriod * 24 * 60 * 60 * 1000)
         : undefined
 
-    await prisma.serviceJob.update({
-      where: { id: jobId },
-      data: {
-        status: parsed.data.toStatus,
-        ...(completedAt ? { completedAt } : {}),
-        ...(parsed.data.toStatus === "DELIVERED"
-          ? { warrantyPeriod: parsed.data.warrantyPeriod, warrantyExpires }
-          : {}),
-      },
-    })
+    await prisma.$transaction(async (tx) => {
+      await tx.serviceJob.update({
+        where: { id: jobId },
+        data: {
+          status: parsed.data.toStatus,
+          ...(completedAt ? { completedAt } : {}),
+          ...(parsed.data.toStatus === "DELIVERED"
+            ? { warrantyPeriod: parsed.data.warrantyPeriod, warrantyExpires }
+            : {}),
+        },
+      })
 
-    await prisma.jobStatusLog.create({
-      data: {
-        jobId,
-        changedById: session.user.id as string,
-        fromStatus: job.status,
-        toStatus: parsed.data.toStatus,
-        note: parsed.data.note || null,
-      },
+      await tx.jobStatusLog.create({
+        data: {
+          jobId,
+          changedById: session.user.id as string,
+          fromStatus: job.status,
+          toStatus: parsed.data.toStatus,
+          note: parsed.data.note || null,
+        },
+      })
+
+      if (parsed.data.toStatus === "DELIVERED") {
+        const usedParts = await tx.jobPart.findMany({
+          where: { report: { jobId }, partId: { not: null } },
+          select: { partId: true, quantity: true },
+        })
+
+        for (const usedPart of usedParts) {
+          const partId = usedPart.partId!
+          const stock = await tx.inventoryStock.findUnique({ where: { partId } })
+          const newQty = (stock?.quantity ?? 0) - usedPart.quantity
+
+          await tx.inventoryStock.upsert({
+            where: { partId },
+            update: { quantity: newQty },
+            create: { partId, quantity: newQty },
+          })
+
+          await tx.inventoryTransaction.create({
+            data: {
+              companyId,
+              partId,
+              jobId,
+              type: "OUT",
+              quantity: -usedPart.quantity,
+              reference: `Used in job ${job.jobNumber}`,
+              performedById: session.user.id as string,
+            },
+          })
+        }
+      }
     })
 
     revalidatePath(`/jobs/${jobId}`)
     revalidatePath("/jobs")
+    if (parsed.data.toStatus === "DELIVERED") {
+      revalidatePath("/inventory")
+    }
     return { success: true }
   } catch {
     return { error: "Failed to update status" }

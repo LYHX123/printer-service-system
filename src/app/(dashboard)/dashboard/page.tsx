@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { auth } from "@/lib/auth"
 import {
   ClipboardList,
@@ -8,13 +9,24 @@ import {
   HardDrive,
   Wrench,
   FileText,
+  PackageX,
 } from "lucide-react"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
+import { StockLevelBadge } from "@/components/ui/badge"
+import { canAccess } from "@/lib/permissions"
+import { getLowStockCount, getLowStockParts, getStockLevel } from "@/lib/data/inventory"
+import type { Role } from "@/types"
 
 export default async function DashboardPage() {
   const session = await auth()
   const firstName = session?.user.name?.split(" ")[0] ?? "there"
+  const role = session!.user.role as Role
+  const companyId = session!.user.companyId as string
+  const canViewInventory = canAccess(role, "inventory")
+
+  const lowStockCount = canViewInventory ? await getLowStockCount(companyId) : 0
+  const lowStockParts = canViewInventory ? await getLowStockParts(companyId) : []
 
   return (
     <div>
@@ -79,10 +91,10 @@ export default async function DashboardPage() {
         />
         <MetricCard
           label="Parts Low Stock"
-          value="—"
+          value={canViewInventory ? lowStockCount : "—"}
           href="/inventory"
           icon={<Wrench className="h-5 w-5 text-slate-600" />}
-          iconBg="bg-slate-100"
+          iconBg={lowStockCount > 0 ? "bg-orange-50" : "bg-slate-100"}
         />
       </div>
 
@@ -102,18 +114,54 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Status breakdown */}
+        {/* Low stock alerts */}
         <div className="rounded-xl border border-slate-200 bg-white">
           <div className="border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-slate-900">Jobs by Status</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Current distribution</p>
+            <h2 className="text-sm font-semibold text-slate-900">Low Stock Alerts</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Parts at or below minimum quantity</p>
           </div>
-          <div className="flex items-center justify-center py-16 text-slate-400">
-            <div className="text-center">
-              <div className="h-8 w-8 mx-auto mb-2 opacity-40 rounded-full border-4 border-current" />
-              <p className="text-sm">Chart available from Phase 8</p>
+          {!canViewInventory ? (
+            <div className="flex items-center justify-center py-16 text-slate-400">
+              <div className="text-center">
+                <PackageX className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No access to inventory</p>
+              </div>
             </div>
-          </div>
+          ) : lowStockParts.length === 0 ? (
+            <div className="flex items-center justify-center py-16 text-slate-400">
+              <div className="text-center">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">All parts are well stocked</p>
+              </div>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+              {lowStockParts.slice(0, 8).map((part) => {
+                const quantity = part.stock?.quantity ?? 0
+                return (
+                  <li key={part.id} className="px-5 py-3">
+                    <Link href={`/inventory/${part.id}`} className="flex items-center justify-between gap-2 group">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">{part.name}</p>
+                        <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-mono text-slate-500">{quantity}/{part.reorderLevel} {part.unit}</span>
+                        <StockLevelBadge level={getStockLevel(quantity, part.reorderLevel)} />
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          {lowStockParts.length > 8 && (
+            <div className="border-t border-slate-100 px-5 py-3 text-center">
+              <Link href="/inventory/reports?tab=low-stock" className="text-xs font-medium text-blue-600 hover:underline">
+                View all {lowStockParts.length} low stock parts →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -27,3 +27,7 @@ export function generateQuotationNumber(sequence: number): string {
   const year = new Date().getFullYear()
   return `Q-${year}-${String(sequence).padStart(4, "0")}`
 }
+
+export function generatePartNumber(sequence: number): string {
+  return `PRT-${String(sequence).padStart(5, "0")}`
+}

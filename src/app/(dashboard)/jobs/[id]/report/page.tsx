@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
 import { getJobForReport } from "@/lib/data/reports"
+import { getSparePartOptions } from "@/lib/data/inventory"
 import { PageHeader } from "@/components/ui/page-header"
 import { WarrantyBadge } from "@/components/ui/badge"
 import { RepairReportForm } from "@/components/jobs/RepairReportForm"
@@ -20,7 +21,10 @@ export default async function JobReportPage({
   const { id } = await params
   const companyId = session!.user.companyId as string
 
-  const job = await getJobForReport(id, companyId)
+  const [job, spareParts] = await Promise.all([
+    getJobForReport(id, companyId),
+    getSparePartOptions(companyId),
+  ])
   if (!job) notFound()
 
   const showMeter = job.equipment.type === "PRINTER" || job.equipment.type === "COPIER"
@@ -137,6 +141,7 @@ export default async function JobReportPage({
           <h3 className="text-sm font-semibold text-slate-900 mb-3">Repair Details</h3>
           <RepairReportForm
             jobId={id}
+            spareParts={spareParts}
             defaultValues={
               job.report
                 ? {
@@ -145,6 +150,7 @@ export default async function JobReportPage({
                     recommendations: job.report.recommendations ?? "",
                     labourCost: Number(job.report.labourCost),
                     parts: job.report.parts.map((p) => ({
+                      partId: p.partId ?? "",
                       partName: p.partName,
                       quantity: p.quantity,
                       unitPrice: Number(p.unitPrice),

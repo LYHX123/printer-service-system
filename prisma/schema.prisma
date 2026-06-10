@@ -400,9 +400,11 @@ model SparePart {
   description    String?
   category       PartCategory @default(GENERAL)
   brand          String?
+  supplier       String?
   compatibleWith String?      // e.g. "HP LaserJet Pro, Canon iR"
   unit           String       // "pcs", "box", "roll", "set"
-  unitPrice      Decimal      @db.Decimal(10, 2)
+  unitCost       Decimal      @default(0) @db.Decimal(10, 2)
+  sellingPrice   Decimal      @default(0) @db.Decimal(10, 2)
   reorderLevel   Int          @default(0)
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())

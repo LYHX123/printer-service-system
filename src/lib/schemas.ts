@@ -194,6 +194,7 @@ export type QuotationStatusInput = z.infer<typeof QuotationStatusSchema>
 // ─── Repair Report ────────────────────────────────────────────────────────────
 
 export const JobPartInputSchema = z.object({
+  partId: z.string().optional().or(z.literal("")),
   partName: z.string().min(1, "Part name required").max(200),
   quantity: z.coerce.number().int().min(1, "Min 1"),
   unitPrice: z.coerce.number().min(0, "Must be ≥ 0"),
@@ -229,3 +230,50 @@ export const UpdateUserRoleSchema = z.object({
 })
 
 export type UpdateUserRoleInput = z.infer<typeof UpdateUserRoleSchema>
+
+// ─── Inventory / Spare Parts ───────────────────────────────────────────────────
+
+export const SparePartSchema = z.object({
+  partNumber: z.string().min(1, "Part number is required").max(50),
+  name: z.string().min(1, "Part name is required").max(200),
+  description: z.string().max(1000).optional().or(z.literal("")),
+  category: z.enum([
+    "TONER",
+    "DRUM",
+    "DEVELOPER",
+    "FUSER",
+    "MAINTENANCE_KIT",
+    "ROLLER",
+    "LAPTOP_PART",
+    "DESKTOP_PART",
+    "CCTV_PART",
+    "PROJECTOR_PART",
+    "GENERAL",
+  ]),
+  brand: z.string().max(100).optional().or(z.literal("")),
+  supplier: z.string().max(150).optional().or(z.literal("")),
+  compatibleWith: z.string().max(300).optional().or(z.literal("")),
+  unit: z.string().min(1, "Unit is required").max(20),
+  unitCost: z.coerce.number().min(0, "Must be ≥ 0"),
+  sellingPrice: z.coerce.number().min(0, "Must be ≥ 0"),
+  reorderLevel: z.coerce.number().int().min(0).default(0),
+  location: z.string().max(100).optional().or(z.literal("")),
+  quantity: z.coerce.number().int().min(0).default(0),
+})
+
+export type SparePartInput = z.infer<typeof SparePartSchema>
+
+export const StockTransactionSchema = z
+  .object({
+    type: z.enum(["IN", "OUT", "ADJUSTMENT"]),
+    quantity: z.coerce.number().int().min(0, "Must be ≥ 0"),
+    unitPrice: z.coerce.number().min(0).optional(),
+    reference: z.string().max(100).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type !== "ADJUSTMENT" && data.quantity < 1) {
+      ctx.addIssue({ code: "custom", path: ["quantity"], message: "Must be at least 1" })
+    }
+  })
+
+export type StockTransactionInput = z.infer<typeof StockTransactionSchema>

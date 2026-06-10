@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { getQuotationForEdit } from "@/lib/data/quotations"
 import { getCustomersWithBranches } from "@/lib/data/customers"
 import { getAllEquipmentForCompany } from "@/lib/data/equipment"
+import { getSparePartOptions } from "@/lib/data/inventory"
 import { canCreateQuotation } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { QuotationForm } from "@/components/quotations/QuotationForm"
@@ -22,10 +23,11 @@ export default async function EditQuotationPage({
   const { id } = await params
   const companyId = session!.user.companyId as string
 
-  const [quotation, customers, allEquipment] = await Promise.all([
+  const [quotation, customers, allEquipment, spareParts] = await Promise.all([
     getQuotationForEdit(id, companyId),
     getCustomersWithBranches(companyId),
     getAllEquipmentForCompany(companyId),
+    getSparePartOptions(companyId),
   ])
 
   if (!quotation) notFound()
@@ -80,6 +82,7 @@ export default async function EditQuotationPage({
       <QuotationForm
         customers={customers}
         allEquipment={allEquipment}
+        spareParts={spareParts}
         defaultValues={defaultValues}
         quotationId={id}
       />

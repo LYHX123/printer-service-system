@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomersWithBranches } from "@/lib/data/customers"
 import { getAllEquipmentForCompany } from "@/lib/data/equipment"
+import { getSparePartOptions } from "@/lib/data/inventory"
 import { canCreateQuotation } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { QuotationForm } from "@/components/quotations/QuotationForm"
@@ -20,9 +21,10 @@ export default async function NewQuotationPage({
   const { customerId, equipmentId } = await searchParams
   const companyId = session!.user.companyId as string
 
-  const [customers, allEquipment] = await Promise.all([
+  const [customers, allEquipment, spareParts] = await Promise.all([
     getCustomersWithBranches(companyId),
     getAllEquipmentForCompany(companyId),
+    getSparePartOptions(companyId),
   ])
 
   const defaultValues: Partial<QuotationInput> = {
@@ -46,6 +48,7 @@ export default async function NewQuotationPage({
       <QuotationForm
         customers={customers}
         allEquipment={allEquipment}
+        spareParts={spareParts}
         defaultValues={defaultValues}
       />
     </div>

@@ -177,6 +177,42 @@ export function PartCategoryBadge({ category }: { category: PartCategory }) {
   )
 }
 
+// ─── Stock Level Badge ────────────────────────────────────────────────────────
+
+const STOCK_LEVEL_STYLES: Record<"in_stock" | "low" | "out", string> = {
+  in_stock: "bg-green-100 text-green-700",
+  low: "bg-orange-100 text-orange-700",
+  out: "bg-red-100 text-red-700",
+}
+
+const STOCK_LEVEL_LABELS: Record<"in_stock" | "low" | "out", string> = {
+  in_stock: "In Stock",
+  low: "Low Stock",
+  out: "Out of Stock",
+}
+
+export function StockLevelBadge({ level }: { level: "in_stock" | "low" | "out" }) {
+  return <Badge className={STOCK_LEVEL_STYLES[level]}>{STOCK_LEVEL_LABELS[level]}</Badge>
+}
+
+// ─── Transaction Type Badge ────────────────────────────────────────────────────
+
+const TRANSACTION_TYPE_STYLES: Record<"IN" | "OUT" | "ADJUSTMENT", string> = {
+  IN: "bg-green-100 text-green-700",
+  OUT: "bg-red-100 text-red-700",
+  ADJUSTMENT: "bg-blue-100 text-blue-700",
+}
+
+const TRANSACTION_TYPE_LABELS_LOCAL: Record<"IN" | "OUT" | "ADJUSTMENT", string> = {
+  IN: "Stock In",
+  OUT: "Stock Out",
+  ADJUSTMENT: "Adjustment",
+}
+
+export function TransactionTypeBadge({ type }: { type: "IN" | "OUT" | "ADJUSTMENT" }) {
+  return <Badge className={TRANSACTION_TYPE_STYLES[type]}>{TRANSACTION_TYPE_LABELS_LOCAL[type]}</Badge>
+}
+
 // ─── Warranty Badge ───────────────────────────────────────────────────────────
 
 export function WarrantyBadge({ warrantyExpires }: { warrantyExpires: Date | string | null }) {

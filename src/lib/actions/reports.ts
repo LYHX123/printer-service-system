@@ -53,6 +53,7 @@ export async function saveRepairReport(jobId: string, data: RepairReportInput) {
         await tx.jobPart.createMany({
           data: parts.map((p) => ({
             reportId: report.id,
+            partId: p.partId || null,
             partName: p.partName,
             quantity: p.quantity,
             unitPrice: p.unitPrice,

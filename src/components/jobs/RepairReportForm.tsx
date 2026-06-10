@@ -8,17 +8,20 @@ import { Plus, Trash2 } from "lucide-react"
 import { RepairReportSchema, type RepairReportInput } from "@/lib/schemas"
 import { saveRepairReport } from "@/lib/actions/reports"
 import { FormField, Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { formatCurrency } from "@/lib/utils"
+import type { SparePartOption } from "@/lib/data/inventory"
 
 interface RepairReportFormProps {
   jobId: string
+  spareParts: SparePartOption[]
   defaultValues?: Partial<RepairReportInput>
 }
 
-export function RepairReportForm({ jobId, defaultValues }: RepairReportFormProps) {
+export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairReportFormProps) {
   const router = useRouter()
   const toast = useToast()
 
@@ -26,6 +29,7 @@ export function RepairReportForm({ jobId, defaultValues }: RepairReportFormProps
     register,
     handleSubmit,
     watch,
+    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm<RepairReportInput>({
@@ -100,7 +104,7 @@ export function RepairReportForm({ jobId, defaultValues }: RepairReportFormProps
             size="sm"
             variant="secondary"
             icon={<Plus className="h-3.5 w-3.5" />}
-            onClick={() => append({ partName: "", quantity: 1, unitPrice: 0 })}
+            onClick={() => append({ partId: "", partName: "", quantity: 1, unitPrice: 0 })}
           >
             Add Part
           </Button>
@@ -123,7 +127,27 @@ export function RepairReportForm({ jobId, defaultValues }: RepairReportFormProps
               const rowSubtotal = qty * price
               return (
                 <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-                  <div className="col-span-12 sm:col-span-6">
+                  <div className="col-span-12 sm:col-span-6 space-y-1.5">
+                    {spareParts.length > 0 && (
+                      <Select
+                        aria-label="Select inventory part"
+                        defaultValue=""
+                        onChange={(e) => {
+                          const part = spareParts.find((p) => p.id === e.target.value)
+                          if (!part) return
+                          setValue(`parts.${index}.partId`, part.id, { shouldValidate: true })
+                          setValue(`parts.${index}.partName`, `${part.partNumber} — ${part.name}`, { shouldValidate: true })
+                          setValue(`parts.${index}.unitPrice`, Number(part.sellingPrice), { shouldValidate: true })
+                        }}
+                      >
+                        <option value="">— Select from inventory (optional) —</option>
+                        {spareParts.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.partNumber} — {p.name} ({formatCurrency(Number(p.sellingPrice))}, {p.stock?.quantity ?? 0} {p.unit} in stock)
+                          </option>
+                        ))}
+                      </Select>
+                    )}
                     <Input
                       placeholder="Part name"
                       {...register(`parts.${index}.partName`)}

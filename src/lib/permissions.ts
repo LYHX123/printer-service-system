@@ -6,8 +6,8 @@ import type { Role } from "@/types"
  * Role summary:
  * - ADMIN: full access to everything.
  * - MANAGER: customers, equipment, jobs, quotations, reports, inventory — no user/settings management.
- * - ENGINEER: assigned jobs, equipment details, photo/signature uploads, job status updates —
- *   no quotations, no inventory, no reports.
+ * - ENGINEER: assigned jobs, equipment details, photo/signature uploads, job status updates,
+ *   view-only inventory — no quotations, no reports.
  * - RECEPTIONIST: customers, equipment, create/view jobs, create quotations —
  *   no reports, no inventory, no user management.
  */
@@ -30,7 +30,7 @@ const MODULE_ACCESS: Record<Module, Role[]> = {
   jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   quotations: ["ADMIN", "MANAGER", "RECEPTIONIST"],
   reports: ["ADMIN", "MANAGER"],
-  inventory: ["ADMIN", "MANAGER"],
+  inventory: ["ADMIN", "MANAGER", "ENGINEER"],
   users: ["ADMIN"],
   settings: ["ADMIN"],
 }
@@ -73,10 +73,13 @@ export function canManageSettings(role: Role): boolean {
   return role === "ADMIN"
 }
 
-/** Admin and Manager can manage inventory (spare parts, purchase orders). */
+/** Admin and Manager can manage inventory (spare parts, purchase orders, stock transactions). */
 export function canManageInventory(role: Role): boolean {
-  return canAccess(role, "inventory")
+  return role === "ADMIN" || role === "MANAGER"
 }
+
+/** Alias for clarity at call sites that gate edit/create/delete actions. */
+export const canEditInventory = canManageInventory
 
 /** Admin and Manager can view reports. */
 export function canViewReports(role: Role): boolean {

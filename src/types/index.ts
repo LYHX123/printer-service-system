@@ -16,6 +16,8 @@ import type {
   JobStatusLog,
   SparePart,
   InventoryStock,
+  InventoryTransaction,
+  TransactionType,
   Role,
   JobStatus,
   Priority,
@@ -46,6 +48,8 @@ export type {
   JobStatusLog,
   SparePart,
   InventoryStock,
+  InventoryTransaction,
+  TransactionType,
   Role,
   JobStatus,
   Priority,
@@ -112,6 +116,12 @@ export type MeterReadingWithJob = MeterReading & {
 
 export type SparePartWithStock = SparePart & {
   stock: InventoryStock | null
+}
+
+export type InventoryTransactionWithRelations = InventoryTransaction & {
+  part: Pick<SparePart, "id" | "partNumber" | "name" | "unit">
+  performedBy: Pick<User, "id" | "name">
+  job: Pick<ServiceJob, "id" | "jobNumber"> | null
 }
 
 // ─── Status transitions ───────────────────────────────────────────────────────
@@ -204,6 +214,12 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   ACTIVE: "Active",
   EXPIRED: "Expired",
   TERMINATED: "Terminated",
+}
+
+export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
+  IN: "Stock In",
+  OUT: "Stock Out",
+  ADJUSTMENT: "Adjustment",
 }
 
 export const PART_CATEGORY_LABELS: Record<PartCategory, string> = {

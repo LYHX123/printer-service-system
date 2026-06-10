@@ -16,6 +16,7 @@ import { formatCurrency } from "@/lib/utils"
 import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 import { SERVICE_TYPE_LABELS, EQUIPMENT_TYPE_LABELS } from "@/types"
 import type { EquipmentType, ServiceType } from "@/types"
+import type { SparePartOption } from "@/lib/data/inventory"
 
 const ALL_SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[]
 
@@ -39,6 +40,7 @@ interface EquipmentOption {
 interface QuotationFormProps {
   customers: CustomerOption[]
   allEquipment: EquipmentOption[]
+  spareParts: SparePartOption[]
   defaultValues?: Partial<QuotationInput>
   quotationId?: string
 }
@@ -46,6 +48,7 @@ interface QuotationFormProps {
 export function QuotationForm({
   customers,
   allEquipment,
+  spareParts,
   defaultValues,
   quotationId,
 }: QuotationFormProps) {
@@ -210,9 +213,9 @@ export function QuotationForm({
           </div>
 
           {fields.length === 0 ? (
-            <p className="text-sm text-slate-400 italic py-2">No spare parts added. Click "Add Part" to include parts in this quotation.</p>
+            <p className="text-sm text-slate-400 italic py-2">No spare parts added. Click &quot;Add Part&quot; to include parts in this quotation.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 pb-1 border-b border-slate-100">
                 <div className="col-span-6">Description</div>
                 <div className="col-span-2 text-right">Qty</div>
@@ -226,7 +229,26 @@ export function QuotationForm({
                 const rowSubtotal = qty * price
                 return (
                   <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-                    <div className="col-span-12 sm:col-span-6">
+                    <div className="col-span-12 sm:col-span-6 space-y-1.5">
+                      {spareParts.length > 0 && (
+                        <Select
+                          aria-label="Select inventory part"
+                          defaultValue=""
+                          onChange={(e) => {
+                            const part = spareParts.find((p) => p.id === e.target.value)
+                            if (!part) return
+                            setValue(`items.${index}.description`, `${part.partNumber} — ${part.name}`, { shouldValidate: true })
+                            setValue(`items.${index}.unitPrice`, Number(part.sellingPrice), { shouldValidate: true })
+                          }}
+                        >
+                          <option value="">— Select from inventory (optional) —</option>
+                          {spareParts.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.partNumber} — {p.name} ({formatCurrency(Number(p.sellingPrice))}, {p.stock?.quantity ?? 0} {p.unit} in stock)
+                            </option>
+                          ))}
+                        </Select>
+                      )}
                       <Input
                         placeholder="Part or service description"
                         {...register(`items.${index}.description`)}
