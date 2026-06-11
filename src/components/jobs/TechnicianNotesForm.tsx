@@ -10,6 +10,7 @@ import { updateTechnicianNotes } from "@/lib/actions/jobs"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { EquipmentType } from "@/types"
 import { TECHNICIAN_NOTES_PLACEHOLDER } from "@/types"
 
@@ -22,6 +23,7 @@ interface TechnicianNotesFormProps {
 export function TechnicianNotesForm({ jobId, currentNotes, equipmentType }: TechnicianNotesFormProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t } = useLanguage()
   const [editing, setEditing] = useState(false)
 
   const {
@@ -73,7 +75,7 @@ export function TechnicianNotesForm({ jobId, currentNotes, equipmentType }: Tech
         className="w-full"
       />
       <div className="flex gap-2 mt-3">
-        <Button type="submit" size="sm" loading={isSubmitting}>Save</Button>
+        <Button type="submit" size="sm" loading={isSubmitting}>{t("save")}</Button>
         <Button
           type="button"
           size="sm"
@@ -84,7 +86,7 @@ export function TechnicianNotesForm({ jobId, currentNotes, equipmentType }: Tech
           }}
           disabled={isSubmitting}
         >
-          Cancel
+          {t("cancel")}
         </Button>
       </div>
     </form>

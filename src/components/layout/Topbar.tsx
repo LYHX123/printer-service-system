@@ -5,20 +5,23 @@ import { signOut } from "next-auth/react"
 import { Menu, LogOut, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { RoleBadge } from "@/components/ui/badge"
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
+import type { TranslationKey } from "@/lib/i18n/translations"
 import type { Role } from "@/types"
 
 // ─── Breadcrumb config ────────────────────────────────────────────────────────
 
-const SECTION_LABELS: Record<string, string> = {
-  dashboard: "Dashboard",
-  quotations: "Quotations",
-  customers: "Customers",
-  equipment: "Equipment",
-  jobs: "Jobs",
-  inventory: "Inventory",
-  reports: "Reports",
-  users: "Users",
-  settings: "Settings",
+const SECTION_LABEL_KEYS: Record<string, TranslationKey> = {
+  dashboard: "dashboard",
+  quotations: "quotations",
+  customers: "customers",
+  equipment: "equipment",
+  jobs: "jobs",
+  inventory: "inventory",
+  reports: "reports",
+  users: "users",
+  settings: "settings",
 }
 
 const SUBSECTION_LABELS: Record<string, string> = {
@@ -27,15 +30,16 @@ const SUBSECTION_LABELS: Record<string, string> = {
   edit: "Edit",
 }
 
-function segmentLabel(seg: string, parentSeg?: string): string {
+function segmentLabel(seg: string, parentSeg: string | undefined, t: (key: TranslationKey) => string): string {
   // Known static subsections
   if (parentSeg && SUBSECTION_LABELS[seg]) return SUBSECTION_LABELS[seg]
   // UUID-like — dynamic route (detail page)
   if (/^[0-9a-f-]{20,}$/i.test(seg)) return "Detail"
-  return SECTION_LABELS[seg] ?? seg
+  if (SECTION_LABEL_KEYS[seg]) return t(SECTION_LABEL_KEYS[seg])
+  return seg
 }
 
-function getBreadcrumbs(pathname: string): { label: string; href: string }[] {
+function getBreadcrumbs(pathname: string, t: (key: TranslationKey) => string): { label: string; href: string }[] {
   const crumbs: { label: string; href: string }[] = [
     { label: "Home", href: "/dashboard" },
   ]
@@ -45,7 +49,7 @@ function getBreadcrumbs(pathname: string): { label: string; href: string }[] {
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i]
     built += `/${seg}`
-    const label = segmentLabel(seg, segments[i - 1])
+    const label = segmentLabel(seg, segments[i - 1], t)
     if (built !== "/dashboard") {
       crumbs.push({ label, href: built })
     }
@@ -54,12 +58,12 @@ function getBreadcrumbs(pathname: string): { label: string; href: string }[] {
   return crumbs
 }
 
-function getPageTitle(pathname: string): string {
+function getPageTitle(pathname: string, t: (key: TranslationKey) => string): string {
   const segments = pathname.split("/").filter(Boolean)
-  if (segments.length === 0) return "Dashboard"
+  if (segments.length === 0) return t("dashboard")
   const last = segments[segments.length - 1]
   const parent = segments[segments.length - 2]
-  return segmentLabel(last, parent)
+  return segmentLabel(last, parent, t)
 }
 
 // ─── User avatar ──────────────────────────────────────────────────────────────
@@ -94,8 +98,9 @@ interface TopbarProps {
 
 export function Topbar({ user, onMenuClick }: TopbarProps) {
   const pathname = usePathname()
-  const crumbs = getBreadcrumbs(pathname)
-  const currentPage = getPageTitle(pathname)
+  const { t } = useLanguage()
+  const crumbs = getBreadcrumbs(pathname, t)
+  const currentPage = getPageTitle(pathname, t)
 
   async function handleSignOut() {
     await signOut({ callbackUrl: "/login" })
@@ -137,8 +142,9 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
         </p>
       </div>
 
-      {/* Right: user info + sign out */}
+      {/* Right: language switcher + user info + sign out */}
       <div className="flex items-center gap-3 shrink-0">
+        <LanguageSwitcher />
         <div className="hidden sm:flex items-center gap-2">
           <UserAvatar name={user.name ?? "U"} />
           <div className="hidden md:block">
@@ -152,10 +158,10 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
         <button
           onClick={handleSignOut}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          title="Sign out"
+          title={t("logout")}
         >
           <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Sign out</span>
+          <span className="hidden sm:inline">{t("logout")}</span>
         </button>
       </div>
     </header>

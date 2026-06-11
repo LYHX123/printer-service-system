@@ -5,8 +5,8 @@ import { getJobs } from "@/lib/data/jobs"
 import { canCreateJob, isRestrictedToAssignedJobs } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { T, TInput } from "@/components/ui/T"
 import { Table } from "@/components/ui/table"
 import { StatusBadge, PriorityBadge, EquipmentTypeIcon } from "@/components/ui/badge"
 import { JOB_STATUS_LABELS, PRIORITY_LABELS } from "@/types"
@@ -47,12 +47,12 @@ export default async function JobsPage({
   return (
     <div>
       <PageHeader
-        title="Service Jobs"
-        subtitle={`${jobs.length} job${jobs.length !== 1 ? "s" : ""}`}
+        title={<T k="serviceJobs" />}
+        subtitle={<>{jobs.length} <T k="jobs" /></>}
         actions={
           canCreateJob(role) ? (
             <Link href="/jobs/new">
-              <Button icon={<Plus className="h-4 w-4" />}>New Job</Button>
+              <Button icon={<Plus className="h-4 w-4" />}><T k="newJob" /></Button>
             </Link>
           ) : undefined
         }
@@ -62,30 +62,30 @@ export default async function JobsPage({
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <Input
+          <TInput
             name="search"
             type="search"
-            placeholder="Job #, customer, equipment…"
+            placeholderKey="searchJobsPlaceholder"
             defaultValue={search}
             className="pl-9"
           />
         </div>
         <Select name="status" defaultValue={status ?? ""} className="w-52">
-          <option value="">All Statuses</option>
+          <option value=""><T k="allStatuses" /></option>
           {JOB_STATUSES.map((s) => (
             <option key={s} value={s}>{JOB_STATUS_LABELS[s]}</option>
           ))}
         </Select>
         <Select name="priority" defaultValue={priority ?? ""} className="w-36">
-          <option value="">All Priorities</option>
+          <option value=""><T k="allPriorities" /></option>
           {PRIORITIES.map((p) => (
             <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
           ))}
         </Select>
-        <Button type="submit" variant="secondary">Filter</Button>
+        <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {(search || status || priority) && (
           <Link href="/jobs">
-            <Button variant="ghost">Clear</Button>
+            <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
       </form>
@@ -94,7 +94,7 @@ export default async function JobsPage({
         columns={[
           {
             key: "jobNumber",
-            label: "Job #",
+            label: <T k="jobNumber" />,
             render: (row) => (
               <Link href={`/jobs/${row.id}`} className="font-mono text-sm font-semibold text-blue-600 hover:underline whitespace-nowrap">
                 {row.jobNumber}
@@ -103,7 +103,7 @@ export default async function JobsPage({
           },
           {
             key: "customer",
-            label: "Customer",
+            label: <T k="customer" />,
             render: (row) => (
               <Link href={`/customers/${row.customer.id}`} className="text-sm text-slate-700 hover:text-blue-600 transition-colors">
                 {row.customer.name}
@@ -112,7 +112,7 @@ export default async function JobsPage({
           },
           {
             key: "equipment",
-            label: "Equipment",
+            label: <T k="equipment" />,
             render: (row) => (
               <div className="flex items-center gap-2">
                 <EquipmentTypeIcon type={row.equipment.type} className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -124,22 +124,22 @@ export default async function JobsPage({
           },
           {
             key: "status",
-            label: "Status",
+            label: <T k="status" />,
             render: (row) => <StatusBadge status={row.status} />,
           },
           {
             key: "priority",
-            label: "Priority",
+            label: <T k="priority" />,
             render: (row) => <PriorityBadge priority={row.priority} />,
           },
           {
             key: "assignedTo",
-            label: "Engineer",
+            label: <T k="engineer" />,
             render: (row) => <span className="text-sm text-slate-600 whitespace-nowrap">{row.assignedTo.name}</span>,
           },
           {
             key: "receivedDate",
-            label: "Received",
+            label: <T k="received" />,
             render: (row) => (
               <span className="text-xs text-slate-500 whitespace-nowrap">
                 {format(new Date(row.receivedDate), "dd MMM yyyy")}
@@ -148,7 +148,7 @@ export default async function JobsPage({
           },
           {
             key: "dueDate",
-            label: "Due",
+            label: <T k="due" />,
             render: (row) => (
               <span className="text-xs text-slate-500 whitespace-nowrap">
                 {row.dueDate ? format(new Date(row.dueDate), "dd MMM yyyy") : "—"}
@@ -158,11 +158,11 @@ export default async function JobsPage({
         ]}
         data={jobs}
         keyExtractor={(row) => row.id}
-        emptyTitle="No jobs found"
+        emptyTitle={<T k="noJobsFound" />}
         emptyDescription={
           search || status || priority
-            ? "Try adjusting your filters."
-            : "Create your first service job to get started."
+            ? <T k="tryAdjustingFilters" />
+            : <T k="createFirstJob" />
         }
       />
     </div>

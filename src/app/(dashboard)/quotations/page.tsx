@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils"
 import { QUOTATION_STATUS_LABELS, SERVICE_TYPE_LABELS } from "@/types"
 import type { QuotationStatus, Role } from "@/types"
 import { format } from "date-fns"
+import { T, TInput } from "@/components/ui/T"
 
 const STATUS_OPTIONS = Object.entries(QUOTATION_STATUS_LABELS) as [QuotationStatus, string][]
 
@@ -39,12 +40,12 @@ export default async function QuotationsPage({
   return (
     <div>
       <PageHeader
-        title="Quotations"
-        subtitle="Create and manage customer quotations."
+        title={<T k="quotations" />}
+        subtitle={<T k="createAndManageQuotations" />}
         actions={
           canCreateQuotation(role) ? (
             <Link href="/quotations/new">
-              <Button icon={<Plus className="h-4 w-4" />}>New Quotation</Button>
+              <Button icon={<Plus className="h-4 w-4" />}><T k="newQuotation" /></Button>
             </Link>
           ) : undefined
         }
@@ -53,27 +54,27 @@ export default async function QuotationsPage({
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-2">
         <form method="get" className="flex gap-2 flex-wrap">
-          <input
+          <TInput
             name="search"
             type="search"
             defaultValue={search}
-            placeholder="Search by Q# or customer…"
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-56"
+            placeholderKey="searchQuotationsPlaceholder"
+            className="h-9 w-56"
           />
           <select
             name="status"
             defaultValue={status ?? ""}
             className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All statuses</option>
+            <option value=""><T k="allStatuses" /></option>
             {STATUS_OPTIONS.map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
-          <Button type="submit" variant="secondary" size="sm">Filter</Button>
+          <Button type="submit" variant="secondary" size="sm"><T k="filter" /></Button>
           {(search || status) && (
             <Link href="/quotations">
-              <Button variant="ghost" size="sm">Clear</Button>
+              <Button variant="ghost" size="sm"><T k="clear" /></Button>
             </Link>
           )}
         </form>
@@ -83,11 +84,11 @@ export default async function QuotationsPage({
         <div className="rounded-xl border border-slate-200 bg-white">
           <EmptyState
             icon={<FileText className="h-7 w-7" />}
-            title="No quotations found"
+            title={<T k="noQuotationsFound" />}
             description={
               search || status
-                ? "Try adjusting your search or filter."
-                : "Create your first quotation to get started."
+                ? <T k="tryAdjustingSearchOrFilter" />
+                : <T k="createFirstQuotation" />
             }
           />
         </div>
@@ -97,9 +98,9 @@ export default async function QuotationsPage({
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  {["Quotation #", "Customer", "Equipment", "Service", "Total", "Status", "Date", ""].map((h) => (
+                  {[<T key="quotationNumber" k="quotationNumber" />, <T key="customer" k="customer" />, <T key="equipment" k="equipment" />, <T key="serviceType" k="serviceType" />, <T key="total" k="total" />, <T key="status" k="status" />, <T key="date" k="date" />, ""].map((h, i) => (
                     <th
-                      key={h}
+                      key={i}
                       className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
                     >
                       {h}
@@ -125,7 +126,7 @@ export default async function QuotationsPage({
                       {q.equipment ? (
                         <span>{q.equipment.brand} {q.equipment.model}</span>
                       ) : (
-                        <span className="text-slate-400 italic text-xs">Not specified</span>
+                        <span className="text-slate-400 italic text-xs"><T k="notSpecified" /></span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-500">
@@ -145,7 +146,7 @@ export default async function QuotationsPage({
                         href={`/quotations/${q.id}`}
                         className="text-xs text-blue-600 hover:underline whitespace-nowrap"
                       >
-                        View →
+                        <T k="view" /> →
                       </Link>
                     </td>
                   </tr>

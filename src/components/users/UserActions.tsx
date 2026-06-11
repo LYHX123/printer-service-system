@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
 import { updateUserRole, setUserActive } from "@/lib/actions/users"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ROLE_LABELS } from "@/types"
 import type { Role } from "@/types"
 
@@ -23,6 +24,7 @@ interface UserActionsProps {
 export function UserActions({ userId, role, isActive, isSelf }: UserActionsProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t } = useLanguage()
   const [updatingRole, setUpdatingRole] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -36,7 +38,7 @@ export function UserActions({ userId, role, isActive, isSelf }: UserActionsProps
       toast.error(result.error)
       return
     }
-    toast.success("Role updated")
+    toast.success(t("roleUpdated"))
     router.refresh()
   }
 
@@ -48,7 +50,7 @@ export function UserActions({ userId, role, isActive, isSelf }: UserActionsProps
       toast.error(result.error)
       return
     }
-    toast.success(isActive ? "User disabled" : "User enabled")
+    toast.success(isActive ? t("userDisabled") : t("userEnabled"))
     setConfirmOpen(false)
     router.refresh()
   }
@@ -76,7 +78,7 @@ export function UserActions({ userId, role, isActive, isSelf }: UserActionsProps
           onClick={() => setConfirmOpen(true)}
           disabled={isSelf}
         >
-          Disable
+          {t("disable")}
         </Button>
       ) : (
         <Button
@@ -85,23 +87,23 @@ export function UserActions({ userId, role, isActive, isSelf }: UserActionsProps
           icon={<CheckCircle className="h-3.5 w-3.5" />}
           onClick={() => setConfirmOpen(true)}
         >
-          Enable
+          {t("enable")}
         </Button>
       )}
 
       <Modal
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title={isActive ? "Disable User" : "Enable User"}
+        title={isActive ? t("disableUser") : t("enableUser")}
         description={
           isActive
-            ? "This user will no longer be able to log in. You can re-enable their account at any time."
-            : "This user will regain access and be able to log in again."
+            ? t("disableUserDesc")
+            : t("enableUserDesc")
         }
         footer={
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={submitting}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               type="button"
@@ -109,7 +111,7 @@ export function UserActions({ userId, role, isActive, isSelf }: UserActionsProps
               loading={submitting}
               onClick={handleToggleActive}
             >
-              {isActive ? "Disable User" : "Enable User"}
+              {isActive ? t("disableUser") : t("enableUser")}
             </Button>
           </div>
         }

@@ -4,9 +4,9 @@ import { auth } from "@/lib/auth"
 import { getCustomers } from "@/lib/data/customers"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Table } from "@/components/ui/table"
 import { format } from "date-fns"
+import { T, NoResultsFor, TInput } from "@/components/ui/T"
 
 export default async function CustomersPage({
   searchParams,
@@ -22,11 +22,11 @@ export default async function CustomersPage({
   return (
     <div>
       <PageHeader
-        title="Customers"
-        subtitle={`${customers.length} customer${customers.length !== 1 ? "s" : ""} registered`}
+        title={<T k="customers" />}
+        subtitle={<>{customers.length} <T k="customers" /> <T k="registered" /></>}
         actions={
           <Link href="/customers/new">
-            <Button icon={<Plus className="h-4 w-4" />}>New Customer</Button>
+            <Button icon={<Plus className="h-4 w-4" />}><T k="newCustomer" /></Button>
           </Link>
         }
       />
@@ -35,28 +35,28 @@ export default async function CustomersPage({
       <form method="GET" className="flex gap-2 mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <Input
+          <TInput
             name="search"
             type="search"
-            placeholder="Search by name, code or company…"
+            placeholderKey="searchCustomersPlaceholder"
             defaultValue={search}
             className="pl-9"
           />
         </div>
-        <Button type="submit" variant="secondary" size="md">Search</Button>
+        <Button type="submit" variant="secondary" size="md"><T k="search" /></Button>
         {search && (
           <Link href="/customers">
-            <Button variant="ghost" size="md">Clear</Button>
+            <Button variant="ghost" size="md"><T k="clear" /></Button>
           </Link>
         )}
       </form>
 
       <Table
         columns={[
-          { key: "code", label: "Code", className: "font-mono text-xs text-slate-500 whitespace-nowrap" },
+          { key: "code", label: <T k="code" />, className: "font-mono text-xs text-slate-500 whitespace-nowrap" },
           {
             key: "name",
-            label: "Customer",
+            label: <T k="customer" />,
             render: (row) => (
               <div>
                 <Link href={`/customers/${row.id}`} className="font-medium text-slate-900 hover:text-blue-600 transition-colors">
@@ -68,15 +68,15 @@ export default async function CustomersPage({
               </div>
             ),
           },
-          { key: "phone", label: "Phone", className: "text-slate-600 whitespace-nowrap" },
+          { key: "phone", label: <T k="phone" />, className: "text-slate-600 whitespace-nowrap" },
           {
             key: "email",
-            label: "Email",
+            label: <T k="email" />,
             render: (row) => <span className="text-slate-500">{row.email ?? "—"}</span>,
           },
           {
             key: "equipment",
-            label: "Equipment",
+            label: <T k="equipment" />,
             className: "text-center",
             headerClassName: "text-center",
             render: (row) => (
@@ -87,7 +87,7 @@ export default async function CustomersPage({
           },
           {
             key: "jobs",
-            label: "Jobs",
+            label: <T k="jobs" />,
             className: "text-center",
             headerClassName: "text-center",
             render: (row) => (
@@ -98,7 +98,7 @@ export default async function CustomersPage({
           },
           {
             key: "createdAt",
-            label: "Registered",
+            label: <T k="registered" />,
             render: (row) => (
               <span className="text-slate-500 text-xs whitespace-nowrap">
                 {format(new Date(row.createdAt), "dd MMM yyyy")}
@@ -110,18 +110,18 @@ export default async function CustomersPage({
             label: "",
             render: (row) => (
               <Link href={`/customers/${row.id}`} className="text-xs text-blue-600 hover:underline whitespace-nowrap">
-                View →
+                <T k="view" /> →
               </Link>
             ),
           },
         ]}
         data={customers}
         keyExtractor={(row) => row.id}
-        emptyTitle="No customers found"
+        emptyTitle={<T k="noCustomersFound" />}
         emptyDescription={
           search
-            ? `No results for "${search}". Try a different search term.`
-            : "Register your first customer to get started."
+            ? <><NoResultsFor search={search} /> <T k="tryDifferentSearchTerm" /></>
+            : <T k="registerFirstCustomer" />
         }
       />
     </div>

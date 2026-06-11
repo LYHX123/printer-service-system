@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
 import { Badge, RoleBadge } from "@/components/ui/badge"
 import { UserActions } from "@/components/users/UserActions"
+import { T } from "@/components/ui/T"
 import { format } from "date-fns"
 import type { Role } from "@/types"
 
@@ -25,11 +26,11 @@ export default async function UsersPage() {
   return (
     <div>
       <PageHeader
-        title="Users"
-        subtitle={`${users.length} user${users.length !== 1 ? "s" : ""} in your company`}
+        title={<T k="users" />}
+        subtitle={<>{users.length} <T k="users" /> <T k="inYourCompany" /></>}
         actions={
           <Link href="/users/new">
-            <Button icon={<Plus className="h-4 w-4" />}>New User</Button>
+            <Button icon={<Plus className="h-4 w-4" />}><T k="newUser" /></Button>
           </Link>
         }
       />
@@ -38,13 +39,13 @@ export default async function UsersPage() {
         columns={[
           {
             key: "name",
-            label: "Name",
+            label: <T k="name" />,
             render: (row) => (
               <div>
                 <p className="font-medium text-slate-900">
                   {row.name}
                   {row.id === currentUserId && (
-                    <span className="ml-2 text-xs font-normal text-slate-400">(you)</span>
+                    <span className="ml-2 text-xs font-normal text-slate-400">(<T k="you" />)</span>
                   )}
                 </p>
               </div>
@@ -52,27 +53,27 @@ export default async function UsersPage() {
           },
           {
             key: "email",
-            label: "Email",
+            label: <T k="email" />,
             className: "text-slate-600",
           },
           {
             key: "role",
-            label: "Role",
+            label: <T k="role" />,
             render: (row) => <RoleBadge role={row.role} />,
           },
           {
             key: "status",
-            label: "Status",
+            label: <T k="status" />,
             render: (row) =>
               row.isActive ? (
-                <Badge className="bg-green-100 text-green-700">Active</Badge>
+                <Badge className="bg-green-100 text-green-700"><T k="active" /></Badge>
               ) : (
-                <Badge className="bg-slate-200 text-slate-600">Disabled</Badge>
+                <Badge className="bg-slate-200 text-slate-600"><T k="disabledStatus" /></Badge>
               ),
           },
           {
             key: "createdAt",
-            label: "Joined",
+            label: <T k="joined" />,
             render: (row) => (
               <span className="text-slate-500 text-xs whitespace-nowrap">
                 {format(new Date(row.createdAt), "dd MMM yyyy")}
@@ -96,8 +97,8 @@ export default async function UsersPage() {
         ]}
         data={users}
         keyExtractor={(row) => row.id}
-        emptyTitle="No users found"
-        emptyDescription="Create your first staff account to get started."
+        emptyTitle={<T k="noUsersFound" />}
+        emptyDescription={<T k="createFirstStaffAccount" />}
       />
     </div>
   )

@@ -5,8 +5,8 @@ import { getEquipmentList } from "@/lib/data/equipment"
 import { getCustomerOptions } from "@/lib/data/customers"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { T, TInput } from "@/components/ui/T"
 import { Table } from "@/components/ui/table"
 import { EquipmentTypeBadge } from "@/components/ui/badge"
 import { EQUIPMENT_TYPE_LABELS } from "@/types"
@@ -40,11 +40,11 @@ export default async function EquipmentPage({
   return (
     <div>
       <PageHeader
-        title="Equipment"
-        subtitle={`${equipment.length} unit${equipment.length !== 1 ? "s" : ""} registered`}
+        title={<T k="equipment" />}
+        subtitle={<>{equipment.length} <T k="equipment" /> <T k="registered" /></>}
         actions={
           <Link href="/equipment/new">
-            <Button icon={<Plus className="h-4 w-4" />}>Register Equipment</Button>
+            <Button icon={<Plus className="h-4 w-4" />}><T k="registerEquipment" /></Button>
           </Link>
         }
       />
@@ -53,30 +53,30 @@ export default async function EquipmentPage({
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <Input
+          <TInput
             name="search"
             type="search"
-            placeholder="Serial, brand, model…"
+            placeholderKey="searchEquipmentPlaceholder"
             defaultValue={search}
             className="pl-9"
           />
         </div>
         <Select name="type" defaultValue={type ?? ""} className="w-44">
-          <option value="">All Types</option>
+          <option value=""><T k="allTypes" /></option>
           {EQUIPMENT_TYPES.map((t) => (
             <option key={t} value={t}>{EQUIPMENT_TYPE_LABELS[t]}</option>
           ))}
         </Select>
         <Select name="customerId" defaultValue={customerId ?? ""} className="w-52">
-          <option value="">All Customers</option>
+          <option value=""><T k="allCustomers" /></option>
           {customers.map((c) => (
             <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
           ))}
         </Select>
-        <Button type="submit" variant="secondary">Filter</Button>
+        <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {(search || type || customerId) && (
           <Link href="/equipment">
-            <Button variant="ghost">Clear</Button>
+            <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
       </form>
@@ -85,12 +85,12 @@ export default async function EquipmentPage({
         columns={[
           {
             key: "type",
-            label: "Type",
+            label: <T k="type" />,
             render: (row) => <EquipmentTypeBadge type={row.type} />,
           },
           {
             key: "brand",
-            label: "Brand / Model",
+            label: <><T k="brand" /> / <T k="model" /></>,
             render: (row) => (
               <div>
                 <Link href={`/equipment/${row.id}`} className="font-medium text-sm text-slate-900 hover:text-blue-600 transition-colors">
@@ -102,7 +102,7 @@ export default async function EquipmentPage({
           },
           {
             key: "customer",
-            label: "Customer",
+            label: <T k="customer" />,
             render: (row) => (
               <div>
                 <Link href={`/customers/${row.customer.id}`} className="text-sm text-slate-700 hover:text-blue-600 transition-colors">
@@ -116,14 +116,14 @@ export default async function EquipmentPage({
           },
           {
             key: "branch",
-            label: "Branch",
+            label: <T k="branch" />,
             render: (row) => (
               <span className="text-sm text-slate-500">{row.branch?.name ?? "—"}</span>
             ),
           },
           {
             key: "jobs",
-            label: "Jobs",
+            label: <T k="jobs" />,
             className: "text-center",
             headerClassName: "text-center",
             render: (row) => (
@@ -134,7 +134,7 @@ export default async function EquipmentPage({
           },
           {
             key: "createdAt",
-            label: "Registered",
+            label: <T k="registered" />,
             render: (row) => (
               <span className="text-xs text-slate-500 whitespace-nowrap">
                 {format(new Date(row.createdAt), "dd MMM yyyy")}
@@ -146,18 +146,18 @@ export default async function EquipmentPage({
             label: "",
             render: (row) => (
               <Link href={`/equipment/${row.id}`} className="text-xs text-blue-600 hover:underline whitespace-nowrap">
-                View →
+                <T k="view" /> →
               </Link>
             ),
           },
         ]}
         data={equipment}
         keyExtractor={(row) => row.id}
-        emptyTitle="No equipment found"
+        emptyTitle={<T k="noEquipmentFound" />}
         emptyDescription={
           search || type || customerId
-            ? "Try adjusting your filters."
-            : "Register your first piece of equipment to get started."
+            ? <T k="tryAdjustingFilters" />
+            : <T k="registerFirstEquipment" />
         }
       />
     </div>

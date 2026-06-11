@@ -15,6 +15,7 @@ import { JobActions } from "@/components/jobs/JobActions"
 import { QuickSendAction } from "@/components/communications/QuickSendAction"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
+import { T } from "@/components/ui/T"
 
 export default async function JobDetailPage({
   params,
@@ -55,7 +56,7 @@ export default async function JobDetailPage({
     <div>
       <Link href="/jobs" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Jobs
+        <T k="jobs" />
       </Link>
 
       <PageHeader
@@ -71,17 +72,17 @@ export default async function JobDetailPage({
           <div className="flex flex-wrap gap-2">
             <Link href={`/jobs/${id}/photos`}>
               <Button variant="outline" size="sm" icon={<ImageIcon className="h-3.5 w-3.5" />}>
-                Photos
+                <T k="photos" />
               </Button>
             </Link>
             <Link href={`/jobs/${id}/signature`}>
               <Button variant="outline" size="sm" icon={<PenTool className="h-3.5 w-3.5" />}>
-                Signature
+                <T k="signature" />
               </Button>
             </Link>
             <Link href={`/jobs/${id}/report`}>
               <Button variant="outline" size="sm" icon={<FileText className="h-3.5 w-3.5" />}>
-                Repair Report
+                <T k="repairReport" />
               </Button>
             </Link>
             <JobActions
@@ -101,7 +102,7 @@ export default async function JobDetailPage({
         <div className="space-y-4">
           {/* Equipment */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Equipment</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="equipment" /></h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <EquipmentTypeBadge type={job.equipment.type} />
@@ -113,7 +114,7 @@ export default async function JobDetailPage({
               {job.equipment.warrantyExpiry && (
                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-2">
                   <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
-                  Warranty to {format(new Date(job.equipment.warrantyExpiry), "dd MMM yyyy")}
+                  <T k="warrantyTo" /> {format(new Date(job.equipment.warrantyExpiry), "dd MMM yyyy")}
                 </div>
               )}
             </div>
@@ -121,7 +122,7 @@ export default async function JobDetailPage({
 
           {/* Customer */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Customer</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="customer" /></h3>
             <div className="space-y-2">
               <Link href={`/customers/${job.customer.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {job.customer.name}
@@ -152,42 +153,42 @@ export default async function JobDetailPage({
 
           {/* Job meta */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Job Details</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="jobDetails" /></h3>
             <dl className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-slate-600">
                 <User className="h-4 w-4 text-slate-400 shrink-0" />
                 <div>
-                  <dt className="text-xs text-slate-400">Assigned To</dt>
+                  <dt className="text-xs text-slate-400"><T k="assignedTo" /></dt>
                   <dd>{job.assignedTo.name}</dd>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <Wrench className="h-4 w-4 text-slate-400 shrink-0" />
                 <div>
-                  <dt className="text-xs text-slate-400">Received</dt>
+                  <dt className="text-xs text-slate-400"><T k="received" /></dt>
                   <dd>{format(new Date(job.receivedDate), "dd MMM yyyy")}</dd>
                 </div>
               </div>
               {job.dueDate && (
                 <div className="text-slate-600 ml-6">
-                  <dt className="text-xs text-slate-400">Due</dt>
+                  <dt className="text-xs text-slate-400"><T k="due" /></dt>
                   <dd>{format(new Date(job.dueDate), "dd MMM yyyy")}</dd>
                 </div>
               )}
               {job.completedAt && (
                 <div className="text-slate-600 ml-6">
-                  <dt className="text-xs text-slate-400">Completed</dt>
+                  <dt className="text-xs text-slate-400"><T k="completed" /></dt>
                   <dd>{format(new Date(job.completedAt), "dd MMM yyyy")}</dd>
                 </div>
               )}
               {job.completedAt && (
                 <div className="text-slate-600 ml-6">
-                  <dt className="text-xs text-slate-400 mb-1">Warranty</dt>
+                  <dt className="text-xs text-slate-400 mb-1"><T k="warranty" /></dt>
                   <dd><WarrantyBadge warrantyExpires={job.warrantyExpires} /></dd>
                 </div>
               )}
               <div className="text-slate-600 ml-6">
-                <dt className="text-xs text-slate-400">Created By</dt>
+                <dt className="text-xs text-slate-400"><T k="createdBy" /></dt>
                 <dd>{job.createdBy.name}</dd>
               </div>
             </dl>
@@ -196,10 +197,10 @@ export default async function JobDetailPage({
           {/* Communications */}
           {canSend && (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">Send Update</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1"><T k="sendUpdate" /></h3>
               <div className="divide-y divide-slate-100">
                 <QuickSendAction
-                  label="Job Received"
+                  label={<T k="jobReceived" />}
                   messageType="JOB_RECEIVED"
                   customerId={job.customer.id}
                   jobId={job.id}
@@ -208,7 +209,7 @@ export default async function JobDetailPage({
                   variables={templateVariables}
                 />
                 <QuickSendAction
-                  label="Job In Progress"
+                  label={<T k="jobInProgress" />}
                   messageType="JOB_IN_PROGRESS"
                   customerId={job.customer.id}
                   jobId={job.id}
@@ -217,7 +218,7 @@ export default async function JobDetailPage({
                   variables={templateVariables}
                 />
                 <QuickSendAction
-                  label="Job Completed"
+                  label={<T k="jobCompleted" />}
                   messageType="JOB_COMPLETED"
                   customerId={job.customer.id}
                   jobId={job.id}
@@ -226,7 +227,7 @@ export default async function JobDetailPage({
                   variables={templateVariables}
                 />
                 <QuickSendAction
-                  label="Ready For Collection"
+                  label={<T k="readyForCollection" />}
                   messageType="READY_FOR_COLLECTION"
                   customerId={job.customer.id}
                   jobId={job.id}
@@ -243,11 +244,11 @@ export default async function JobDetailPage({
         <div className="lg:col-span-2 space-y-4">
           {/* Problem description */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Problem Description</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="problemDescription" /></h3>
             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{job.problemDesc}</p>
             {job.internalNotes && (
               <div className="mt-4 pt-4 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Internal Notes</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1"><T k="internalNotes" /></p>
                 <p className="text-sm text-slate-600 italic whitespace-pre-line">{job.internalNotes}</p>
               </div>
             )}
@@ -258,16 +259,16 @@ export default async function JobDetailPage({
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <Gauge className="h-4 w-4 text-slate-400" />
-                Meter Readings
+                <T k="meterReadings" />
               </h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-xs font-semibold text-slate-500 uppercase border-b border-slate-100">
-                      <th className="pb-2 text-left">Date</th>
-                      <th className="pb-2 text-right">Black</th>
-                      <th className="pb-2 text-right">Colour</th>
-                      <th className="pb-2 text-left pl-4">Recorded by</th>
+                      <th className="pb-2 text-left"><T k="date" /></th>
+                      <th className="pb-2 text-right"><T k="black" /></th>
+                      <th className="pb-2 text-right"><T k="colour" /></th>
+                      <th className="pb-2 text-left pl-4"><T k="recordedBy" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -289,7 +290,7 @@ export default async function JobDetailPage({
 
           {/* Technician notes */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Technician Notes</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="technicianNotes" /></h3>
             <TechnicianNotesForm
               jobId={id}
               currentNotes={job.technicianNotes}
@@ -299,7 +300,7 @@ export default async function JobDetailPage({
 
           {/* Status timeline */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Status History</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="statusHistory" /></h3>
             <StatusTimeline logs={job.statusLogs} />
           </div>
         </div>

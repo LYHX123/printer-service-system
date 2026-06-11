@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const CURRENCIES = ["KES", "USD", "EUR", "GBP", "TZS", "UGX"]
 
@@ -33,6 +34,7 @@ interface CompanySettingsFormProps {
 
 export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsFormProps) {
   const toast = useToast()
+  const { t } = useLanguage()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [logo, setLogo] = useState(logoUrl)
   const [uploading, setUploading] = useState(false)
@@ -51,7 +53,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
     if (result?.error) {
       toast.error(result.error)
     } else {
-      toast.success("Company settings saved")
+      toast.success(t("companySettingsSaved"))
     }
   }
 
@@ -66,11 +68,11 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
       const res = await fetch("/api/settings/logo", { method: "POST", body: formData })
       const json = await res.json()
       if (!res.ok) {
-        toast.error(json.error ?? "Failed to upload logo")
+        toast.error(json.error ?? t("failedToUploadLogo"))
         return
       }
       setLogo(`${json.logoUrl}?t=${Date.now()}`)
-      toast.success("Logo updated")
+      toast.success(t("logoUpdated"))
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ""
@@ -105,52 +107,52 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
               loading={uploading}
               onClick={() => fileInputRef.current?.click()}
             >
-              Upload Logo
+              {t("uploadLogo")}
             </Button>
-            <p className="mt-1 text-xs text-slate-500">PNG, JPG or WEBP. Max 5MB.</p>
+            <p className="mt-1 text-xs text-slate-500">{t("logoFormatHint")}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="Company Name" htmlFor="name" required error={errors.name?.message}>
+          <FormField label={t("companyName")} htmlFor="name" required error={errors.name?.message}>
             <Input id="name" placeholder="e.g. TechFix Services" {...register("name")} error={errors.name?.message} />
           </FormField>
-          <FormField label="Phone Number" htmlFor="phone" error={errors.phone?.message}>
+          <FormField label={t("phoneNumber")} htmlFor="phone" error={errors.phone?.message}>
             <Input id="phone" type="tel" placeholder="e.g. +254 700 000000" {...register("phone")} />
           </FormField>
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="Email" htmlFor="email" error={errors.email?.message}>
+          <FormField label={t("email")} htmlFor="email" error={errors.email?.message}>
             <Input id="email" type="email" placeholder="e.g. info@company.com" {...register("email")} />
           </FormField>
-          <FormField label="Website" htmlFor="website" error={errors.website?.message}>
+          <FormField label={t("website")} htmlFor="website" error={errors.website?.message}>
             <Input id="website" placeholder="e.g. https://www.company.com" {...register("website")} />
           </FormField>
         </div>
 
-        <FormField label="Address" htmlFor="address" error={errors.address?.message}>
-          <Textarea id="address" placeholder="Full company address" rows={3} {...register("address")} />
+        <FormField label={t("address")} htmlFor="address" error={errors.address?.message}>
+          <Textarea id="address" placeholder={t("fullCompanyAddress")} rows={3} {...register("address")} />
         </FormField>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="KRA PIN" htmlFor="kraPin" error={errors.kraPin?.message}>
+          <FormField label={t("kraPin")} htmlFor="kraPin" error={errors.kraPin?.message}>
             <Input id="kraPin" placeholder="e.g. P000000000A" {...register("kraPin")} />
           </FormField>
-          <FormField label="VAT Percentage" htmlFor="vatPercent" required error={errors.vatPercent?.message}>
+          <FormField label={t("vatPercentage")} htmlFor="vatPercent" required error={errors.vatPercent?.message}>
             <Input id="vatPercent" type="number" step="0.01" min={0} max={100} {...register("vatPercent")} error={errors.vatPercent?.message} />
           </FormField>
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="Currency" htmlFor="currency" required error={errors.currency?.message}>
+          <FormField label={t("currency")} htmlFor="currency" required error={errors.currency?.message}>
             <Select id="currency" {...register("currency")}>
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </Select>
           </FormField>
-          <FormField label="Timezone" htmlFor="timezone" required error={errors.timezone?.message}>
+          <FormField label={t("timezone")} htmlFor="timezone" required error={errors.timezone?.message}>
             <Select id="timezone" {...register("timezone")}>
               {TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>{tz}</option>
@@ -162,7 +164,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
 
       <div className="flex justify-end gap-3 mt-4">
         <Button type="submit" loading={isSubmitting}>
-          Save Changes
+          {t("saveChanges")}
         </Button>
       </div>
     </form>

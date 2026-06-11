@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { EQUIPMENT_TYPE_LABELS, EQUIPMENT_NOTES_PLACEHOLDER } from "@/types"
 import type { EquipmentType } from "@/types"
 
@@ -33,6 +34,7 @@ interface EquipmentFormProps {
 
 export function EquipmentForm({ customers, defaultValues, equipmentId }: EquipmentFormProps) {
   const toast = useToast()
+  const { t } = useLanguage()
   const {
     register,
     handleSubmit,
@@ -105,7 +107,7 @@ export function EquipmentForm({ customers, defaultValues, equipmentId }: Equipme
         </div>
 
         {/* Equipment type */}
-        <FormField label="Equipment Type" htmlFor="type" required error={errors.type?.message}>
+        <FormField label={t("equipmentType")} htmlFor="type" required error={errors.type?.message}>
           <Select id="type" {...register("type")} error={errors.type?.message}>
             {EQUIPMENT_TYPES.map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
@@ -115,20 +117,20 @@ export function EquipmentForm({ customers, defaultValues, equipmentId }: Equipme
 
         {/* Brand + Model */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="Brand" htmlFor="brand" required error={errors.brand?.message}>
+          <FormField label={t("brand")} htmlFor="brand" required error={errors.brand?.message}>
             <Input id="brand" placeholder="e.g. HP, Canon, Ricoh, Lenovo" {...register("brand")} error={errors.brand?.message} />
           </FormField>
-          <FormField label="Model" htmlFor="model" required error={errors.model?.message}>
+          <FormField label={t("model")} htmlFor="model" required error={errors.model?.message}>
             <Input id="model" placeholder="e.g. LaserJet Pro M404dn" {...register("model")} error={errors.model?.message} />
           </FormField>
         </div>
 
         {/* Serial + Asset */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label="Serial Number" htmlFor="serialNumber" required error={errors.serialNumber?.message}>
+          <FormField label={t("serialNumber")} htmlFor="serialNumber" required error={errors.serialNumber?.message}>
             <Input id="serialNumber" placeholder="Manufacturer serial number" {...register("serialNumber")} error={errors.serialNumber?.message} />
           </FormField>
-          <FormField label="Asset Number" htmlFor="assetNumber" error={errors.assetNumber?.message}>
+          <FormField label={t("assetNumber")} htmlFor="assetNumber" error={errors.assetNumber?.message}>
             <Input id="assetNumber" placeholder="Internal asset tag (optional)" {...register("assetNumber")} />
           </FormField>
         </div>
@@ -170,9 +172,9 @@ export function EquipmentForm({ customers, defaultValues, equipmentId }: Equipme
       </div>
 
       <div className="flex justify-end gap-3 mt-4">
-        <Button type="button" variant="outline" onClick={() => history.back()}>Cancel</Button>
+        <Button type="button" variant="outline" onClick={() => history.back()}>{t("cancel")}</Button>
         <Button type="submit" loading={isSubmitting}>
-          {equipmentId ? "Save Changes" : "Register Equipment"}
+          {equipmentId ? t("save") : t("create")}
         </Button>
       </div>
     </form>

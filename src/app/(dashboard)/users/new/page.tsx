@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { canManageUsers } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { UserForm } from "@/components/users/UserForm"
+import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
 export default async function NewUserPage() {
@@ -15,9 +16,9 @@ export default async function NewUserPage() {
     <div>
       <Link href="/users" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Back to Users
+        <T k="backToUsers" />
       </Link>
-      <PageHeader title="New User" subtitle="Create a new staff account and assign a role." />
+      <PageHeader title={<T k="newUser" />} subtitle={<T k="newUserDesc" />} />
       <UserForm />
     </div>
   )

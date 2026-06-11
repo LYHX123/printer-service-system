@@ -4,6 +4,7 @@ import { getCompanySettings } from "@/lib/data/settings"
 import { canManageSettings } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm"
+import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
 export default async function SettingsPage() {
@@ -20,8 +21,8 @@ export default async function SettingsPage() {
   return (
     <div>
       <PageHeader
-        title="Company Settings"
-        subtitle="Manage your company profile, branding, and regional preferences."
+        title={<T k="companySettings" />}
+        subtitle={<T k="companySettingsDesc" />}
       />
       <CompanySettingsForm
         defaultValues={{

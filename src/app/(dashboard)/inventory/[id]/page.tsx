@@ -11,6 +11,7 @@ import { SparePartActions } from "@/components/inventory/SparePartActions"
 import { formatCurrency } from "@/lib/utils"
 import { PART_CATEGORY_LABELS } from "@/types"
 import type { Role } from "@/types"
+import { T } from "@/components/ui/T"
 
 export default async function SparePartDetailPage({
   params,
@@ -34,7 +35,7 @@ export default async function SparePartDetailPage({
     <div>
       <Link href="/inventory" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Inventory
+        <T k="inventory" />
       </Link>
 
       <PageHeader
@@ -44,7 +45,7 @@ export default async function SparePartDetailPage({
             <PartCategoryBadge category={part.category} />
             <span className="font-mono text-xs text-slate-400">{part.partNumber}</span>
             {!part.isActive && (
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">Archived</span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500"><T k="archived" /></span>
             )}
           </span>
         }
@@ -64,19 +65,19 @@ export default async function SparePartDetailPage({
         <div className="space-y-4">
           {/* Specs */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Part Details</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="partDetails" /></h3>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center gap-2 text-slate-600">
                 <Hash className="h-4 w-4 text-slate-400 shrink-0" />
                 <div>
-                  <dt className="text-xs text-slate-400">Part Number</dt>
+                  <dt className="text-xs text-slate-400"><T k="partNumber" /></dt>
                   <dd className="font-mono font-semibold">{part.partNumber}</dd>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <Tag className="h-4 w-4 text-slate-400 shrink-0" />
                 <div>
-                  <dt className="text-xs text-slate-400">Category</dt>
+                  <dt className="text-xs text-slate-400"><T k="category" /></dt>
                   <dd>{PART_CATEGORY_LABELS[part.category]}</dd>
                 </div>
               </div>
@@ -84,7 +85,7 @@ export default async function SparePartDetailPage({
                 <div className="flex items-center gap-2 text-slate-600">
                   <Package className="h-4 w-4 text-slate-400 shrink-0" />
                   <div>
-                    <dt className="text-xs text-slate-400">Brand</dt>
+                    <dt className="text-xs text-slate-400"><T k="brand" /></dt>
                     <dd>{part.brand}</dd>
                   </div>
                 </div>
@@ -93,7 +94,7 @@ export default async function SparePartDetailPage({
                 <div className="flex items-center gap-2 text-slate-600">
                   <Truck className="h-4 w-4 text-slate-400 shrink-0" />
                   <div>
-                    <dt className="text-xs text-slate-400">Supplier</dt>
+                    <dt className="text-xs text-slate-400"><T k="supplier" /></dt>
                     <dd>{part.supplier}</dd>
                   </div>
                 </div>
@@ -102,20 +103,20 @@ export default async function SparePartDetailPage({
                 <div className="flex items-center gap-2 text-slate-600">
                   <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                   <div>
-                    <dt className="text-xs text-slate-400">Storage Location</dt>
+                    <dt className="text-xs text-slate-400"><T k="storageLocation" /></dt>
                     <dd>{part.stock.location}</dd>
                   </div>
                 </div>
               )}
               {part.compatibleWith && (
                 <div>
-                  <dt className="text-xs text-slate-400 mb-1">Compatible With</dt>
+                  <dt className="text-xs text-slate-400 mb-1"><T k="compatibleWith" /></dt>
                   <dd className="text-slate-600">{part.compatibleWith}</dd>
                 </div>
               )}
               {part.description && (
                 <div>
-                  <dt className="text-xs text-slate-400 mb-1">Description</dt>
+                  <dt className="text-xs text-slate-400 mb-1"><T k="description" /></dt>
                   <dd className="text-slate-600 whitespace-pre-line leading-relaxed">{part.description}</dd>
                 </div>
               )}
@@ -124,35 +125,35 @@ export default async function SparePartDetailPage({
 
           {/* Stock summary */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Stock</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="stock" /></h3>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Current Quantity</dt>
+                <dt className="text-slate-500"><T k="currentQuantity" /></dt>
                 <dd className="font-mono text-base font-semibold text-slate-900">{quantity} {part.unit}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Minimum Quantity</dt>
+                <dt className="text-slate-500"><T k="minQty" /></dt>
                 <dd className="font-mono text-slate-700">{part.reorderLevel} {part.unit}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Status</dt>
+                <dt className="text-slate-500"><T k="status" /></dt>
                 <dd><StockLevelBadge level={stockLevel} /></dd>
               </div>
               <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                <dt className="text-slate-500">Unit Cost</dt>
+                <dt className="text-slate-500"><T k="unitCost" /></dt>
                 <dd className="font-medium text-slate-700">{formatCurrency(Number(part.unitCost))}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Selling Price</dt>
+                <dt className="text-slate-500"><T k="sellingPrice" /></dt>
                 <dd className="font-medium text-slate-700">{formatCurrency(Number(part.sellingPrice))}</dd>
               </div>
               <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                <dt className="text-slate-500">Stock Value (at cost)</dt>
+                <dt className="text-slate-500"><T k="stockValue" /></dt>
                 <dd className="font-semibold text-slate-900">{formatCurrency(stockValue)}</dd>
               </div>
               {part.stock?.lastCounted && (
                 <div className="flex items-center justify-between">
-                  <dt className="text-slate-500">Last Counted</dt>
+                  <dt className="text-slate-500"><T k="lastCounted" /></dt>
                   <dd className="text-xs text-slate-500">{format(new Date(part.stock.lastCounted), "dd MMM yyyy")}</dd>
                 </div>
               )}
@@ -164,16 +165,16 @@ export default async function SparePartDetailPage({
         <div className="lg:col-span-2 space-y-4">
           {/* Transaction history */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Transaction History</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="transactionHistory" /></h3>
             {part.transactions.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">No stock transactions recorded yet.</p>
+              <p className="text-sm text-slate-400 italic"><T k="noStockTransactions" /></p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-100">
                   <thead>
                     <tr>
-                      {["Date", "Type", "Quantity", "Unit Price", "Reference", "Job", "By"].map((h) => (
-                        <th key={h} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
+                      {[<T key="date" k="date" />, <T key="type" k="type" />, <T key="quantity" k="quantity" />, <T key="unitPrice" k="unitPrice" />, <T key="reference" k="reference" />, <T key="job" k="job" />, <T key="by" k="by" />].map((h, i) => (
+                        <th key={i} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -211,16 +212,16 @@ export default async function SparePartDetailPage({
 
           {/* Usage in jobs */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Used In Jobs</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="usedInJobs" /></h3>
             {part.jobParts.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">This part hasn&apos;t been used in any jobs yet.</p>
+              <p className="text-sm text-slate-400 italic"><T k="noPartsUsedInJobs" /></p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-100">
                   <thead>
                     <tr>
-                      {["Job #", "Quantity", "Unit Price", "Total"].map((h) => (
-                        <th key={h} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
+                      {[<T key="jobNumber" k="jobNumber" />, <T key="quantity" k="quantity" />, <T key="unitPrice" k="unitPrice" />, <T key="total" k="total" />].map((h, i) => (
+                        <th key={i} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
                       ))}
                     </tr>
                   </thead>

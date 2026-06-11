@@ -15,6 +15,7 @@ import { QuickSendAction } from "@/components/communications/QuickSendAction"
 import { formatCurrency } from "@/lib/utils"
 import { SERVICE_TYPE_LABELS, QUOTATION_STATUS_LABELS } from "@/types"
 import { format } from "date-fns"
+import { T } from "@/components/ui/T"
 
 export default async function QuotationDetailPage({
   params,
@@ -60,7 +61,7 @@ export default async function QuotationDetailPage({
         className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4"
       >
         <ChevronLeft className="h-4 w-4" />
-        Quotations
+        <T k="quotations" />
       </Link>
 
       <PageHeader
@@ -73,7 +74,7 @@ export default async function QuotationDetailPage({
             </span>
             {quotation.validUntil && (
               <span className="text-slate-400 text-xs">
-                Valid until {format(new Date(quotation.validUntil), "dd MMM yyyy")}
+                <T k="validUntil" /> {format(new Date(quotation.validUntil), "dd MMM yyyy")}
               </span>
             )}
           </span>
@@ -92,7 +93,7 @@ export default async function QuotationDetailPage({
         <div className="mb-4 flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
           <Briefcase className="h-4 w-4 text-green-600 shrink-0" />
           <span className="text-sm text-green-800">
-            Converted to job{" "}
+            <T k="convertedToJob" />{" "}
             <Link
               href={`/jobs/${quotation.convertedJob.id}`}
               className="font-semibold text-green-700 hover:underline"
@@ -108,7 +109,7 @@ export default async function QuotationDetailPage({
         <div className="space-y-4">
           {/* Customer info */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Customer</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="customer" /></h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <User className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
@@ -141,7 +142,7 @@ export default async function QuotationDetailPage({
           {/* Equipment info */}
           {quotation.equipment && (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-3">Equipment</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="equipment" /></h3>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
                   <EquipmentTypeBadge type={quotation.equipment.type} />
@@ -159,25 +160,25 @@ export default async function QuotationDetailPage({
 
           {/* Metadata */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Details</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="details" /></h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-slate-500">Created by</dt>
+                <dt className="text-slate-500"><T k="createdBy" /></dt>
                 <dd className="text-slate-700">{quotation.createdBy.name}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-slate-500">Created</dt>
+                <dt className="text-slate-500"><T k="createdLabel" /></dt>
                 <dd className="text-slate-700">{format(new Date(quotation.createdAt), "dd MMM yyyy")}</dd>
               </div>
               {quotation.approvedAt && (
                 <div className="flex justify-between">
-                  <dt className="text-slate-500">Approved</dt>
+                  <dt className="text-slate-500"><T k="approved" /></dt>
                   <dd className="text-slate-700">{format(new Date(quotation.approvedAt), "dd MMM yyyy")}</dd>
                 </div>
               )}
               {quotation.validUntil && (
                 <div className="flex justify-between">
-                  <dt className="text-slate-500">Valid until</dt>
+                  <dt className="text-slate-500"><T k="validUntil" /></dt>
                   <dd className="text-slate-700">{format(new Date(quotation.validUntil), "dd MMM yyyy")}</dd>
                 </div>
               )}
@@ -187,10 +188,10 @@ export default async function QuotationDetailPage({
           {/* Communications */}
           {canSend && (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">Send to Customer</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1"><T k="sendToCustomer" /></h3>
               <div className="divide-y divide-slate-100">
                 <QuickSendAction
-                  label="Send Quotation"
+                  label={<T k="sendQuotation" />}
                   messageType="QUOTATION_SENT"
                   customerId={quotation.customer.id}
                   quotationId={quotation.id}
@@ -199,7 +200,7 @@ export default async function QuotationDetailPage({
                   variables={templateVariables}
                 />
                 <QuickSendAction
-                  label="Payment Reminder"
+                  label={<T k="paymentReminder" />}
                   messageType="PAYMENT_REMINDER"
                   customerId={quotation.customer.id}
                   quotationId={quotation.id}
@@ -218,7 +219,7 @@ export default async function QuotationDetailPage({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <Wrench className="h-4 w-4 text-slate-400" />
-              Problem Description
+              <T k="problemDescription" />
             </h3>
             <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
               {quotation.problemDesc}
@@ -229,19 +230,19 @@ export default async function QuotationDetailPage({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <Package className="h-4 w-4 text-slate-400" />
-              Spare Parts
+              <T k="spareParts" />
             </h3>
             {quotation.items.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">No spare parts listed.</p>
+              <p className="text-sm text-slate-400 italic"><T k="noSparePartsListed" /></p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-xs font-semibold text-slate-500 uppercase border-b border-slate-100">
-                      <th className="pb-2 text-left">Description</th>
-                      <th className="pb-2 text-right">Qty</th>
-                      <th className="pb-2 text-right">Unit Price</th>
-                      <th className="pb-2 text-right">Subtotal</th>
+                      <th className="pb-2 text-left"><T k="description" /></th>
+                      <th className="pb-2 text-right"><T k="quantity" /></th>
+                      <th className="pb-2 text-right"><T k="unitPrice" /></th>
+                      <th className="pb-2 text-right"><T k="subtotal" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -261,50 +262,50 @@ export default async function QuotationDetailPage({
 
           {/* Cost summary */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Cost Summary</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="costSummary" /></h3>
             <div className="max-w-sm ml-auto space-y-2 text-sm">
               {labourCost > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>Labour</span>
+                  <span><T k="labour" /></span>
                   <span>{formatCurrency(labourCost)}</span>
                 </div>
               )}
               {partsCost > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>Parts ({quotation.items.length} item{quotation.items.length !== 1 ? "s" : ""})</span>
+                  <span><T k="parts" /> ({quotation.items.length})</span>
                   <span>{formatCurrency(partsCost)}</span>
                 </div>
               )}
               {diagnosisFee > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>Diagnosis Fee</span>
+                  <span><T k="diagnosisFee" /></span>
                   <span>{formatCurrency(diagnosisFee)}</span>
                 </div>
               )}
               {transportFee > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>Transport Fee</span>
+                  <span><T k="transportFee" /></span>
                   <span>{formatCurrency(transportFee)}</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-700 border-t border-slate-100 pt-2">
-                <span>Subtotal</span>
+                <span><T k="subtotal" /></span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
               {vatPercent > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>VAT ({vatPercent}%)</span>
+                  <span><T k="vat" /> ({vatPercent}%)</span>
                   <span>{formatCurrency(vatAmount)}</span>
                 </div>
               )}
               {discountAmount > 0 && (
                 <div className="flex justify-between text-red-600">
-                  <span>Discount</span>
+                  <span><T k="discount" /></span>
                   <span>({formatCurrency(discountAmount)})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-slate-900 text-base border-t border-slate-200 pt-2">
-                <span>Total</span>
+                <span><T k="total" /></span>
                 <span>{formatCurrency(totalCost)}</span>
               </div>
             </div>
@@ -315,7 +316,7 @@ export default async function QuotationDetailPage({
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
                 <FileText className="h-4 w-4 text-slate-400" />
-                Remarks
+                <T k="remarks" />
               </h3>
               <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{quotation.remarks}</p>
             </div>
@@ -325,7 +326,7 @@ export default async function QuotationDetailPage({
           {quotation.internalNotes && (
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
               <h3 className="text-xs font-semibold text-amber-700 mb-2 uppercase tracking-wide">
-                Internal Notes
+                <T k="internalNotes" />
               </h3>
               <p className="text-sm text-amber-900 whitespace-pre-line leading-relaxed">{quotation.internalNotes}</p>
             </div>

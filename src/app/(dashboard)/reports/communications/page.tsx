@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ChannelBadge, MessageTypeBadge } from "@/components/ui/badge"
+import { T } from "@/components/ui/T"
 import {
   COMMUNICATION_CHANNEL_LABELS,
   COMMUNICATION_MESSAGE_TYPE_LABELS,
@@ -72,8 +73,8 @@ export default async function CommunicationsReportPage({
   return (
     <div>
       <PageHeader
-        title="Communication Report"
-        subtitle="WhatsApp and email communications sent to customers."
+        title={<T k="communicationReport" />}
+        subtitle={<T k="communicationReportDesc" />}
       />
 
       <div className="space-y-4">
@@ -81,38 +82,38 @@ export default async function CommunicationsReportPage({
           <Input name="from" type="date" defaultValue={from ?? ""} className="w-44" aria-label="From date" />
           <Input name="to" type="date" defaultValue={to ?? ""} className="w-44" aria-label="To date" />
           <Select name="customerId" defaultValue={customerId ?? ""} className="w-52">
-            <option value="">All Customers</option>
+            <option value=""><T k="allCustomers" /></option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
             ))}
           </Select>
           <Select name="userId" defaultValue={userId ?? ""} className="w-52">
-            <option value="">All Users</option>
+            <option value=""><T k="allUsers" /></option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </Select>
           <Select name="channel" defaultValue={validChannel ?? ""} className="w-40">
-            <option value="">All Channels</option>
+            <option value=""><T k="allChannels" /></option>
             {CHANNELS.map((c) => (
               <option key={c} value={c}>{COMMUNICATION_CHANNEL_LABELS[c]}</option>
             ))}
           </Select>
           <Select name="messageType" defaultValue={validMessageType ?? ""} className="w-56">
-            <option value="">All Message Types</option>
+            <option value=""><T k="allMessageTypes" /></option>
             {MESSAGE_TYPES.map((m) => (
               <option key={m} value={m}>{COMMUNICATION_MESSAGE_TYPE_LABELS[m]}</option>
             ))}
           </Select>
-          <Button type="submit" variant="secondary">Filter</Button>
+          <Button type="submit" variant="secondary"><T k="filter" /></Button>
           {hasFilters && (
             <Link href="/reports/communications">
-              <Button variant="ghost">Clear</Button>
+              <Button variant="ghost"><T k="clear" /></Button>
             </Link>
           )}
           <a href={`/api/reports/communications/csv?${csvParams.toString()}`}>
             <Button type="button" variant="outline" icon={<Download className="h-3.5 w-3.5" />}>
-              Export CSV
+              <T k="exportCsv" />
             </Button>
           </a>
         </form>
@@ -120,22 +121,22 @@ export default async function CommunicationsReportPage({
         <Table
           columns={[
             {
-              key: "createdAt", label: "Date",
+              key: "createdAt", label: <T k="date" />,
               render: (row) => <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(row.createdAt), "dd MMM yyyy HH:mm")}</span>,
             },
             {
-              key: "customer", label: "Customer",
+              key: "customer", label: <T k="customer" />,
               render: (row) => (
                 <Link href={`/customers/${row.customer.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                   {row.customer.name}
                 </Link>
               ),
             },
-            { key: "channel", label: "Channel", render: (row) => <ChannelBadge channel={row.channel} /> },
-            { key: "messageType", label: "Message Type", render: (row) => <MessageTypeBadge messageType={row.messageType} /> },
-            { key: "recipient", label: "Recipient", render: (row) => <span className="text-sm text-slate-600">{row.recipient}</span> },
+            { key: "channel", label: <T k="channel" />, render: (row) => <ChannelBadge channel={row.channel} /> },
+            { key: "messageType", label: <T k="messageType" />, render: (row) => <MessageTypeBadge messageType={row.messageType} /> },
+            { key: "recipient", label: <T k="recipient" />, render: (row) => <span className="text-sm text-slate-600">{row.recipient}</span> },
             {
-              key: "reference", label: "Reference",
+              key: "reference", label: <T k="reference" />,
               render: (row) => (
                 <span className="text-xs text-slate-500">
                   {row.job ? (
@@ -148,13 +149,13 @@ export default async function CommunicationsReportPage({
                 </span>
               ),
             },
-            { key: "status", label: "Status", render: (row) => <span className="text-xs text-slate-500">{row.status}</span> },
-            { key: "createdBy", label: "Created By", render: (row) => <span className="text-sm text-slate-600">{row.createdBy.name}</span> },
+            { key: "status", label: <T k="status" />, render: (row) => <span className="text-xs text-slate-500">{row.status}</span> },
+            { key: "createdBy", label: <T k="createdBy" />, render: (row) => <span className="text-sm text-slate-600">{row.createdBy.name}</span> },
           ]}
           data={logs}
           keyExtractor={(row) => row.id}
-          emptyTitle="No communications found"
-          emptyDescription="Try adjusting your filters, or communications will appear here once sent from a customer, job, or quotation page."
+          emptyTitle={<T k="noCommunicationsFound" />}
+          emptyDescription={<T k="communicationsWillAppear" />}
         />
       </div>
     </div>

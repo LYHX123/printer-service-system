@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils"
 import { Button } from "./button"
 
 interface EmptyStateProps {
-  title: string
-  description?: string
+  title: ReactNode
+  description?: ReactNode
   icon?: ReactNode
   action?: {
-    label: string
+    label: ReactNode
     onClick: () => void
   }
   className?: string

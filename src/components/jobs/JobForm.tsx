@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import {
   SERVICE_TYPE_LABELS,
   PRIORITY_LABELS,
@@ -56,6 +57,7 @@ interface JobFormProps {
 
 export function JobForm({ customers, allEquipment, engineers, defaultValues }: JobFormProps) {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const {
     register,
@@ -188,7 +190,7 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
         </div>
 
         {/* Assigned engineer */}
-        <FormField label="Assigned To" htmlFor="assignedToId" required error={errors.assignedToId?.message}>
+        <FormField label={t("engineer")} htmlFor="assignedToId" required error={errors.assignedToId?.message}>
           <Select id="assignedToId" placeholder="Select engineer…" {...register("assignedToId")} error={errors.assignedToId?.message}>
             {engineers.map((e) => (
               <option key={e.id} value={e.id}>{e.name} ({e.role})</option>
@@ -197,7 +199,7 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
         </FormField>
 
         {/* Problem description */}
-        <FormField label="Problem Description" htmlFor="problemDesc" required error={errors.problemDesc?.message}>
+        <FormField label={t("problemReported")} htmlFor="problemDesc" required error={errors.problemDesc?.message}>
           <Textarea
             id="problemDesc"
             rows={3}
@@ -243,10 +245,10 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
 
       <div className="flex justify-end gap-3 mt-4">
         <Button type="button" variant="outline" onClick={() => history.back()}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" loading={isSubmitting}>
-          Create Job
+          {t("create")}
         </Button>
       </div>
     </form>

@@ -28,6 +28,7 @@ import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { StatusBadge, QuotationStatusBadge } from "@/components/ui/badge"
+import { T } from "@/components/ui/T"
 import { formatCurrency } from "@/lib/utils"
 import {
   JOB_STATUS_LABELS,
@@ -64,16 +65,16 @@ export default async function ReportsPage({
   return (
     <div>
       <PageHeader
-        title="Reports"
-        subtitle="View service performance, revenue, and operational reports."
+        title={<T k="reports" />}
+        subtitle={<T k="reportsDesc" />}
       />
 
       <div className="mb-4">
         <Tabs
           tabs={[
-            { id: "overview", label: "Overview" },
-            { id: "repair-reports", label: "Repair Reports" },
-            { id: "quotations", label: "Quotations" },
+            { id: "overview", label: <T k="overview" /> },
+            { id: "repair-reports", label: <T k="repairReports" /> },
+            { id: "quotations", label: <T k="quotations" /> },
           ]}
           activeTab={activeTab}
           pathPrefix="/reports"
@@ -108,24 +109,24 @@ async function OverviewTab({ companyId }: { companyId: string }) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          label="Total Jobs"
+          label={<T k="totalJobs" />}
           value={overview.jobCount}
           icon={<ClipboardList className="h-5 w-5 text-blue-600" />}
         />
         <MetricCard
-          label="Completed Jobs"
+          label={<T k="completedJobs" />}
           value={overview.deliveredCount}
           icon={<ClipboardList className="h-5 w-5 text-green-600" />}
           iconBg="bg-green-50"
         />
         <MetricCard
-          label="Repair Reports"
+          label={<T k="repairReports" />}
           value={overview.repairReportCount}
           icon={<FileText className="h-5 w-5 text-indigo-600" />}
           iconBg="bg-indigo-50"
         />
         <MetricCard
-          label="Quotations"
+          label={<T k="quotations" />}
           value={overview.quotationCount}
           icon={<FileText className="h-5 w-5 text-purple-600" />}
           iconBg="bg-purple-50"
@@ -133,24 +134,24 @@ async function OverviewTab({ companyId }: { companyId: string }) {
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-900">Inventory Reports</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-900"><T k="inventoryReports" /></h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetricCard
-            label="Inventory Valuation (cost)"
+            label={<T k="inventoryValuationCost" />}
             value={formatCurrency(valuation.totalCostValue)}
             icon={<Boxes className="h-5 w-5 text-blue-600" />}
             href="/inventory/reports?tab=valuation"
           />
           <MetricCard
-            label="Low Stock Items"
+            label={<T k="lowStockItems" />}
             value={lowStockCount}
             icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
             iconBg="bg-orange-50"
             href="/inventory/reports?tab=low-stock"
           />
           <MetricCard
-            label="Stock Movements"
-            value="View report"
+            label={<T k="stockMovements" />}
+            value={<T k="viewReport" />}
             icon={<ArrowLeftRight className="h-5 w-5 text-slate-600" />}
             iconBg="bg-slate-100"
             href="/inventory/reports?tab=movements"
@@ -159,11 +160,11 @@ async function OverviewTab({ companyId }: { companyId: string }) {
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-900">Productivity</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-900"><T k="productivity" /></h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetricCard
-            label="Engineer Productivity"
-            value="View report"
+            label={<T k="engineerProductivity" />}
+            value={<T k="viewReport" />}
             icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
             href="/reports/engineers"
           />
@@ -205,32 +206,32 @@ async function RepairReportsTab({
         <Input name="from" type="date" defaultValue={from ?? ""} className="w-44" aria-label="From date" />
         <Input name="to" type="date" defaultValue={to ?? ""} className="w-44" aria-label="To date" />
         <Select name="customerId" defaultValue={customerId ?? ""} className="w-52">
-          <option value="">All Customers</option>
+          <option value=""><T k="allCustomers" /></option>
           {customers.map((c) => (
             <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
           ))}
         </Select>
         <Select name="engineerId" defaultValue={engineerId ?? ""} className="w-52">
-          <option value="">All Engineers</option>
+          <option value=""><T k="allEngineers" /></option>
           {engineers.map((e) => (
             <option key={e.id} value={e.id}>{e.name}</option>
           ))}
         </Select>
         <Select name="status" defaultValue={validStatus ?? ""} className="w-52">
-          <option value="">All Statuses</option>
+          <option value=""><T k="allStatuses" /></option>
           {JOB_STATUSES.map((s) => (
             <option key={s} value={s}>{JOB_STATUS_LABELS[s]}</option>
           ))}
         </Select>
-        <Button type="submit" variant="secondary">Filter</Button>
+        <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {hasFilters && (
           <Link href="/reports?tab=repair-reports">
-            <Button variant="ghost">Clear</Button>
+            <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
         <a href={`/api/reports/repair-reports/csv?${csvParams.toString()}`}>
           <Button type="button" variant="outline" icon={<Download className="h-3.5 w-3.5" />}>
-            Export CSV
+            <T k="exportCsv" />
           </Button>
         </a>
       </form>
@@ -239,23 +240,23 @@ async function RepairReportsTab({
         columns={[
           {
             key: "jobNumber",
-            label: "Job Number",
+            label: <T k="jobNumber" />,
             render: (row) => (
               <Link href={`/jobs/${row.jobId}/report`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.jobNumber}
               </Link>
             ),
           },
-          { key: "customer", label: "Customer", render: (row) => <span className="text-sm text-slate-900">{row.customer.name}</span> },
-          { key: "engineer", label: "Engineer", render: (row) => <span className="text-sm text-slate-600">{row.assignedTo.name}</span> },
-          { key: "serviceType", label: "Service Type", render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
-          { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> },
+          { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.name}</span> },
+          { key: "engineer", label: <T k="engineer" />, render: (row) => <span className="text-sm text-slate-600">{row.assignedTo.name}</span> },
+          { key: "serviceType", label: <T k="serviceType" />, render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
+          { key: "status", label: <T k="status" />, render: (row) => <StatusBadge status={row.status} /> },
           {
-            key: "createdAt", label: "Report Date",
+            key: "createdAt", label: <T k="reportDate" />,
             render: (row) => <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(row.createdAt), "dd MMM yyyy")}</span>,
           },
           {
-            key: "totalCost", label: "Total Cost", className: "text-right", headerClassName: "text-right",
+            key: "totalCost", label: <T k="totalCost" />, className: "text-right", headerClassName: "text-right",
             render: (row) => <span className="font-medium">{formatCurrency(row.totalCost)}</span>,
           },
           {
@@ -263,7 +264,7 @@ async function RepairReportsTab({
             render: (row) => (
               <a href={`/api/jobs/${row.jobId}/report/pdf`} target="_blank" rel="noopener noreferrer">
                 <Button type="button" variant="ghost" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
-                  PDF
+                  <T k="pdf" />
                 </Button>
               </a>
             ),
@@ -271,8 +272,8 @@ async function RepairReportsTab({
         ]}
         data={reports}
         keyExtractor={(row) => row.id}
-        emptyTitle="No repair reports found"
-        emptyDescription="Try adjusting your filters, or repair reports will appear here once jobs are completed."
+        emptyTitle={<T k="noRepairReportsFound" />}
+        emptyDescription={<T k="noRepairReportsDesc" />}
       />
     </div>
   )
@@ -310,32 +311,32 @@ async function QuotationsTab({
         <Input name="from" type="date" defaultValue={from ?? ""} className="w-44" aria-label="From date" />
         <Input name="to" type="date" defaultValue={to ?? ""} className="w-44" aria-label="To date" />
         <Select name="customerId" defaultValue={customerId ?? ""} className="w-52">
-          <option value="">All Customers</option>
+          <option value=""><T k="allCustomers" /></option>
           {customers.map((c) => (
             <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
           ))}
         </Select>
         <Select name="engineerId" defaultValue={engineerId ?? ""} className="w-52">
-          <option value="">All Staff</option>
+          <option value=""><T k="allStaff" /></option>
           {engineers.map((e) => (
             <option key={e.id} value={e.id}>{e.name}</option>
           ))}
         </Select>
         <Select name="status" defaultValue={validStatus ?? ""} className="w-52">
-          <option value="">All Statuses</option>
+          <option value=""><T k="allStatuses" /></option>
           {QUOTATION_STATUSES.map((s) => (
             <option key={s} value={s}>{QUOTATION_STATUS_LABELS[s]}</option>
           ))}
         </Select>
-        <Button type="submit" variant="secondary">Filter</Button>
+        <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {hasFilters && (
           <Link href="/reports?tab=quotations">
-            <Button variant="ghost">Clear</Button>
+            <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
         <a href={`/api/reports/quotations/csv?${csvParams.toString()}`}>
           <Button type="button" variant="outline" icon={<Download className="h-3.5 w-3.5" />}>
-            Export CSV
+            <T k="exportCsv" />
           </Button>
         </a>
       </form>
@@ -344,23 +345,23 @@ async function QuotationsTab({
         columns={[
           {
             key: "quotationNumber",
-            label: "Quotation #",
+            label: <T k="quotationNumber" />,
             render: (row) => (
               <Link href={`/quotations/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.quotationNumber}
               </Link>
             ),
           },
-          { key: "customer", label: "Customer", render: (row) => <span className="text-sm text-slate-900">{row.customer.name}</span> },
-          { key: "createdBy", label: "Created By", render: (row) => <span className="text-sm text-slate-600">{row.createdBy.name}</span> },
-          { key: "serviceType", label: "Service Type", render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
-          { key: "status", label: "Status", render: (row) => <QuotationStatusBadge status={row.status} /> },
+          { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.name}</span> },
+          { key: "createdBy", label: <T k="createdBy" />, render: (row) => <span className="text-sm text-slate-600">{row.createdBy.name}</span> },
+          { key: "serviceType", label: <T k="serviceType" />, render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
+          { key: "status", label: <T k="status" />, render: (row) => <QuotationStatusBadge status={row.status} /> },
           {
-            key: "createdAt", label: "Date",
+            key: "createdAt", label: <T k="date" />,
             render: (row) => <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(row.createdAt), "dd MMM yyyy")}</span>,
           },
           {
-            key: "totalCost", label: "Total Cost", className: "text-right", headerClassName: "text-right",
+            key: "totalCost", label: <T k="totalCost" />, className: "text-right", headerClassName: "text-right",
             render: (row) => <span className="font-medium">{formatCurrency(Number(row.totalCost))}</span>,
           },
           {
@@ -368,7 +369,7 @@ async function QuotationsTab({
             render: (row) => (
               <a href={`/api/quotations/${row.id}/pdf`} target="_blank" rel="noopener noreferrer">
                 <Button type="button" variant="ghost" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
-                  PDF
+                  <T k="pdf" />
                 </Button>
               </a>
             ),
@@ -376,8 +377,8 @@ async function QuotationsTab({
         ]}
         data={quotations}
         keyExtractor={(row) => row.id}
-        emptyTitle="No quotations found"
-        emptyDescription="Try adjusting your filters, or quotations will appear here once created."
+        emptyTitle={<T k="noQuotationsFoundReport" />}
+        emptyDescription={<T k="noQuotationsReportsDesc" />}
       />
     </div>
   )

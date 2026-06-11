@@ -1,9 +1,10 @@
+import { type ReactNode } from "react"
 import { SendMessageButton } from "./SendMessageButton"
 import type { TemplateVariables } from "@/lib/communications/templates"
 import type { CommunicationMessageType } from "@/types"
 
 interface QuickSendActionProps {
-  label: string
+  label: ReactNode
   messageType: CommunicationMessageType
   customerId: string
   jobId?: string

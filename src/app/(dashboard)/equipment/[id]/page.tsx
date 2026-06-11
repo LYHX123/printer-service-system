@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { formatCurrency } from "@/lib/utils"
 import { SERVICE_TYPE_LABELS } from "@/types"
 import { format } from "date-fns"
+import { T } from "@/components/ui/T"
 
 export default async function EquipmentDetailPage({
   params,
@@ -29,7 +30,7 @@ export default async function EquipmentDetailPage({
     <div>
       <Link href="/equipment" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Equipment
+        <T k="equipment" />
       </Link>
 
       <PageHeader
@@ -44,12 +45,12 @@ export default async function EquipmentDetailPage({
           <div className="flex gap-2">
             <Link href={`/jobs/new?customerId=${equipment.customerId}&equipmentId=${equipment.id}`}>
               <Button variant="secondary" size="sm" icon={<Plus className="h-3.5 w-3.5" />}>
-                New Job
+                <T k="newJob" />
               </Button>
             </Link>
             <Link href={`/equipment/${id}/edit`}>
               <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />}>
-                Edit
+                <T k="edit" />
               </Button>
             </Link>
           </div>
@@ -61,12 +62,12 @@ export default async function EquipmentDetailPage({
         <div className="space-y-4">
           {/* Specs */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Device Details</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="deviceDetails" /></h3>
             <dl className="space-y-3 text-sm">
               <div className="flex items-center gap-2 text-slate-600">
                 <Hash className="h-4 w-4 text-slate-400 shrink-0" />
                 <div>
-                  <dt className="text-xs text-slate-400">Serial Number</dt>
+                  <dt className="text-xs text-slate-400"><T k="serialNumber" /></dt>
                   <dd className="font-mono font-semibold">{equipment.serialNumber}</dd>
                 </div>
               </div>
@@ -74,7 +75,7 @@ export default async function EquipmentDetailPage({
                 <div className="flex items-center gap-2 text-slate-600">
                   <Hash className="h-4 w-4 text-slate-400 shrink-0" />
                   <div>
-                    <dt className="text-xs text-slate-400">Asset Number</dt>
+                    <dt className="text-xs text-slate-400"><T k="assetNumber" /></dt>
                     <dd className="font-mono">{equipment.assetNumber}</dd>
                   </div>
                 </div>
@@ -83,7 +84,7 @@ export default async function EquipmentDetailPage({
                 <div className="flex items-center gap-2 text-slate-600">
                   <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
                   <div>
-                    <dt className="text-xs text-slate-400">Purchase Date</dt>
+                    <dt className="text-xs text-slate-400"><T k="purchaseDate" /></dt>
                     <dd>{format(new Date(equipment.purchaseDate), "dd MMM yyyy")}</dd>
                   </div>
                 </div>
@@ -92,7 +93,7 @@ export default async function EquipmentDetailPage({
                 <div className="flex items-center gap-2 text-slate-600">
                   <ShieldCheck className="h-4 w-4 text-slate-400 shrink-0" />
                   <div>
-                    <dt className="text-xs text-slate-400">Warranty Expiry</dt>
+                    <dt className="text-xs text-slate-400"><T k="warrantyExpiry" /></dt>
                     <dd>{format(new Date(equipment.warrantyExpiry), "dd MMM yyyy")}</dd>
                   </div>
                 </div>
@@ -102,7 +103,7 @@ export default async function EquipmentDetailPage({
 
           {/* Customer */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Owner</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="owner" /></h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-slate-400 shrink-0" />
@@ -128,7 +129,7 @@ export default async function EquipmentDetailPage({
           {/* Notes */}
           {equipment.notes && (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-3">Specifications</h3>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="specifications" /></h3>
               <p className="text-sm text-slate-600 whitespace-pre-line leading-relaxed">{equipment.notes}</p>
             </div>
           )}
@@ -141,20 +142,20 @@ export default async function EquipmentDetailPage({
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <Gauge className="h-4 w-4 text-slate-400" />
-                Meter Readings
+                <T k="meterReadings" />
               </h3>
               {equipment.meterReadings.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">No meter readings recorded yet.</p>
+                <p className="text-sm text-slate-400 italic"><T k="noMeterReadings" /></p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="text-xs font-semibold text-slate-500 uppercase border-b border-slate-100">
-                        <th className="pb-2 text-left">Date</th>
-                        <th className="pb-2 text-right">Black</th>
-                        <th className="pb-2 text-right">Colour</th>
-                        <th className="pb-2 text-left pl-4">Source</th>
-                        <th className="pb-2 text-left pl-4">Recorded by</th>
+                        <th className="pb-2 text-left"><T k="date" /></th>
+                        <th className="pb-2 text-right"><T k="black" /></th>
+                        <th className="pb-2 text-right"><T k="colour" /></th>
+                        <th className="pb-2 text-left pl-4"><T k="source" /></th>
+                        <th className="pb-2 text-left pl-4"><T k="recordedBy" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -175,7 +176,7 @@ export default async function EquipmentDetailPage({
                                 {r.job.jobNumber}
                               </Link>
                             ) : (
-                              <span className="text-xs text-slate-400">{r.notes ?? "Manual"}</span>
+                              <span className="text-xs text-slate-400">{r.notes ?? <T k="manual" />}</span>
                             )}
                           </td>
                           <td className="py-2 pl-4 text-xs text-slate-500">{r.recordedBy.name}</td>
@@ -191,23 +192,23 @@ export default async function EquipmentDetailPage({
           {/* Service history */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-900">Service History</h3>
+              <h3 className="text-sm font-semibold text-slate-900"><T k="serviceHistory" /></h3>
               <Link href={`/jobs/new?customerId=${equipment.customerId}&equipmentId=${equipment.id}`}>
-                <Button size="sm" variant="secondary" icon={<Plus className="h-3.5 w-3.5" />}>New Job</Button>
+                <Button size="sm" variant="secondary" icon={<Plus className="h-3.5 w-3.5" />}><T k="newJob" /></Button>
               </Link>
             </div>
             {equipment.serviceJobs.length === 0 ? (
               <EmptyState
-                title="No service history"
-                description="Service jobs will appear here once created."
+                title={<T k="noServiceHistory" />}
+                description={<T k="serviceJobsWillAppear" />}
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-100">
                   <thead>
                     <tr>
-                      {["Job #", "Service", "Status", "Priority", "Engineer", "Received", "Completed", "Warranty"].map((h) => (
-                        <th key={h} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
+                      {[<T key="jobNumber" k="jobNumber" />, <T key="serviceType" k="serviceType" />, <T key="status" k="status" />, <T key="priority" k="priority" />, <T key="engineer" k="engineer" />, <T key="received" k="received" />, <T key="completed" k="completed" />, <T key="warranty" k="warranty" />].map((h, i) => (
+                        <th key={i} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -245,21 +246,21 @@ export default async function EquipmentDetailPage({
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <FileText className="h-4 w-4 text-slate-400" />
-                Quotations
+                <T k="quotations" />
               </h3>
               <Link href={`/quotations/new?customerId=${equipment.customerId}&equipmentId=${equipment.id}`}>
-                <Button size="sm" variant="secondary" icon={<Plus className="h-3.5 w-3.5" />}>New Quotation</Button>
+                <Button size="sm" variant="secondary" icon={<Plus className="h-3.5 w-3.5" />}><T k="newQuotation" /></Button>
               </Link>
             </div>
             {equipment.quotations.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">No quotations for this equipment yet.</p>
+              <p className="text-sm text-slate-400 italic"><T k="noQuotationsForEquipment" /></p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-100">
                   <thead>
                     <tr>
-                      {["Quotation #", "Service", "Total", "Status", "Date", ""].map((h) => (
-                        <th key={h} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
+                      {[<T key="quotationNumber" k="quotationNumber" />, <T key="serviceType" k="serviceType" />, <T key="total" k="total" />, <T key="status" k="status" />, <T key="date" k="date" />, ""].map((h, i) => (
+                        <th key={i} className="pb-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pr-4">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -283,7 +284,7 @@ export default async function EquipmentDetailPage({
                         </td>
                         <td className="py-2">
                           <Link href={`/quotations/${q.id}`} className="text-xs text-blue-600 hover:underline">
-                            View →
+                            <T k="view" /> →
                           </Link>
                         </td>
                       </tr>

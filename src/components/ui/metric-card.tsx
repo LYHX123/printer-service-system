@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "./skeleton"
 
 interface MetricCardProps {
-  label: string
-  value: string | number
+  label: ReactNode
+  value: ReactNode
   icon?: ReactNode
   iconBg?: string
   trend?: {

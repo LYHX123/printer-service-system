@@ -1,3 +1,5 @@
+"use client"
+
 import { type ReactNode } from "react"
 import {
   Printer,
@@ -10,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type {
   JobStatus,
   Priority,
@@ -148,9 +151,14 @@ const QUOTATION_STYLES: Record<QuotationStatus, string> = {
 }
 
 export function QuotationStatusBadge({ status }: { status: QuotationStatus }) {
+  const { t } = useLanguage()
+  const label =
+    status === "APPROVED" ? t("approved") :
+    status === "REJECTED" ? t("rejected") :
+    QUOTATION_STATUS_LABELS[status]
   return (
     <Badge className={QUOTATION_STYLES[status]}>
-      {QUOTATION_STATUS_LABELS[status]}
+      {label}
     </Badge>
   )
 }

@@ -20,12 +20,15 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { canAccess, type Module } from "@/lib/permissions"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
+import type { TranslationKey } from "@/lib/i18n/translations"
 import type { Role } from "@/types"
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 
 interface NavItem {
   href: string
+  labelKey: TranslationKey | null
   label: string
   icon: LucideIcon
   exact?: boolean
@@ -40,32 +43,32 @@ interface NavSection {
 const NAV_SECTIONS: NavSection[] = [
   {
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
-      { href: "/quotations", label: "Quotations", icon: FileText, module: "quotations" },
-      { href: "/customers", label: "Customers", icon: Users, module: "customers" },
-      { href: "/equipment", label: "Equipment", icon: HardDrive, module: "equipment" },
-      { href: "/jobs", label: "Jobs", icon: ClipboardList, module: "jobs" },
+      { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
+      { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
+      { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
+      { href: "/equipment", labelKey: "equipment", label: "Equipment", icon: HardDrive, module: "equipment" },
+      { href: "/jobs", labelKey: "jobs", label: "Jobs", icon: ClipboardList, module: "jobs" },
     ],
   },
   {
     title: "Operations",
     items: [
-      { href: "/inventory", label: "Inventory", icon: Package, module: "inventory" },
+      { href: "/inventory", labelKey: "inventory", label: "Inventory", icon: Package, module: "inventory" },
     ],
   },
   {
     title: "Reports",
     items: [
-      { href: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-      { href: "/reports/engineers", label: "Productivity", icon: TrendingUp, module: "productivity" },
-      { href: "/reports/communications", label: "Communications", icon: MessageCircle, module: "communications" },
+      { href: "/reports", labelKey: "reports", label: "Reports", icon: BarChart3, module: "reports" },
+      { href: "/reports/engineers", labelKey: "productivity", label: "Productivity", icon: TrendingUp, module: "productivity" },
+      { href: "/reports/communications", labelKey: null, label: "Communications", icon: MessageCircle, module: "communications" },
     ],
   },
   {
     title: "Administration",
     items: [
-      { href: "/users", label: "Users", icon: UserCog, module: "users" },
-      { href: "/settings", label: "Settings", icon: Settings, module: "settings" },
+      { href: "/users", labelKey: "users", label: "Users", icon: UserCog, module: "users" },
+      { href: "/settings", labelKey: "settings", label: "Settings", icon: Settings, module: "settings" },
     ],
   },
 ]
@@ -80,6 +83,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, open, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { t } = useLanguage()
 
   return (
     <>
@@ -160,7 +164,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
                                 isActive ? "text-blue-400" : "text-slate-500"
                               )}
                             />
-                            {item.label}
+                            {item.labelKey ? t(item.labelKey) : item.label}
                           </Link>
                         </li>
                       )

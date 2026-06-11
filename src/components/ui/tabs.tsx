@@ -1,9 +1,10 @@
 import Link from "next/link"
+import { type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
 export interface TabItem {
   id: string
-  label: string
+  label: ReactNode
   count?: number
 }
 

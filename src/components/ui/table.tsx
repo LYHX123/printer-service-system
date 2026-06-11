@@ -5,7 +5,7 @@ import { TableRowSkeleton } from "./skeleton"
 
 export interface Column<T> {
   key: string
-  label: string
+  label: ReactNode
   render?: (row: T, index: number) => ReactNode
   className?: string
   headerClassName?: string
@@ -15,8 +15,8 @@ interface TableProps<T> {
   columns: Column<T>[]
   data: T[]
   keyExtractor: (row: T, index: number) => string
-  emptyTitle?: string
-  emptyDescription?: string
+  emptyTitle?: ReactNode
+  emptyDescription?: ReactNode
   loading?: boolean
   loadingRows?: number
   onRowClick?: (row: T) => void

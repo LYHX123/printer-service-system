@@ -6,8 +6,8 @@ import { canAccess, canManageInventory } from "@/lib/permissions"
 import { getSpareParts, getStockLevel } from "@/lib/data/inventory"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { T, TInput } from "@/components/ui/T"
 import { Table } from "@/components/ui/table"
 import { PartCategoryBadge, StockLevelBadge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
@@ -16,10 +16,10 @@ import type { PartCategory, Role } from "@/types"
 import type { StockLevel } from "@/lib/data/inventory"
 
 const CATEGORIES = Object.keys(PART_CATEGORY_LABELS) as PartCategory[]
-const STOCK_LEVELS: { value: StockLevel; label: string }[] = [
-  { value: "in_stock", label: "In Stock" },
-  { value: "low", label: "Low Stock" },
-  { value: "out", label: "Out of Stock" },
+const STOCK_LEVELS: { value: StockLevel; labelKey: "inStock" | "lowStock" | "outOfStock" }[] = [
+  { value: "in_stock", labelKey: "inStock" },
+  { value: "low", labelKey: "lowStock" },
+  { value: "out", labelKey: "outOfStock" },
 ]
 
 export default async function InventoryPage({
@@ -50,16 +50,16 @@ export default async function InventoryPage({
   return (
     <div>
       <PageHeader
-        title="Inventory"
-        subtitle={`${parts.length} part${parts.length !== 1 ? "s" : ""} in catalog`}
+        title={<T k="inventory" />}
+        subtitle={<>{parts.length} <T k="parts" /> <T k="inCatalog" /></>}
         actions={
           <div className="flex gap-2">
             <Link href="/inventory/reports">
-              <Button variant="secondary">Reports</Button>
+              <Button variant="secondary"><T k="reports" /></Button>
             </Link>
             {canEdit && (
               <Link href="/inventory/new">
-                <Button icon={<Plus className="h-4 w-4" />}>Add Part</Button>
+                <Button icon={<Plus className="h-4 w-4" />}><T k="addPart" /></Button>
               </Link>
             )}
           </div>
@@ -70,30 +70,30 @@ export default async function InventoryPage({
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <Input
+          <TInput
             name="search"
             type="search"
-            placeholder="Part number, name, brand…"
+            placeholderKey="searchPartsPlaceholder"
             defaultValue={search}
             className="pl-9"
           />
         </div>
         <Select name="category" defaultValue={category ?? ""} className="w-48">
-          <option value="">All Categories</option>
+          <option value=""><T k="allCategories" /></option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>{PART_CATEGORY_LABELS[c]}</option>
           ))}
         </Select>
         <Select name="stockLevel" defaultValue={stockLevel ?? ""} className="w-44">
-          <option value="">All Stock Levels</option>
+          <option value=""><T k="allStockLevels" /></option>
           {STOCK_LEVELS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
+            <option key={s.value} value={s.value}><T k={s.labelKey} /></option>
           ))}
         </Select>
-        <Button type="submit" variant="secondary">Filter</Button>
+        <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {(search || category || stockLevel) && (
           <Link href="/inventory">
-            <Button variant="ghost">Clear</Button>
+            <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
       </form>
@@ -102,7 +102,7 @@ export default async function InventoryPage({
         columns={[
           {
             key: "partNumber",
-            label: "Part #",
+            label: <T k="partNumber" />,
             render: (row) => (
               <Link href={`/inventory/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.partNumber}
@@ -111,7 +111,7 @@ export default async function InventoryPage({
           },
           {
             key: "name",
-            label: "Name",
+            label: <T k="name" />,
             render: (row) => (
               <div>
                 <Link href={`/inventory/${row.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
@@ -123,31 +123,31 @@ export default async function InventoryPage({
           },
           {
             key: "category",
-            label: "Category",
+            label: <T k="category" />,
             render: (row) => <PartCategoryBadge category={row.category} />,
           },
           {
             key: "supplier",
-            label: "Supplier",
+            label: <T k="supplier" />,
             render: (row) => <span className="text-sm text-slate-600">{row.supplier ?? "—"}</span>,
           },
           {
             key: "unitCost",
-            label: "Unit Cost",
+            label: <T k="unitCost" />,
             className: "text-right",
             headerClassName: "text-right",
             render: (row) => formatCurrency(Number(row.unitCost)),
           },
           {
             key: "sellingPrice",
-            label: "Selling Price",
+            label: <T k="sellingPrice" />,
             className: "text-right",
             headerClassName: "text-right",
             render: (row) => formatCurrency(Number(row.sellingPrice)),
           },
           {
             key: "quantity",
-            label: "Qty",
+            label: <T k="quantity" />,
             className: "text-right",
             headerClassName: "text-right",
             render: (row) => (
@@ -156,19 +156,19 @@ export default async function InventoryPage({
           },
           {
             key: "minQty",
-            label: "Min Qty",
+            label: <T k="minQty" />,
             className: "text-right",
             headerClassName: "text-right",
             render: (row) => <span className="font-mono text-slate-500">{row.reorderLevel}</span>,
           },
           {
             key: "location",
-            label: "Location",
+            label: <T k="location" />,
             render: (row) => <span className="text-sm text-slate-600">{row.stock?.location ?? "—"}</span>,
           },
           {
             key: "status",
-            label: "Status",
+            label: <T k="status" />,
             render: (row) => (
               <StockLevelBadge level={getStockLevel(row.stock?.quantity ?? 0, row.reorderLevel)} />
             ),
@@ -176,11 +176,11 @@ export default async function InventoryPage({
         ]}
         data={parts}
         keyExtractor={(row) => row.id}
-        emptyTitle="No parts found"
+        emptyTitle={<T k="noPartsFound" />}
         emptyDescription={
           search || category || stockLevel
-            ? "Try adjusting your filters."
-            : "Add your first spare part to start tracking inventory."
+            ? <T k="tryAdjustingFilters" />
+            : <T k="addFirstPart" />
         }
       />
     </div>

@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { formatCurrency } from "@/lib/utils"
 import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 import { SERVICE_TYPE_LABELS, EQUIPMENT_TYPE_LABELS } from "@/types"
@@ -53,6 +54,7 @@ export function QuotationForm({
   quotationId,
 }: QuotationFormProps) {
   const toast = useToast()
+  const { t } = useLanguage()
   const isEdit = Boolean(quotationId)
 
   const {
@@ -200,7 +202,7 @@ export function QuotationForm({
         {/* Spare Parts Line Items */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Spare Parts</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{t("spareParts")}</h2>
             <Button
               type="button"
               size="sm"
@@ -297,7 +299,7 @@ export function QuotationForm({
         <div className="rounded-xl border border-slate-200 bg-white p-6">
           <h2 className="text-sm font-semibold text-slate-900 mb-5">Cost Breakdown</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FormField label="Labour Cost (KES)" htmlFor="labourCost" error={errors.labourCost?.message}>
+            <FormField label={`${t("labourCost")} (KES)`} htmlFor="labourCost" error={errors.labourCost?.message}>
               <Input id="labourCost" type="number" min="0" step="0.01" placeholder="0.00" {...register("labourCost")} />
             </FormField>
             <FormField label="Diagnosis Fee (KES)" htmlFor="diagnosisFee" error={errors.diagnosisFee?.message}>
@@ -306,7 +308,7 @@ export function QuotationForm({
             <FormField label="Transport Fee (KES)" htmlFor="transportFee" error={errors.transportFee?.message}>
               <Input id="transportFee" type="number" min="0" step="0.01" placeholder="0.00" {...register("transportFee")} />
             </FormField>
-            <FormField label="VAT (%)" htmlFor="vatPercent" error={errors.vatPercent?.message}>
+            <FormField label={`${t("vat")} (%)`} htmlFor="vatPercent" error={errors.vatPercent?.message}>
               <Input id="vatPercent" type="number" min="0" max="100" step="0.01" placeholder="0.00" {...register("vatPercent")} />
             </FormField>
             <FormField label="Discount (KES)" htmlFor="discountAmount" error={errors.discountAmount?.message}>
@@ -318,11 +320,11 @@ export function QuotationForm({
           <div className="mt-5 pt-4 border-t border-slate-100">
             <div className="ml-auto max-w-xs space-y-1.5 text-sm">
               <div className="flex justify-between text-slate-600">
-                <span>Labour</span>
+                <span>{t("labourCost")}</span>
                 <span>{formatCurrency(labourCost)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Parts</span>
+                <span>{t("spareParts")}</span>
                 <span>{formatCurrency(partsCost)}</span>
               </div>
               {diagnosisFee > 0 && (
@@ -343,7 +345,7 @@ export function QuotationForm({
               </div>
               {vatPercent > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>VAT ({vatPercent}%)</span>
+                  <span>{t("vat")} ({vatPercent}%)</span>
                   <span>{formatCurrency(vatAmount)}</span>
                 </div>
               )}
@@ -354,7 +356,7 @@ export function QuotationForm({
                 </div>
               )}
               <div className="flex justify-between font-bold text-slate-900 text-base border-t border-slate-200 pt-2 mt-1">
-                <span>Total</span>
+                <span>{t("total")}</span>
                 <span>{formatCurrency(total)}</span>
               </div>
             </div>
@@ -385,10 +387,10 @@ export function QuotationForm({
 
       <div className="flex justify-end gap-3 mt-4">
         <Button type="button" variant="outline" onClick={() => history.back()}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" loading={isSubmitting}>
-          {isEdit ? "Save Changes" : "Create Quotation"}
+          {isEdit ? t("save") : t("create")}
         </Button>
       </div>
     </form>

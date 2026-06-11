@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { PART_CATEGORY_LABELS } from "@/types"
 import type { PartCategory } from "@/types"
 
@@ -22,6 +23,7 @@ interface InventoryFormProps {
 
 export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
   const toast = useToast()
+  const { t } = useLanguage()
   const isEdit = Boolean(partId)
 
   const {
@@ -65,14 +67,14 @@ export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
           <h2 className="text-sm font-semibold text-slate-900">Part Details</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FormField
-              label="Part Number"
+              label={t("partNumber")}
               htmlFor="partNumber"
               error={errors.partNumber?.message}
               hint={isEdit ? undefined : "Leave blank to auto-generate"}
             >
               <Input id="partNumber" placeholder="e.g. PRT-00001" {...register("partNumber")} error={errors.partNumber?.message} />
             </FormField>
-            <FormField label="Part Name" htmlFor="name" required error={errors.name?.message}>
+            <FormField label={t("partName")} htmlFor="name" required error={errors.name?.message}>
               <Input id="name" placeholder="e.g. HP CF217A Toner Cartridge" {...register("name")} error={errors.name?.message} />
             </FormField>
           </div>
@@ -85,10 +87,10 @@ export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
                 ))}
               </Select>
             </FormField>
-            <FormField label="Brand" htmlFor="brand" error={errors.brand?.message}>
+            <FormField label={t("brand")} htmlFor="brand" error={errors.brand?.message}>
               <Input id="brand" placeholder="e.g. HP, Canon, Ricoh" {...register("brand")} />
             </FormField>
-            <FormField label="Supplier" htmlFor="supplier" error={errors.supplier?.message}>
+            <FormField label={t("supplier")} htmlFor="supplier" error={errors.supplier?.message}>
               <Input id="supplier" placeholder="e.g. Mediatech Distributors" {...register("supplier")} />
             </FormField>
           </div>
@@ -109,24 +111,24 @@ export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
             <FormField label="Unit" htmlFor="unit" required error={errors.unit?.message}>
               <Input id="unit" placeholder="pcs, box, roll, set" {...register("unit")} error={errors.unit?.message} />
             </FormField>
-            <FormField label="Unit Cost (KES)" htmlFor="unitCost" required error={errors.unitCost?.message}>
+            <FormField label={`${t("unitCost")} (KES)`} htmlFor="unitCost" required error={errors.unitCost?.message}>
               <Input id="unitCost" type="number" min="0" step="0.01" placeholder="0.00" {...register("unitCost")} error={errors.unitCost?.message} />
             </FormField>
-            <FormField label="Selling Price (KES)" htmlFor="sellingPrice" required error={errors.sellingPrice?.message}>
+            <FormField label={`${t("sellingPrice")} (KES)`} htmlFor="sellingPrice" required error={errors.sellingPrice?.message}>
               <Input id="sellingPrice" type="number" min="0" step="0.01" placeholder="0.00" {...register("sellingPrice")} error={errors.sellingPrice?.message} />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             <FormField
-              label={isEdit ? "Current Quantity" : "Initial Quantity"}
+              label={t("quantity")}
               htmlFor="quantity"
               error={errors.quantity?.message}
               hint={isEdit ? "Use Adjust Stock to change quantity" : undefined}
             >
               <Input id="quantity" type="number" min="0" step="1" {...register("quantity")} error={errors.quantity?.message} disabled={isEdit} />
             </FormField>
-            <FormField label="Minimum Quantity" htmlFor="reorderLevel" error={errors.reorderLevel?.message}>
+            <FormField label={t("minimumQuantity")} htmlFor="reorderLevel" error={errors.reorderLevel?.message}>
               <Input id="reorderLevel" type="number" min="0" step="1" {...register("reorderLevel")} error={errors.reorderLevel?.message} />
             </FormField>
             <FormField label="Storage Location" htmlFor="location" error={errors.location?.message}>
@@ -138,10 +140,10 @@ export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
 
       <div className="flex justify-end gap-3 mt-4">
         <Button type="button" variant="outline" onClick={() => history.back()}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" loading={isSubmitting}>
-          {isEdit ? "Save Changes" : "Add Part"}
+          {isEdit ? t("save") : t("create")}
         </Button>
       </div>
     </form>

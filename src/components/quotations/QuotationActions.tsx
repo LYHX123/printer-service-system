@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/modal"
 import { QuotationStatusModal } from "./QuotationStatusModal"
 import { convertToJob } from "@/lib/actions/quotations"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { QuotationStatus, Role } from "@/types"
 
 type ModalTargetStatus = "SENT" | "APPROVED" | "REJECTED" | "EXPIRED"
@@ -20,6 +21,7 @@ interface QuotationActionsProps {
 
 export function QuotationActions({ quotationId, status, role }: QuotationActionsProps) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [statusModal, setStatusModal] = useState<ModalTargetStatus | null>(null)
   const [convertOpen, setConvertOpen] = useState(false)
   const [converting, setConverting] = useState(false)
@@ -43,13 +45,13 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
       <div className="flex flex-wrap gap-2">
         <a href={`/api/quotations/${quotationId}/pdf`} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
-            Download PDF
+            {t("downloadPdf")}
           </Button>
         </a>
         {canEdit && (
           <Link href={`/quotations/${quotationId}/edit`}>
             <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />}>
-              Edit
+              {t("edit")}
             </Button>
           </Link>
         )}
@@ -118,7 +120,7 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
               onClick={() => setConvertOpen(false)}
               disabled={converting}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               type="button"

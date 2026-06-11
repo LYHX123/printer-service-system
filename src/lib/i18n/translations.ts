@@ -1,0 +1,911 @@
+export type Language = "en" | "zh"
+
+export const LANGUAGES: { code: Language; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "zh", label: "中文" },
+]
+
+export const DEFAULT_LANGUAGE: Language = "en"
+
+export type TranslationKey =
+  // Common
+  | "dashboard"
+  | "customers"
+  | "equipment"
+  | "jobs"
+  | "quotations"
+  | "inventory"
+  | "reports"
+  | "productivity"
+  | "settings"
+  | "users"
+  | "login"
+  | "logout"
+  | "save"
+  | "cancel"
+  | "create"
+  | "edit"
+  | "delete"
+  | "search"
+  | "filter"
+  | "export"
+  | "downloadPdf"
+  | "print"
+  // Customers
+  | "customerName"
+  | "companyName"
+  | "phone"
+  | "email"
+  | "address"
+  // Equipment
+  | "equipmentType"
+  | "brand"
+  | "model"
+  | "serialNumber"
+  | "assetNumber"
+  // Jobs
+  | "jobNumber"
+  | "status"
+  | "engineer"
+  | "problemReported"
+  | "diagnosis"
+  | "workPerformed"
+  // Quotations
+  | "quotationNumber"
+  | "labourCost"
+  | "spareParts"
+  | "vat"
+  | "total"
+  | "approved"
+  | "rejected"
+  // Inventory
+  | "partNumber"
+  | "partName"
+  | "quantity"
+  | "minimumQuantity"
+  | "supplier"
+  | "unitCost"
+  | "sellingPrice"
+  // General / page chrome
+  | "view"
+  | "clear"
+  | "noResultsFor"
+  | "tryDifferentSearchTerm"
+  | "tryAdjustingFilters"
+  | "exportCsv"
+  | "registered"
+  | "detail"
+  | "overview"
+  | "branches"
+  | "communications"
+  | "name"
+  | "type"
+  | "category"
+  | "date"
+  | "reference"
+  | "job"
+  | "by"
+  | "role"
+  | "code"
+  | "branch"
+  | "description"
+  | "priority"
+  | "searchCustomersPlaceholder"
+  | "searchEquipmentPlaceholder"
+  | "searchJobsPlaceholder"
+  | "searchQuotationsPlaceholder"
+  | "searchPartsPlaceholder"
+  // Customer detail
+  | "contactInformation"
+  | "summary"
+  | "customerCode"
+  | "totalJobs"
+  | "registerEquipment"
+  | "newQuotation"
+  | "newJob"
+  | "newCustomer"
+  | "newUser"
+  | "inYourCompany"
+  | "addPart"
+  | "noEquipmentRegistered"
+  | "registerEquipmentDesc"
+  | "noServiceJobs"
+  | "createJobForCustomerDesc"
+  | "noQuotations"
+  | "createQuotationDesc"
+  | "noCommunicationHistory"
+  | "communicationHistoryDesc"
+  // Equipment detail
+  | "deviceDetails"
+  | "purchaseDate"
+  | "warrantyExpiry"
+  | "owner"
+  | "specifications"
+  | "meterReadings"
+  | "black"
+  | "colour"
+  | "source"
+  | "recordedBy"
+  | "serviceHistory"
+  | "noServiceHistory"
+  | "serviceJobsWillAppear"
+  | "received"
+  | "completed"
+  | "warranty"
+  | "noQuotationsForEquipment"
+  | "noMeterReadings"
+  | "manual"
+  // Job detail
+  | "customer"
+  | "jobDetails"
+  | "assignedTo"
+  | "due"
+  | "createdBy"
+  | "sendUpdate"
+  | "problemDescription"
+  | "internalNotes"
+  | "technicianNotes"
+  | "statusHistory"
+  | "photos"
+  | "signature"
+  | "repairReport"
+  | "warrantyTo"
+  | "jobReceived"
+  | "jobInProgress"
+  | "jobCompleted"
+  | "readyForCollection"
+  // Quotation detail
+  | "details"
+  | "createdLabel"
+  | "validUntil"
+  | "sendToCustomer"
+  | "sendQuotation"
+  | "paymentReminder"
+  | "unitPrice"
+  | "subtotal"
+  | "diagnosisFee"
+  | "transportFee"
+  | "discount"
+  | "remarks"
+  | "convertedToJob"
+  | "noSparePartsListed"
+  | "costSummary"
+  | "labour"
+  | "parts"
+  // Inventory detail / list
+  | "partDetails"
+  | "compatibleWith"
+  | "storageLocation"
+  | "stock"
+  | "currentQuantity"
+  | "stockValue"
+  | "lastCounted"
+  | "transactionHistory"
+  | "noStockTransactions"
+  | "usedInJobs"
+  | "noPartsUsedInJobs"
+  | "archived"
+  | "location"
+  | "minQty"
+  | "inStock"
+  | "lowStock"
+  | "outOfStock"
+  | "notSpecified"
+  | "noPartsFound"
+  | "addFirstPart"
+  | "inCatalog"
+  // List pages — empty states & filters
+  | "noCustomersFound"
+  | "registerFirstCustomer"
+  | "noEquipmentFound"
+  | "registerFirstEquipment"
+  | "noJobsFound"
+  | "createFirstJob"
+  | "noQuotationsFound"
+  | "createFirstQuotation"
+  | "createAndManageQuotations"
+  | "tryAdjustingSearchOrFilter"
+  | "serviceJobs"
+  | "allTypes"
+  | "allCustomers"
+  | "allStatuses"
+  | "allPriorities"
+  | "allCategories"
+  | "allStockLevels"
+  | "allEngineers"
+  | "allStaff"
+  | "allChannels"
+  | "allMessageTypes"
+  | "allUsers"
+  // Reports
+  | "reportsDesc"
+  | "completedJobs"
+  | "inventoryValuationCost"
+  | "lowStockItems"
+  | "viewReport"
+  | "stockMovements"
+  | "pdf"
+  | "noRepairReportsDesc"
+  | "noQuotationsReportsDesc"
+  | "repairReports"
+  | "inventoryReports"
+  | "inventoryReportsDesc"
+  | "inventoryValuation"
+  | "lowStockReportTitle"
+  | "stockMovementReport"
+  | "totalParts"
+  | "stockValueAtCost"
+  | "stockValueAtSelling"
+  | "partsNeedingReorder"
+  | "engineerProductivity"
+  | "engineerProductivityDesc"
+  | "days"
+  | "jobsCompleted"
+  | "jobsAssigned"
+  | "avgCompletionTime"
+  | "revenueGenerated"
+  | "partsUsed"
+  | "communicationReport"
+  | "communicationReportDesc"
+  | "recipient"
+  | "channel"
+  | "messageType"
+  | "costValue"
+  | "sellingValue"
+  | "reportDate"
+  | "totalCost"
+  | "serviceType"
+  | "noPartsInInventory"
+  | "addPartsToSeeValuation"
+  | "noLowStockItems"
+  | "allPartsAboveMin"
+  | "noStockMovementsFound"
+  | "currentQty"
+  | "part"
+  | "noRepairReportsFound"
+  | "noQuotationsFoundReport"
+  | "noProductivityData"
+  | "noCommunicationsFound"
+  | "communicationsWillAppear"
+  // Settings
+  | "companySettings"
+  | "companySettingsDesc"
+  | "phoneNumber"
+  | "website"
+  | "kraPin"
+  | "vatPercentage"
+  | "currency"
+  | "timezone"
+  | "uploadLogo"
+  | "saveChanges"
+  | "companySettingsSaved"
+  | "logoUpdated"
+  | "failedToUploadLogo"
+  | "logoFormatHint"
+  | "fullCompanyAddress"
+  // Users
+  | "active"
+  | "disabledStatus"
+  | "joined"
+  | "you"
+  | "noUsersFound"
+  | "createFirstStaffAccount"
+  | "roleUpdated"
+  | "userDisabled"
+  | "userEnabled"
+  | "disable"
+  | "enable"
+  | "disableUser"
+  | "enableUser"
+  | "disableUserDesc"
+  | "enableUserDesc"
+  | "backToUsers"
+  | "newUserDesc"
+  | "fullName"
+  | "emailAddress"
+  | "password"
+  | "minimum8Characters"
+  | "createUser"
+
+export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
+  en: {
+    // Common
+    dashboard: "Dashboard",
+    customers: "Customers",
+    equipment: "Equipment",
+    jobs: "Jobs",
+    quotations: "Quotations",
+    inventory: "Inventory",
+    reports: "Reports",
+    productivity: "Productivity",
+    settings: "Settings",
+    users: "Users",
+    login: "Login",
+    logout: "Logout",
+    save: "Save",
+    cancel: "Cancel",
+    create: "Create",
+    edit: "Edit",
+    delete: "Delete",
+    search: "Search",
+    filter: "Filter",
+    export: "Export",
+    downloadPdf: "Download PDF",
+    print: "Print",
+    // Customers
+    customerName: "Customer Name",
+    companyName: "Company Name",
+    phone: "Phone",
+    email: "Email",
+    address: "Address",
+    // Equipment
+    equipmentType: "Equipment Type",
+    brand: "Brand",
+    model: "Model",
+    serialNumber: "Serial Number",
+    assetNumber: "Asset Number",
+    // Jobs
+    jobNumber: "Job Number",
+    status: "Status",
+    engineer: "Engineer",
+    problemReported: "Problem Reported",
+    diagnosis: "Diagnosis",
+    workPerformed: "Work Performed",
+    // Quotations
+    quotationNumber: "Quotation #",
+    labourCost: "Labour Cost",
+    spareParts: "Spare Parts",
+    vat: "VAT",
+    total: "Total",
+    approved: "Approved",
+    rejected: "Rejected",
+    // Inventory
+    partNumber: "Part Number",
+    partName: "Part Name",
+    quantity: "Quantity",
+    minimumQuantity: "Minimum Quantity",
+    supplier: "Supplier",
+    unitCost: "Unit Cost",
+    sellingPrice: "Selling Price",
+    // General / page chrome
+    view: "View",
+    clear: "Clear",
+    noResultsFor: 'No results for "{search}".',
+    tryDifferentSearchTerm: "Try a different search term.",
+    tryAdjustingFilters: "Try adjusting your filters.",
+    exportCsv: "Export CSV",
+    registered: "Registered",
+    detail: "Detail",
+    overview: "Overview",
+    branches: "Branches",
+    communications: "Communications",
+    name: "Name",
+    type: "Type",
+    category: "Category",
+    date: "Date",
+    reference: "Reference",
+    job: "Job",
+    by: "By",
+    role: "Role",
+    code: "Code",
+    branch: "Branch",
+    description: "Description",
+    priority: "Priority",
+    searchCustomersPlaceholder: "Search by name, code or company…",
+    searchEquipmentPlaceholder: "Serial, brand, model…",
+    searchJobsPlaceholder: "Job #, customer, equipment…",
+    searchQuotationsPlaceholder: "Search by Q# or customer…",
+    searchPartsPlaceholder: "Part number, name, brand…",
+    // Customer detail
+    contactInformation: "Contact Information",
+    summary: "Summary",
+    customerCode: "Customer Code",
+    totalJobs: "Total Jobs",
+    registerEquipment: "Register Equipment",
+    newQuotation: "New Quotation",
+    newJob: "New Job",
+    newCustomer: "New Customer",
+    newUser: "New User",
+    inYourCompany: "in your company",
+    addPart: "Add Part",
+    noEquipmentRegistered: "No equipment registered",
+    registerEquipmentDesc: "Register equipment for this customer to track service history.",
+    noServiceJobs: "No service jobs",
+    createJobForCustomerDesc: "Create a job for this customer when equipment needs servicing.",
+    noQuotations: "No quotations",
+    createQuotationDesc: "Create a quotation for this customer.",
+    noCommunicationHistory: "No communication history",
+    communicationHistoryDesc: "WhatsApp and email messages sent to this customer will appear here.",
+    // Equipment detail
+    deviceDetails: "Device Details",
+    purchaseDate: "Purchase Date",
+    warrantyExpiry: "Warranty Expiry",
+    owner: "Owner",
+    specifications: "Specifications",
+    meterReadings: "Meter Readings",
+    black: "Black",
+    colour: "Colour",
+    source: "Source",
+    recordedBy: "Recorded by",
+    serviceHistory: "Service History",
+    noServiceHistory: "No service history",
+    serviceJobsWillAppear: "Service jobs will appear here once created.",
+    received: "Received",
+    completed: "Completed",
+    warranty: "Warranty",
+    noQuotationsForEquipment: "No quotations for this equipment yet.",
+    noMeterReadings: "No meter readings recorded yet.",
+    manual: "Manual",
+    // Job detail
+    customer: "Customer",
+    jobDetails: "Job Details",
+    assignedTo: "Assigned To",
+    due: "Due",
+    createdBy: "Created By",
+    sendUpdate: "Send Update",
+    problemDescription: "Problem Description",
+    internalNotes: "Internal Notes",
+    technicianNotes: "Technician Notes",
+    statusHistory: "Status History",
+    photos: "Photos",
+    signature: "Signature",
+    repairReport: "Repair Report",
+    warrantyTo: "Warranty to",
+    jobReceived: "Job Received",
+    jobInProgress: "Job In Progress",
+    jobCompleted: "Job Completed",
+    readyForCollection: "Ready For Collection",
+    // Quotation detail
+    details: "Details",
+    createdLabel: "Created",
+    validUntil: "Valid until",
+    sendToCustomer: "Send to Customer",
+    sendQuotation: "Send Quotation",
+    paymentReminder: "Payment Reminder",
+    unitPrice: "Unit Price",
+    subtotal: "Subtotal",
+    diagnosisFee: "Diagnosis Fee",
+    transportFee: "Transport Fee",
+    discount: "Discount",
+    remarks: "Remarks",
+    convertedToJob: "Converted to job",
+    noSparePartsListed: "No spare parts listed.",
+    costSummary: "Cost Summary",
+    labour: "Labour",
+    parts: "Parts",
+    // Inventory detail / list
+    partDetails: "Part Details",
+    compatibleWith: "Compatible With",
+    storageLocation: "Storage Location",
+    stock: "Stock",
+    currentQuantity: "Current Quantity",
+    stockValue: "Stock Value (at cost)",
+    lastCounted: "Last Counted",
+    transactionHistory: "Transaction History",
+    noStockTransactions: "No stock transactions recorded yet.",
+    usedInJobs: "Used In Jobs",
+    noPartsUsedInJobs: "This part hasn't been used in any jobs yet.",
+    archived: "Archived",
+    location: "Location",
+    minQty: "Min Qty",
+    inStock: "In Stock",
+    lowStock: "Low Stock",
+    outOfStock: "Out of Stock",
+    notSpecified: "Not specified",
+    noPartsFound: "No parts found",
+    addFirstPart: "Add your first spare part to start tracking inventory.",
+    inCatalog: "in catalog",
+    // List pages — empty states & filters
+    noCustomersFound: "No customers found",
+    registerFirstCustomer: "Register your first customer to get started.",
+    noEquipmentFound: "No equipment found",
+    registerFirstEquipment: "Register your first piece of equipment to get started.",
+    noJobsFound: "No jobs found",
+    createFirstJob: "Create your first service job to get started.",
+    noQuotationsFound: "No quotations found",
+    createFirstQuotation: "Create your first quotation to get started.",
+    createAndManageQuotations: "Create and manage customer quotations.",
+    tryAdjustingSearchOrFilter: "Try adjusting your search or filter.",
+    serviceJobs: "Service Jobs",
+    allTypes: "All Types",
+    allCustomers: "All Customers",
+    allStatuses: "All Statuses",
+    allPriorities: "All Priorities",
+    allCategories: "All Categories",
+    allStockLevels: "All Stock Levels",
+    allEngineers: "All Engineers",
+    allStaff: "All Staff",
+    allChannels: "All Channels",
+    allMessageTypes: "All Message Types",
+    allUsers: "All Users",
+    // Reports
+    repairReports: "Repair Reports",
+    inventoryReports: "Inventory Reports",
+    inventoryReportsDesc: "Valuation, low stock, and stock movement reports.",
+    inventoryValuation: "Inventory Valuation",
+    lowStockReportTitle: "Low Stock Report",
+    stockMovementReport: "Stock Movement Report",
+    totalParts: "Total Parts",
+    stockValueAtCost: "Stock Value (at cost)",
+    stockValueAtSelling: "Stock Value (at selling price)",
+    partsNeedingReorder: "Parts Needing Reorder",
+    engineerProductivity: "Engineer Productivity",
+    engineerProductivityDesc: "Track jobs completed, average completion time, revenue, and parts used per engineer.",
+    days: "days",
+    jobsCompleted: "Jobs Completed",
+    jobsAssigned: "Jobs Assigned",
+    avgCompletionTime: "Avg. Completion Time",
+    revenueGenerated: "Revenue Generated",
+    partsUsed: "Parts Used",
+    communicationReport: "Communication Report",
+    communicationReportDesc: "WhatsApp and email communications sent to customers.",
+    recipient: "Recipient",
+    channel: "Channel",
+    messageType: "Message Type",
+    costValue: "Cost Value",
+    sellingValue: "Selling Value",
+    reportDate: "Report Date",
+    totalCost: "Total Cost",
+    serviceType: "Service Type",
+    noPartsInInventory: "No parts in inventory",
+    addPartsToSeeValuation: "Add spare parts to see their valuation here.",
+    noLowStockItems: "No low stock items",
+    allPartsAboveMin: "All parts are above their minimum stock levels.",
+    noStockMovementsFound: "No stock movements found",
+    currentQty: "Current Qty",
+    part: "Part",
+    noRepairReportsFound: "No repair reports found",
+    noRepairReportsDesc: "Try adjusting your filters, or repair reports will appear here once jobs are completed.",
+    noQuotationsFoundReport: "No quotations found",
+    noQuotationsReportsDesc: "Try adjusting your filters, or quotations will appear here once created.",
+    reportsDesc: "View service performance, revenue, and operational reports.",
+    completedJobs: "Completed Jobs",
+    inventoryValuationCost: "Inventory Valuation (cost)",
+    lowStockItems: "Low Stock Items",
+    viewReport: "View report",
+    stockMovements: "Stock Movements",
+    pdf: "PDF",
+    noProductivityData: "No productivity data found",
+    noCommunicationsFound: "No communications found",
+    communicationsWillAppear: "Communications will appear here once sent from a customer, job, or quotation page.",
+    // Settings
+    companySettings: "Company Settings",
+    companySettingsDesc: "Manage your company profile, branding, and regional preferences.",
+    phoneNumber: "Phone Number",
+    website: "Website",
+    kraPin: "KRA PIN",
+    vatPercentage: "VAT Percentage",
+    currency: "Currency",
+    timezone: "Timezone",
+    uploadLogo: "Upload Logo",
+    saveChanges: "Save Changes",
+    companySettingsSaved: "Company settings saved",
+    logoUpdated: "Logo updated",
+    failedToUploadLogo: "Failed to upload logo",
+    logoFormatHint: "PNG, JPG or WEBP. Max 5MB.",
+    fullCompanyAddress: "Full company address",
+    // Users
+    active: "Active",
+    disabledStatus: "Disabled",
+    joined: "Joined",
+    you: "you",
+    noUsersFound: "No users found",
+    createFirstStaffAccount: "Create your first staff account to get started.",
+    roleUpdated: "Role updated",
+    userDisabled: "User disabled",
+    userEnabled: "User enabled",
+    disable: "Disable",
+    enable: "Enable",
+    disableUser: "Disable User",
+    enableUser: "Enable User",
+    disableUserDesc: "This user will no longer be able to log in. You can re-enable their account at any time.",
+    enableUserDesc: "This user will regain access and be able to log in again.",
+    backToUsers: "Back to Users",
+    newUserDesc: "Create a new staff account and assign a role.",
+    fullName: "Full Name",
+    emailAddress: "Email Address",
+    password: "Password",
+    minimum8Characters: "Minimum 8 characters",
+    createUser: "Create User",
+  },
+  zh: {
+    // Common
+    dashboard: "仪表盘",
+    customers: "客户",
+    equipment: "设备",
+    jobs: "工单",
+    quotations: "报价单",
+    inventory: "库存",
+    reports: "报表",
+    productivity: "生产力",
+    settings: "设置",
+    users: "用户",
+    login: "登录",
+    logout: "退出登录",
+    save: "保存",
+    cancel: "取消",
+    create: "新建",
+    edit: "编辑",
+    delete: "删除",
+    search: "搜索",
+    filter: "筛选",
+    export: "导出",
+    downloadPdf: "下载PDF",
+    print: "打印",
+    // Customers
+    customerName: "客户名称",
+    companyName: "公司名称",
+    phone: "电话",
+    email: "邮箱",
+    address: "地址",
+    // Equipment
+    equipmentType: "设备类型",
+    brand: "品牌",
+    model: "型号",
+    serialNumber: "序列号",
+    assetNumber: "资产编号",
+    // Jobs
+    jobNumber: "工单编号",
+    status: "状态",
+    engineer: "工程师",
+    problemReported: "报告的问题",
+    diagnosis: "诊断",
+    workPerformed: "已完成的工作",
+    // Quotations
+    quotationNumber: "报价单号",
+    labourCost: "人工费",
+    spareParts: "备件",
+    vat: "增值税",
+    total: "总计",
+    approved: "已批准",
+    rejected: "已拒绝",
+    // Inventory
+    partNumber: "零件编号",
+    partName: "零件名称",
+    quantity: "数量",
+    minimumQuantity: "最低数量",
+    supplier: "供应商",
+    unitCost: "单位成本",
+    sellingPrice: "销售价格",
+    // General / page chrome
+    view: "查看",
+    clear: "清除",
+    noResultsFor: '未找到与"{search}"相关的结果。',
+    tryDifferentSearchTerm: "请尝试其他搜索词。",
+    tryAdjustingFilters: "请尝试调整筛选条件。",
+    exportCsv: "导出CSV",
+    registered: "注册日期",
+    detail: "详情",
+    overview: "概览",
+    branches: "分支机构",
+    communications: "沟通记录",
+    name: "名称",
+    type: "类型",
+    category: "分类",
+    date: "日期",
+    reference: "参考",
+    job: "工单",
+    by: "操作人",
+    role: "角色",
+    code: "编码",
+    branch: "分支机构",
+    description: "描述",
+    priority: "优先级",
+    searchCustomersPlaceholder: "按名称、编号或公司搜索…",
+    searchEquipmentPlaceholder: "序列号、品牌、型号…",
+    searchJobsPlaceholder: "工单号、客户、设备…",
+    searchQuotationsPlaceholder: "按报价单号或客户搜索…",
+    searchPartsPlaceholder: "零件编号、名称、品牌…",
+    // Customer detail
+    contactInformation: "联系信息",
+    summary: "摘要",
+    customerCode: "客户编码",
+    totalJobs: "工单总数",
+    registerEquipment: "登记设备",
+    newQuotation: "新建报价单",
+    newJob: "新建工单",
+    newCustomer: "新建客户",
+    newUser: "新建用户",
+    inYourCompany: "位于贵公司",
+    addPart: "新增零件",
+    noEquipmentRegistered: "暂无注册设备",
+    registerEquipmentDesc: "为该客户登记设备以跟踪服务历史。",
+    noServiceJobs: "暂无服务工单",
+    createJobForCustomerDesc: "当设备需要维修时，为该客户创建工单。",
+    noQuotations: "暂无报价单",
+    createQuotationDesc: "为该客户创建报价单。",
+    noCommunicationHistory: "暂无沟通记录",
+    communicationHistoryDesc: "发送给该客户的WhatsApp和邮件信息将显示在此处。",
+    // Equipment detail
+    deviceDetails: "设备详情",
+    purchaseDate: "购买日期",
+    warrantyExpiry: "保修到期日",
+    owner: "所有者",
+    specifications: "规格说明",
+    meterReadings: "读数记录",
+    black: "黑白",
+    colour: "彩色",
+    source: "来源",
+    recordedBy: "记录人",
+    serviceHistory: "服务历史",
+    noServiceHistory: "暂无服务记录",
+    serviceJobsWillAppear: "创建后服务工单将显示在此处。",
+    received: "接收日期",
+    completed: "完成日期",
+    warranty: "保修",
+    noQuotationsForEquipment: "该设备暂无报价单。",
+    noMeterReadings: "暂无读数记录。",
+    manual: "手动",
+    // Job detail
+    customer: "客户",
+    jobDetails: "工单详情",
+    assignedTo: "指派给",
+    due: "截止日期",
+    createdBy: "创建人",
+    sendUpdate: "发送更新",
+    problemDescription: "问题描述",
+    internalNotes: "内部备注",
+    technicianNotes: "技术员备注",
+    statusHistory: "状态历史",
+    photos: "照片",
+    signature: "签名",
+    repairReport: "维修报告",
+    warrantyTo: "保修至",
+    jobReceived: "已接收工单",
+    jobInProgress: "工单处理中",
+    jobCompleted: "工单已完成",
+    readyForCollection: "可领取",
+    // Quotation detail
+    details: "详情",
+    createdLabel: "创建时间",
+    validUntil: "有效期至",
+    sendToCustomer: "发送给客户",
+    sendQuotation: "发送报价单",
+    paymentReminder: "付款提醒",
+    unitPrice: "单价",
+    subtotal: "小计",
+    diagnosisFee: "诊断费",
+    transportFee: "交通费",
+    discount: "折扣",
+    remarks: "备注",
+    convertedToJob: "已转换为工单",
+    noSparePartsListed: "未列出备件。",
+    costSummary: "费用汇总",
+    labour: "人工",
+    parts: "备件",
+    // Inventory detail / list
+    partDetails: "零件详情",
+    compatibleWith: "适用型号",
+    storageLocation: "存储位置",
+    stock: "库存",
+    currentQuantity: "当前数量",
+    stockValue: "库存价值（按成本）",
+    lastCounted: "最后盘点日期",
+    transactionHistory: "交易记录",
+    noStockTransactions: "暂无库存交易记录。",
+    usedInJobs: "工单使用记录",
+    noPartsUsedInJobs: "该零件尚未在任何工单中使用。",
+    archived: "已归档",
+    location: "位置",
+    minQty: "最低数量",
+    inStock: "有库存",
+    lowStock: "库存不足",
+    outOfStock: "缺货",
+    notSpecified: "未指定",
+    noPartsFound: "未找到零件",
+    addFirstPart: "添加第一个备件以开始跟踪库存。",
+    inCatalog: "在库",
+    // List pages — empty states & filters
+    noCustomersFound: "未找到客户",
+    registerFirstCustomer: "注册第一个客户以开始使用。",
+    noEquipmentFound: "未找到设备",
+    registerFirstEquipment: "登记第一台设备以开始使用。",
+    noJobsFound: "未找到工单",
+    createFirstJob: "创建第一个服务工单以开始使用。",
+    noQuotationsFound: "未找到报价单",
+    createFirstQuotation: "创建第一个报价单以开始使用。",
+    createAndManageQuotations: "创建和管理客户报价单。",
+    tryAdjustingSearchOrFilter: "请尝试调整搜索或筛选条件。",
+    serviceJobs: "服务工单",
+    allTypes: "所有类型",
+    allCustomers: "所有客户",
+    allStatuses: "所有状态",
+    allPriorities: "所有优先级",
+    allCategories: "所有分类",
+    allStockLevels: "所有库存水平",
+    allEngineers: "所有工程师",
+    allStaff: "所有员工",
+    allChannels: "所有渠道",
+    allMessageTypes: "所有消息类型",
+    allUsers: "所有用户",
+    // Reports
+    repairReports: "维修报告",
+    inventoryReports: "库存报表",
+    inventoryReportsDesc: "估值、低库存和库存变动报表。",
+    inventoryValuation: "库存估值",
+    lowStockReportTitle: "低库存报表",
+    stockMovementReport: "库存变动报表",
+    totalParts: "零件总数",
+    stockValueAtCost: "库存价值（按成本）",
+    stockValueAtSelling: "库存价值（按售价）",
+    partsNeedingReorder: "需补货零件",
+    engineerProductivity: "工程师生产力",
+    engineerProductivityDesc: "追踪每位工程师完成的工单、平均完成时间、产生的收入和使用的备件。",
+    days: "天",
+    jobsCompleted: "已完成工单",
+    jobsAssigned: "已分配工单",
+    avgCompletionTime: "平均完成时间",
+    revenueGenerated: "创造的收入",
+    partsUsed: "已用零件",
+    communicationReport: "沟通报告",
+    communicationReportDesc: "发送给客户的WhatsApp和电子邮件通讯记录。",
+    recipient: "收件人",
+    channel: "渠道",
+    messageType: "消息类型",
+    costValue: "成本价值",
+    sellingValue: "销售价值",
+    reportDate: "报告日期",
+    totalCost: "总费用",
+    serviceType: "服务类型",
+    noPartsInInventory: "库存中暂无零件",
+    addPartsToSeeValuation: "添加备件以查看其估值。",
+    noLowStockItems: "暂无低库存项目",
+    allPartsAboveMin: "所有零件库存均高于最低库存水平。",
+    noStockMovementsFound: "未找到库存变动记录",
+    currentQty: "当前数量",
+    part: "零件",
+    noRepairReportsFound: "未找到维修报告",
+    noRepairReportsDesc: "请尝试调整筛选条件，或在工单完成后维修报告将显示在此处。",
+    noQuotationsFoundReport: "未找到报价单",
+    noQuotationsReportsDesc: "请尝试调整筛选条件，或在创建报价单后将显示在此处。",
+    reportsDesc: "查看服务表现、收入和运营报表。",
+    completedJobs: "已完成工单",
+    inventoryValuationCost: "库存估值（成本）",
+    lowStockItems: "低库存项目",
+    viewReport: "查看报表",
+    stockMovements: "库存变动",
+    pdf: "PDF",
+    noProductivityData: "未找到生产力数据",
+    noCommunicationsFound: "未找到沟通记录",
+    communicationsWillAppear: "从客户、工单或报价单页面发送的沟通记录将显示在此处。",
+    // Settings
+    companySettings: "公司设置",
+    companySettingsDesc: "管理您的公司资料、品牌和区域设置。",
+    phoneNumber: "电话号码",
+    website: "网站",
+    kraPin: "KRA PIN",
+    vatPercentage: "增值税百分比",
+    currency: "货币",
+    timezone: "时区",
+    uploadLogo: "上传徽标",
+    saveChanges: "保存更改",
+    companySettingsSaved: "公司设置已保存",
+    logoUpdated: "徽标已更新",
+    failedToUploadLogo: "徽标上传失败",
+    logoFormatHint: "PNG、JPG 或 WEBP 格式，最大 5MB。",
+    fullCompanyAddress: "公司完整地址",
+    // Users
+    active: "启用",
+    disabledStatus: "已禁用",
+    joined: "加入日期",
+    you: "你",
+    noUsersFound: "未找到用户",
+    createFirstStaffAccount: "创建第一个员工账户以开始使用。",
+    roleUpdated: "角色已更新",
+    userDisabled: "用户已禁用",
+    userEnabled: "用户已启用",
+    disable: "禁用",
+    enable: "启用",
+    disableUser: "禁用用户",
+    enableUser: "启用用户",
+    disableUserDesc: "该用户将无法再登录。您可以随时重新启用其账户。",
+    enableUserDesc: "该用户将恢复访问权限并可重新登录。",
+    backToUsers: "返回用户列表",
+    newUserDesc: "创建新的员工账户并分配角色。",
+    fullName: "全名",
+    emailAddress: "电子邮箱",
+    password: "密码",
+    minimum8Characters: "至少8个字符",
+    createUser: "创建用户",
+  },
+}
