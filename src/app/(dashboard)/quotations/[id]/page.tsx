@@ -6,10 +6,12 @@ import {
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation } from "@/lib/data/quotations"
-import { canAccess } from "@/lib/permissions"
+import { getCompanySettings } from "@/lib/data/settings"
+import { canAccess, canSendCommunications } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { QuotationStatusBadge, EquipmentTypeBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
+import { QuickSendAction } from "@/components/communications/QuickSendAction"
 import { formatCurrency } from "@/lib/utils"
 import { SERVICE_TYPE_LABELS, QUOTATION_STATUS_LABELS } from "@/types"
 import { format } from "date-fns"
@@ -25,8 +27,21 @@ export default async function QuotationDetailPage({
   const { id } = await params
   const companyId = session!.user.companyId as string
 
-  const quotation = await getQuotation(id, companyId)
+  const [quotation, company] = await Promise.all([
+    getQuotation(id, companyId),
+    getCompanySettings(companyId),
+  ])
   if (!quotation) notFound()
+
+  const canSend = canSendCommunications(role)
+  const templateVariables = {
+    customer: quotation.customer.name,
+    quotationNumber: quotation.quotationNumber,
+    equipment: quotation.equipment ? `${quotation.equipment.brand} ${quotation.equipment.model}` : "",
+    amount: formatCurrency(Number(quotation.totalCost)),
+    companyName: company?.name ?? "",
+    companyPhone: company?.phone ?? "",
+  }
 
   const partsCost = Number(quotation.partsCost)
   const labourCost = Number(quotation.labourCost)
@@ -168,6 +183,33 @@ export default async function QuotationDetailPage({
               )}
             </dl>
           </div>
+
+          {/* Communications */}
+          {canSend && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">Send to Customer</h3>
+              <div className="divide-y divide-slate-100">
+                <QuickSendAction
+                  label="Send Quotation"
+                  messageType="QUOTATION_SENT"
+                  customerId={quotation.customer.id}
+                  quotationId={quotation.id}
+                  phone={quotation.customer.phone}
+                  email={quotation.customer.email}
+                  variables={templateVariables}
+                />
+                <QuickSendAction
+                  label="Payment Reminder"
+                  messageType="PAYMENT_REMINDER"
+                  customerId={quotation.customer.id}
+                  quotationId={quotation.id}
+                  phone={quotation.customer.phone}
+                  email={quotation.customer.email}
+                  variables={templateVariables}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main content */}

@@ -3,12 +3,16 @@ import { notFound } from "next/navigation"
 import { ChevronLeft, Plus, Pencil, Phone, Mail, MapPin } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomer } from "@/lib/data/customers"
+import { getCommunicationLogs } from "@/lib/data/communications"
+import { getCompanySettings } from "@/lib/data/settings"
+import { canSendCommunications } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Tabs } from "@/components/ui/tabs"
-import { StatusBadge, PriorityBadge, EquipmentTypeBadge, QuotationStatusBadge } from "@/components/ui/badge"
+import { StatusBadge, PriorityBadge, EquipmentTypeBadge, QuotationStatusBadge, ChannelBadge, MessageTypeBadge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { BranchesTab } from "@/components/customers/BranchesTab"
+import { SendMessageButton } from "@/components/communications/SendMessageButton"
 import { formatCurrency } from "@/lib/utils"
 import { SERVICE_TYPE_LABELS } from "@/types"
 import { format } from "date-fns"
@@ -24,9 +28,22 @@ export default async function CustomerDetailPage({
   const { id } = await params
   const { tab = "overview" } = await searchParams
   const companyId = session!.user.companyId as string
+  const role = session!.user.role as import("@/types").Role
 
   const customer = await getCustomer(id, companyId)
   if (!customer) notFound()
+
+  const [communications, company] = await Promise.all([
+    getCommunicationLogs(id, companyId),
+    getCompanySettings(companyId),
+  ])
+
+  const canSend = canSendCommunications(role)
+  const templateVariables = {
+    customer: customer.name,
+    companyName: company?.name ?? "",
+    companyPhone: company?.phone ?? "",
+  }
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -34,6 +51,7 @@ export default async function CustomerDetailPage({
     { id: "equipment", label: "Equipment", count: customer.equipment.length },
     { id: "jobs", label: "Jobs", count: customer.serviceJobs.length },
     { id: "quotations", label: "Quotations", count: customer.quotations.length },
+    { id: "communications", label: "Communications", count: communications.length },
   ]
 
   return (
@@ -47,7 +65,27 @@ export default async function CustomerDetailPage({
         title={customer.name}
         subtitle={customer.companyName ?? customer.code}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {canSend && (
+              <>
+                <SendMessageButton
+                  channel="WHATSAPP"
+                  messageType="GENERAL"
+                  label="WhatsApp"
+                  customerId={customer.id}
+                  recipient={customer.phone}
+                  variables={templateVariables}
+                />
+                <SendMessageButton
+                  channel="EMAIL"
+                  messageType="GENERAL"
+                  label="Email"
+                  customerId={customer.id}
+                  recipient={customer.email}
+                  variables={templateVariables}
+                />
+              </>
+            )}
             <Link href={`/equipment/new?customerId=${customer.id}`}>
               <Button variant="secondary" size="sm" icon={<Plus className="h-3.5 w-3.5" />}>
                 Register Equipment
@@ -273,6 +311,44 @@ export default async function CustomerDetailPage({
                       <td className="px-4 py-3">
                         <Link href={`/quotations/${q.id}`} className="text-xs text-blue-600 hover:underline">View →</Link>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Communications tab */}
+      {tab === "communications" && (
+        <div>
+          {communications.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white">
+              <EmptyState
+                title="No communication history"
+                description="WhatsApp and email messages sent to this customer will appear here."
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    {["Date", "Channel", "Message Type", "Recipient", "Status", "Created By"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {communications.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{format(new Date(c.createdAt), "dd MMM yyyy HH:mm")}</td>
+                      <td className="px-4 py-3"><ChannelBadge channel={c.channel} /></td>
+                      <td className="px-4 py-3"><MessageTypeBadge messageType={c.messageType} /></td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{c.recipient}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{c.status}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{c.createdBy.name}</td>
                     </tr>
                   ))}
                 </tbody>

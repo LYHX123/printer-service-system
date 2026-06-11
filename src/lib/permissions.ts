@@ -21,6 +21,7 @@ export type Module =
   | "reports"
   | "productivity"
   | "inventory"
+  | "communications"
   | "users"
   | "settings"
 
@@ -33,6 +34,7 @@ const MODULE_ACCESS: Record<Module, Role[]> = {
   reports: ["ADMIN", "MANAGER"],
   productivity: ["ADMIN", "MANAGER", "ENGINEER"],
   inventory: ["ADMIN", "MANAGER", "ENGINEER"],
+  communications: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   users: ["ADMIN"],
   settings: ["ADMIN"],
 }
@@ -91,4 +93,12 @@ export function canViewReports(role: Role): boolean {
 /** Admin and Manager can view productivity for all engineers; Engineers see only their own. */
 export function canViewAllProductivity(role: Role): boolean {
   return role === "ADMIN" || role === "MANAGER"
+}
+
+/**
+ * Admin, Manager and Receptionist can send WhatsApp/Email communications and create
+ * CommunicationLog entries. Engineers have view-only access to communication history.
+ */
+export function canSendCommunications(role: Role): boolean {
+  return role === "ADMIN" || role === "MANAGER" || role === "RECEPTIONIST"
 }

@@ -28,6 +28,9 @@ import type {
   PartCategory,
   ContractType,
   ContractStatus,
+  CommunicationLog,
+  CommunicationChannel,
+  CommunicationMessageType,
 } from "@/generated/prisma/client"
 
 export type {
@@ -60,6 +63,9 @@ export type {
   PartCategory,
   ContractType,
   ContractStatus,
+  CommunicationLog,
+  CommunicationChannel,
+  CommunicationMessageType,
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -220,6 +226,23 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   IN: "Stock In",
   OUT: "Stock Out",
   ADJUSTMENT: "Adjustment",
+}
+
+export const COMMUNICATION_CHANNEL_LABELS: Record<CommunicationChannel, string> = {
+  WHATSAPP: "WhatsApp",
+  EMAIL: "Email",
+}
+
+export const COMMUNICATION_MESSAGE_TYPE_LABELS: Record<CommunicationMessageType, string> = {
+  JOB_RECEIVED: "Job Received",
+  JOB_IN_PROGRESS: "Job In Progress",
+  AWAITING_CUSTOMER_APPROVAL: "Awaiting Customer Approval",
+  QUOTATION_SENT: "Quotation Sent",
+  QUOTATION_APPROVED: "Quotation Approved",
+  JOB_COMPLETED: "Job Completed",
+  READY_FOR_COLLECTION: "Ready for Collection",
+  PAYMENT_REMINDER: "Payment Reminder",
+  GENERAL: "General",
 }
 
 export const PART_CATEGORY_LABELS: Record<PartCategory, string> = {

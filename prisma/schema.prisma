@@ -109,6 +109,23 @@ enum ContractStatus {
   TERMINATED
 }
 
+enum CommunicationChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum CommunicationMessageType {
+  JOB_RECEIVED
+  JOB_IN_PROGRESS
+  AWAITING_CUSTOMER_APPROVAL
+  QUOTATION_SENT
+  QUOTATION_APPROVED
+  JOB_COMPLETED
+  READY_FOR_COLLECTION
+  PAYMENT_REMINDER
+  GENERAL
+}
+
 // ─── Core Models ──────────────────────────────────────────────────────────────
 
 model Company {
@@ -138,6 +155,7 @@ model Company {
   spareParts     SparePart[]
   purchaseOrders PurchaseOrder[]
   contracts      CustomerContract[]
+  communicationLogs CommunicationLog[]
 }
 
 model User {
@@ -165,6 +183,7 @@ model User {
   createdContracts      CustomerContract[]
   equipmentPhotos       EquipmentPhoto[]
   meterReadings         MeterReading[]
+  communicationLogs     CommunicationLog[]
 }
 
 model Customer {
@@ -185,6 +204,7 @@ model Customer {
   serviceJobs ServiceJob[]
   quotations  Quotation[]
   contracts   CustomerContract[]
+  communicationLogs CommunicationLog[]
 }
 
 // Branches or project sites that belong to a customer
@@ -278,6 +298,7 @@ model ServiceJob {
   statusLogs            JobStatusLog[]
   inventoryTransactions InventoryTransaction[]
   meterReadings         MeterReading[]
+  communicationLogs     CommunicationLog[]
 }
 
 model Quotation {
@@ -313,6 +334,7 @@ model Quotation {
 
   items        QuotationItem[]
   convertedJob ServiceJob?     @relation("QuotationConversion")
+  communicationLogs CommunicationLog[]
 }
 
 model QuotationItem {
@@ -536,4 +558,27 @@ model MeterReading {
   equipment  Equipment   @relation(fields: [equipmentId], references: [id])
   job        ServiceJob? @relation(fields: [jobId], references: [id])
   recordedBy User        @relation(fields: [recordedById], references: [id])
+}
+
+// ─── Customer Communication Log ────────────────────────────────────────────────
+
+model CommunicationLog {
+  id             String                   @id @default(uuid())
+  companyId      String
+  customerId     String
+  jobId          String?
+  quotationId    String?
+  channel        CommunicationChannel
+  messageType    CommunicationMessageType
+  recipient      String
+  messageContent String
+  status         String                   @default("SENT")
+  createdById    String
+  createdAt      DateTime                 @default(now())
+
+  company   Company     @relation(fields: [companyId], references: [id])
+  customer  Customer    @relation(fields: [customerId], references: [id])
+  job       ServiceJob? @relation(fields: [jobId], references: [id])
+  quotation Quotation?  @relation(fields: [quotationId], references: [id])
+  createdBy User        @relation(fields: [createdById], references: [id])
 }
