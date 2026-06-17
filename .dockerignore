@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+.git
+.gitignore
+.env
+.env*.local
+.env.production
+*.tsbuildinfo
+npm-debug.log*
+coverage
+public/uploads
+DEPLOYMENT_PLAN.md
+README.md
+PROJECT_PLAN.md
