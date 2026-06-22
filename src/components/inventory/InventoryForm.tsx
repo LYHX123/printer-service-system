@@ -41,6 +41,7 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
   const itemNameKey = itemNameTranslationKey(stockType)
   const [image, setImage] = useState(imageUrl ?? null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const {
     register,
@@ -59,14 +60,20 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
   })
 
   async function onSubmit(data: SparePartInput) {
+    setFormError(null)
+
     if (isEdit) {
       const result = await updateSparePart(partId!, data)
-      if (result?.error) toast.error(result.error)
+      if (result?.error) {
+        setFormError(result.error)
+        toast.error(result.error)
+      }
       return
     }
 
     const result = await createSparePart(data)
     if ("error" in result) {
+      setFormError(result.error)
       toast.error(result.error)
       return
     }
@@ -113,10 +120,10 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
         </FormField>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={t("brand")} htmlFor="brand" error={errors.brand?.message}>
-            <Input id="brand" placeholder="e.g. HP, Canon, Ricoh" {...register("brand")} />
+          <FormField label={t("brand")} htmlFor="brand" required error={errors.brand?.message}>
+            <Input id="brand" placeholder="e.g. HP, Canon, Ricoh" {...register("brand")} error={errors.brand?.message} />
           </FormField>
-          <FormField label={t("quantity")} htmlFor="quantity" error={errors.quantity?.message}>
+          <FormField label={t("quantity")} htmlFor="quantity" required error={errors.quantity?.message}>
             <Input id="quantity" type="number" min="0" step="1" {...register("quantity")} error={errors.quantity?.message} />
           </FormField>
         </div>
@@ -137,6 +144,12 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
           </div>
         </div>
       </div>
+
+      {formError && (
+        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {formError}
+        </p>
+      )}
 
       <div className="flex justify-end gap-3 mt-4">
         <Button type="button" variant="outline" onClick={() => history.back()}>

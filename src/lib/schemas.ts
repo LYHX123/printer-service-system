@@ -234,8 +234,8 @@ export type UpdateUserRoleInput = z.infer<typeof UpdateUserRoleSchema>
 // ─── Inventory / Spare Parts ───────────────────────────────────────────────────
 
 export const SparePartSchema = z.object({
-  partNumber: z.string().min(1, "Part number is required").max(50),
-  name: z.string().min(1, "Part name is required").max(200),
+  partNumber: z.string().max(50),
+  name: z.string().min(1, "Name is required").max(200),
   description: z.string().max(1000).optional().or(z.literal("")),
   category: z.enum([
     "TONER",
@@ -250,7 +250,7 @@ export const SparePartSchema = z.object({
     "PROJECTOR_PART",
     "GENERAL",
   ]),
-  brand: z.string().max(100).optional().or(z.literal("")),
+  brand: z.string().min(1, "Brand is required").max(100),
   supplier: z.string().max(150).optional().or(z.literal("")),
   compatibleWith: z.string().max(300).optional().or(z.literal("")),
   unit: z.string().max(20).default("pcs"),
