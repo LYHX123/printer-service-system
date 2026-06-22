@@ -52,7 +52,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Operations",
     items: [
-      { href: "/inventory", labelKey: "inventory", label: "Inventory", icon: Package, module: "inventory" },
+      { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
     ],
   },
   {

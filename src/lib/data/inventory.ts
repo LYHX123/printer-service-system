@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { getStockType, type StockType } from "@/lib/stock-types"
 import type {
   SparePart,
   InventoryStock,
@@ -21,15 +22,15 @@ export type SparePartListItem = SparePart & { stock: InventoryStock | null }
 
 export async function getSpareParts(
   companyId: string,
-  opts?: { search?: string; category?: PartCategory; stockLevel?: StockLevel }
+  opts?: { search?: string; category?: PartCategory; categories?: PartCategory[]; stockLevel?: StockLevel }
 ): Promise<SparePartListItem[]> {
-  const { search, category, stockLevel } = opts ?? {}
+  const { search, category, categories, stockLevel } = opts ?? {}
 
   const parts = await prisma.sparePart.findMany({
     where: {
       companyId,
       isActive: true,
-      ...(category ? { category } : {}),
+      ...(categories ? { category: { in: categories } } : category ? { category } : {}),
       ...(search
         ? {
             OR: [
@@ -131,6 +132,21 @@ export async function getLowStockParts(companyId: string): Promise<SparePartList
 export async function getLowStockCount(companyId: string): Promise<number> {
   const parts = await getLowStockParts(companyId)
   return parts.length
+}
+
+/** Item counts for the 3 Stock cards (Equipment / Consumption / Parts). */
+export async function getStockTypeCounts(companyId: string): Promise<Record<StockType, number>> {
+  const grouped = await prisma.sparePart.groupBy({
+    by: ["category"],
+    where: { companyId, isActive: true },
+    _count: { _all: true },
+  })
+
+  const counts: Record<StockType, number> = { EQUIPMENT: 0, CONSUMPTION: 0, PARTS: 0 }
+  for (const row of grouped) {
+    counts[getStockType(row.category)] += row._count._all
+  }
+  return counts
 }
 
 // ─── Reports ────────────────────────────────────────────────────────────────

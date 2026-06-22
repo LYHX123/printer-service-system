@@ -41,6 +41,7 @@ export type TranslationKey =
   | "equipmentType"
   | "brand"
   | "model"
+  | "itemName"
   | "serialNumber"
   | "assetNumber"
   // Jobs
@@ -295,7 +296,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipment: "Equipment",
     jobs: "Jobs",
     quotations: "Quotations",
-    inventory: "Inventory",
+    inventory: "Stock",
     reports: "Reports",
     productivity: "Productivity",
     settings: "Settings",
@@ -322,6 +323,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipmentType: "Equipment Type",
     brand: "Brand",
     model: "Model",
+    itemName: "Item Name",
     serialNumber: "Serial Number",
     assetNumber: "Asset Number",
     // Jobs
@@ -602,6 +604,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipmentType: "设备类型",
     brand: "品牌",
     model: "型号",
+    itemName: "物品名称",
     serialNumber: "序列号",
     assetNumber: "资产编号",
     // Jobs

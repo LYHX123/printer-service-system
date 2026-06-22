@@ -140,21 +140,21 @@ async function OverviewTab({ companyId }: { companyId: string }) {
             label={<T k="inventoryValuationCost" />}
             value={formatCurrency(valuation.totalCostValue)}
             icon={<Boxes className="h-5 w-5 text-blue-600" />}
-            href="/inventory/reports?tab=valuation"
+            href="/stock/reports?tab=valuation"
           />
           <MetricCard
             label={<T k="lowStockItems" />}
             value={lowStockCount}
             icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
             iconBg="bg-orange-50"
-            href="/inventory/reports?tab=low-stock"
+            href="/stock/reports?tab=low-stock"
           />
           <MetricCard
             label={<T k="stockMovements" />}
             value={<T k="viewReport" />}
             icon={<ArrowLeftRight className="h-5 w-5 text-slate-600" />}
             iconBg="bg-slate-100"
-            href="/inventory/reports?tab=movements"
+            href="/stock/reports?tab=movements"
           />
         </div>
       </div>

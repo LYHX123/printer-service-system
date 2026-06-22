@@ -202,7 +202,7 @@ export async function updateJobStatus(jobId: string, data: StatusUpdateInput) {
     revalidatePath(`/jobs/${jobId}`)
     revalidatePath("/jobs")
     if (parsed.data.toStatus === "DELIVERED") {
-      revalidatePath("/inventory")
+      revalidatePath("/stock")
     }
     return { success: true }
   } catch {

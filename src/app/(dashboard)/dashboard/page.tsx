@@ -92,7 +92,7 @@ export default async function DashboardPage() {
         <MetricCard
           label="Parts Low Stock"
           value={canViewInventory ? lowStockCount : "—"}
-          href="/inventory"
+          href="/stock"
           icon={<Wrench className="h-5 w-5 text-slate-600" />}
           iconBg={lowStockCount > 0 ? "bg-orange-50" : "bg-slate-100"}
         />
@@ -140,7 +140,7 @@ export default async function DashboardPage() {
                 const quantity = part.stock?.quantity ?? 0
                 return (
                   <li key={part.id} className="px-5 py-3">
-                    <Link href={`/inventory/${part.id}`} className="flex items-center justify-between gap-2 group">
+                    <Link href={`/stock/${part.id}`} className="flex items-center justify-between gap-2 group">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">{part.name}</p>
                         <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
           )}
           {lowStockParts.length > 8 && (
             <div className="border-t border-slate-100 px-5 py-3 text-center">
-              <Link href="/inventory/reports?tab=low-stock" className="text-xs font-medium text-blue-600 hover:underline">
+              <Link href="/stock/reports?tab=low-stock" className="text-xs font-medium text-blue-600 hover:underline">
                 View all {lowStockParts.length} low stock parts →
               </Link>
             </div>

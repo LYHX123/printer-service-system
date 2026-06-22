@@ -39,7 +39,7 @@ export default async function InventoryReportsPage({
 
   return (
     <div>
-      <Link href="/inventory" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
+      <Link href="/stock" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
         <T k="inventory" />
       </Link>
@@ -54,7 +54,7 @@ export default async function InventoryReportsPage({
             { id: "movements", label: <T k="stockMovementReport" /> },
           ]}
           activeTab={activeTab}
-          pathPrefix="/inventory/reports"
+          pathPrefix="/stock/reports"
         />
       </div>
 
@@ -84,7 +84,7 @@ async function ValuationReport({ companyId }: { companyId: string }) {
             key: "partNumber",
             label: <T k="partNumber" />,
             render: (row) => (
-              <Link href={`/inventory/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/stock/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.partNumber}
               </Link>
             ),
@@ -147,7 +147,7 @@ async function LowStockReport({ companyId }: { companyId: string }) {
             key: "partNumber",
             label: <T k="partNumber" />,
             render: (row) => (
-              <Link href={`/inventory/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/stock/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.partNumber}
               </Link>
             ),
@@ -205,7 +205,7 @@ async function MovementsReport({
         <Input name="to" type="date" defaultValue={to ?? ""} className="w-44" />
         <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {(type || from || to) && (
-          <Link href="/inventory/reports?tab=movements">
+          <Link href="/stock/reports?tab=movements">
             <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
@@ -220,7 +220,7 @@ async function MovementsReport({
           {
             key: "part", label: <T k="part" />,
             render: (row) => (
-              <Link href={`/inventory/${row.part.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/stock/${row.part.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.part.name}
                 <span className="block font-mono text-xs text-slate-400">{row.part.partNumber}</span>
               </Link>

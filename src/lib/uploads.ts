@@ -48,6 +48,25 @@ export async function saveCompanyLogo(
   return `/uploads/companies/${companyId}/${fileName}`
 }
 
+export async function saveSparePartImage(
+  partId: string,
+  buffer: Buffer
+): Promise<string> {
+  const dir = path.join(UPLOADS_ROOT, "spareparts", partId)
+  await mkdir(dir, { recursive: true })
+
+  const fileName = "image.jpg"
+  const resized = await sharp(buffer)
+    .rotate()
+    .resize({ width: 600, height: 600, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer()
+
+  await writeFile(path.join(dir, fileName), resized)
+
+  return `/uploads/spareparts/${partId}/${fileName}`
+}
+
 export async function deleteJobPhoto(fileUrl: string): Promise<void> {
   const filePath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""))
   await unlink(filePath).catch(() => {})

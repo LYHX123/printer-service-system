@@ -1,30 +1,34 @@
 "use client"
 
+import { useState } from "react"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
+import { ImageOff } from "lucide-react"
 import { SparePartSchema, type SparePartInput } from "@/lib/schemas"
 import { createSparePart, updateSparePart } from "@/lib/actions/inventory"
 import { FormField, Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { FileUploader } from "@/components/ui/file-uploader"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { PART_CATEGORY_LABELS } from "@/types"
-import type { PartCategory } from "@/types"
-
-const CATEGORIES = Object.keys(PART_CATEGORY_LABELS) as PartCategory[]
+import { STOCK_TYPE_LABELS, itemNameTranslationKey } from "@/lib/stock-types"
+import type { StockType } from "@/lib/stock-types"
 
 interface InventoryFormProps {
+  stockType: StockType
   defaultValues?: Partial<SparePartInput>
   partId?: string
+  imageUrl?: string | null
 }
 
-export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
+export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: InventoryFormProps) {
   const toast = useToast()
   const { t } = useLanguage()
   const isEdit = Boolean(partId)
+  const itemNameKey = itemNameTranslationKey(stockType)
+  const [image, setImage] = useState(imageUrl ?? null)
 
   const {
     register,
@@ -35,16 +39,8 @@ export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
     defaultValues: {
       partNumber: "",
       name: "",
-      description: "",
       category: "GENERAL",
       brand: "",
-      supplier: "",
-      compatibleWith: "",
-      unit: "pcs",
-      unitCost: 0,
-      sellingPrice: 0,
-      reorderLevel: 0,
-      location: "",
       quantity: 0,
       ...defaultValues,
     },
@@ -59,82 +55,57 @@ export function InventoryForm({ defaultValues, partId }: InventoryFormProps) {
     }
   }
 
+  async function handleImageUpload(file: File) {
+    const formData = new FormData()
+    formData.append("file", file)
+    const res = await fetch(`/api/stock/${partId}/image`, { method: "POST", body: formData })
+    const json = await res.json()
+    if (!res.ok) {
+      toast.error(json.error ?? "Failed to upload picture")
+      return
+    }
+    setImage(`${json.imageUrl}?t=${Date.now()}`)
+    toast.success("Picture updated")
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="space-y-5">
-        {/* Identification */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-slate-900">Part Details</h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <FormField
-              label={t("partNumber")}
-              htmlFor="partNumber"
-              error={errors.partNumber?.message}
-              hint={isEdit ? undefined : "Leave blank to auto-generate"}
-            >
-              <Input id="partNumber" placeholder="e.g. PRT-00001" {...register("partNumber")} error={errors.partNumber?.message} />
-            </FormField>
-            <FormField label={t("partName")} htmlFor="name" required error={errors.name?.message}>
-              <Input id="name" placeholder="e.g. HP CF217A Toner Cartridge" {...register("name")} error={errors.name?.message} />
-            </FormField>
-          </div>
+      <input type="hidden" {...register("category")} />
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <FormField label="Category" htmlFor="category" required error={errors.category?.message}>
-              <Select id="category" {...register("category")} error={errors.category?.message}>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{PART_CATEGORY_LABELS[c]}</option>
-                ))}
-              </Select>
-            </FormField>
-            <FormField label={t("brand")} htmlFor="brand" error={errors.brand?.message}>
-              <Input id="brand" placeholder="e.g. HP, Canon, Ricoh" {...register("brand")} />
-            </FormField>
-            <FormField label={t("supplier")} htmlFor="supplier" error={errors.supplier?.message}>
-              <Input id="supplier" placeholder="e.g. Mediatech Distributors" {...register("supplier")} />
-            </FormField>
-          </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-slate-900">{STOCK_TYPE_LABELS[stockType]}</h2>
 
-          <FormField label="Compatible With" htmlFor="compatibleWith" error={errors.compatibleWith?.message}>
-            <Input id="compatibleWith" placeholder="e.g. HP LaserJet Pro M102, M130" {...register("compatibleWith")} />
-          </FormField>
-
-          <FormField label="Description" htmlFor="description" error={errors.description?.message}>
-            <Textarea id="description" rows={2} placeholder="Additional notes about this part…" {...register("description")} />
-          </FormField>
+        <div>
+          <p className="mb-2 text-sm font-medium text-slate-700">Picture</p>
+          {isEdit ? (
+            <div className="flex items-start gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                {image ? (
+                  <Image src={image} alt={defaultValues?.name ?? "Item picture"} width={80} height={80} className="h-full w-full object-cover" unoptimized />
+                ) : (
+                  <ImageOff className="h-7 w-7 text-slate-300" />
+                )}
+              </div>
+              <div className="flex-1">
+                <FileUploader onUpload={handleImageUpload} label="Drag & drop a picture, or click to browse" />
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">Save this item first, then add a picture from its page.</p>
+          )}
         </div>
 
-        {/* Pricing & Stock */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-slate-900">Pricing & Stock</h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <FormField label="Unit" htmlFor="unit" required error={errors.unit?.message}>
-              <Input id="unit" placeholder="pcs, box, roll, set" {...register("unit")} error={errors.unit?.message} />
-            </FormField>
-            <FormField label={`${t("unitCost")} (KES)`} htmlFor="unitCost" required error={errors.unitCost?.message}>
-              <Input id="unitCost" type="number" min="0" step="0.01" placeholder="0.00" {...register("unitCost")} error={errors.unitCost?.message} />
-            </FormField>
-            <FormField label={`${t("sellingPrice")} (KES)`} htmlFor="sellingPrice" required error={errors.sellingPrice?.message}>
-              <Input id="sellingPrice" type="number" min="0" step="0.01" placeholder="0.00" {...register("sellingPrice")} error={errors.sellingPrice?.message} />
-            </FormField>
-          </div>
+        <FormField label={t(itemNameKey)} htmlFor="name" required error={errors.name?.message}>
+          <Input id="name" {...register("name")} error={errors.name?.message} />
+        </FormField>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <FormField
-              label={t("quantity")}
-              htmlFor="quantity"
-              error={errors.quantity?.message}
-              hint={isEdit ? "Use Adjust Stock to change quantity" : undefined}
-            >
-              <Input id="quantity" type="number" min="0" step="1" {...register("quantity")} error={errors.quantity?.message} disabled={isEdit} />
-            </FormField>
-            <FormField label={t("minimumQuantity")} htmlFor="reorderLevel" error={errors.reorderLevel?.message}>
-              <Input id="reorderLevel" type="number" min="0" step="1" {...register("reorderLevel")} error={errors.reorderLevel?.message} />
-            </FormField>
-            <FormField label="Storage Location" htmlFor="location" error={errors.location?.message}>
-              <Input id="location" placeholder="e.g. Shelf A2, Bin 14" {...register("location")} />
-            </FormField>
-          </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FormField label={t("brand")} htmlFor="brand" error={errors.brand?.message}>
+            <Input id="brand" placeholder="e.g. HP, Canon, Ricoh" {...register("brand")} />
+          </FormField>
+          <FormField label={t("quantity")} htmlFor="quantity" error={errors.quantity?.message}>
+            <Input id="quantity" type="number" min="0" step="1" {...register("quantity")} error={errors.quantity?.message} />
+          </FormField>
         </div>
       </div>
 
