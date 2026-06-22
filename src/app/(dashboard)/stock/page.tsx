@@ -26,6 +26,18 @@ const STOCK_TYPE_ICONS: Record<StockType, LucideIcon> = {
   PARTS: Wrench,
 }
 
+const ADD_BUTTON_LABELS: Record<StockType, string> = {
+  EQUIPMENT: "Add Equipment",
+  CONSUMPTION: "Add Consumption Item",
+  PARTS: "Add Part",
+}
+
+const EMPTY_TITLES: Record<StockType, string> = {
+  EQUIPMENT: "No equipment found",
+  CONSUMPTION: "No consumption items found",
+  PARTS: "No parts found",
+}
+
 export default async function StockPage({
   searchParams,
 }: {
@@ -90,7 +102,7 @@ export default async function StockPage({
         actions={
           canEdit && (
             <Link href={`/stock/new?type=${stockType}`}>
-              <Button icon={<Plus className="h-4 w-4" />}><T k="addPart" /></Button>
+              <Button icon={<Plus className="h-4 w-4" />}>{ADD_BUTTON_LABELS[stockType]}</Button>
             </Link>
           )
         }
@@ -117,15 +129,20 @@ export default async function StockPage({
       </form>
 
       <Table
+        tableClassName="table-fixed"
         columns={[
           {
             key: "brand",
             label: <T k="brand" />,
+            className: "w-[25%] text-left",
+            headerClassName: "w-[25%] text-left",
             render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
           },
           {
             key: "name",
             label: <T k={itemNameKey} />,
+            className: "w-[45%] text-left",
+            headerClassName: "w-[45%] text-left",
             render: (row) => (
               <Link href={`/stock/${row.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.name}
@@ -135,19 +152,21 @@ export default async function StockPage({
           {
             key: "quantity",
             label: <T k="quantity" />,
-            className: "text-right",
-            headerClassName: "text-right",
+            className: "w-[15%] text-center",
+            headerClassName: "w-[15%] text-center",
             render: (row) => <span className="font-mono font-semibold">{row.stock?.quantity ?? 0}</span>,
           },
           {
             key: "image",
             label: "Picture",
+            className: "w-[15%] text-center",
+            headerClassName: "w-[15%] text-center",
             render: (row) => (
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                 {row.imageUrl ? (
-                  <Image src={row.imageUrl} alt={row.name} width={40} height={40} className="h-full w-full object-cover" unoptimized />
+                  <Image src={row.imageUrl} alt={row.name} width={80} height={80} className="h-full w-full object-cover" unoptimized />
                 ) : (
-                  <ImageOff className="h-4 w-4 text-slate-300" />
+                  <ImageOff className="h-6 w-6 text-slate-300" />
                 )}
               </div>
             ),
@@ -155,7 +174,7 @@ export default async function StockPage({
         ]}
         data={parts}
         keyExtractor={(row) => row.id}
-        emptyTitle={<T k="noPartsFound" />}
+        emptyTitle={EMPTY_TITLES[stockType]}
         emptyDescription={search ? <T k="tryAdjustingFilters" /> : <T k="addFirstPart" />}
       />
     </div>

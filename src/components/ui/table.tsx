@@ -21,6 +21,7 @@ interface TableProps<T> {
   loadingRows?: number
   onRowClick?: (row: T) => void
   className?: string
+  tableClassName?: string
 }
 
 export function Table<T>({
@@ -33,11 +34,12 @@ export function Table<T>({
   loadingRows = 5,
   onRowClick,
   className,
+  tableClassName,
 }: TableProps<T>) {
   return (
     <div className={cn("overflow-hidden rounded-xl border border-slate-200 bg-white", className)}>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
+        <table className={cn("min-w-full divide-y divide-slate-200", tableClassName)}>
           <thead className="bg-slate-50">
             <tr>
               {columns.map((col) => (
