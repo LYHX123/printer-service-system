@@ -61,3 +61,13 @@ export function stockCountTranslationKey(stockType: StockType, count: number): T
   const labels = STOCK_TYPE_COUNT_LABELS[stockType]
   return count === 1 ? labels.singular : labels.plural
 }
+
+/** A spare part whose quantity has dropped to or below the low-stock notification threshold. */
+export type LowStockAlert = {
+  id: string
+  stockType: StockType
+  brand: string | null
+  name: string
+  quantity: number
+  isOutOfStock: boolean
+}

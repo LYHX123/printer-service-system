@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/layout/DashboardShell"
+import { canAccess } from "@/lib/permissions"
+import { getLowStockAlerts } from "@/lib/data/inventory"
+import { LowStockNotification } from "@/components/inventory/LowStockNotification"
 import type { Role } from "@/types"
 
 export default async function DashboardLayout({
@@ -19,5 +22,14 @@ export default async function DashboardLayout({
     companyId: session.user.companyId as string,
   }
 
-  return <DashboardShell user={user}>{children}</DashboardShell>
+  const lowStockAlerts = canAccess(user.role, "inventory")
+    ? await getLowStockAlerts(user.companyId)
+    : []
+
+  return (
+    <>
+      <DashboardShell user={user}>{children}</DashboardShell>
+      <LowStockNotification alerts={lowStockAlerts} />
+    </>
+  )
 }

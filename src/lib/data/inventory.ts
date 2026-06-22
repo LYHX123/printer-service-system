@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { getStockType, type StockType } from "@/lib/stock-types"
+import { getStockType, type StockType, type LowStockAlert } from "@/lib/stock-types"
 import type {
   SparePart,
   InventoryStock,
@@ -132,6 +132,31 @@ export async function getLowStockParts(companyId: string): Promise<SparePartList
 export async function getLowStockCount(companyId: string): Promise<number> {
   const parts = await getLowStockParts(companyId)
   return parts.length
+}
+
+/** Login/dashboard notification threshold: flat quantity rule, independent of each part's reorder level. */
+const LOW_STOCK_NOTIFICATION_THRESHOLD = 2
+
+export async function getLowStockAlerts(companyId: string): Promise<LowStockAlert[]> {
+  const parts = await prisma.sparePart.findMany({
+    where: { companyId, isActive: true },
+    include: { stock: true },
+    orderBy: { name: "asc" },
+  })
+
+  return parts
+    .filter((p) => (p.stock?.quantity ?? 0) <= LOW_STOCK_NOTIFICATION_THRESHOLD)
+    .map((p) => {
+      const quantity = p.stock?.quantity ?? 0
+      return {
+        id: p.id,
+        stockType: getStockType(p.category),
+        brand: p.brand,
+        name: p.name,
+        quantity,
+        isOutOfStock: quantity === 0,
+      }
+    })
 }
 
 /** Item counts for the 3 Stock cards (Equipment / Consumption / Parts). */
