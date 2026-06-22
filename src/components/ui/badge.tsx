@@ -21,8 +21,6 @@ import type {
   ContractStatus,
   Role,
   PartCategory,
-  CommunicationChannel,
-  CommunicationMessageType,
 } from "@/types"
 import {
   JOB_STATUS_LABELS,
@@ -32,8 +30,6 @@ import {
   CONTRACT_STATUS_LABELS,
   ROLE_LABELS,
   PART_CATEGORY_LABELS,
-  COMMUNICATION_CHANNEL_LABELS,
-  COMMUNICATION_MESSAGE_TYPE_LABELS,
 } from "@/types"
 
 // ─── Base Badge ───────────────────────────────────────────────────────────────
@@ -251,24 +247,5 @@ const ROLE_STYLES: Record<Role, string> = {
 export function RoleBadge({ role }: { role: Role }) {
   return (
     <Badge className={ROLE_STYLES[role]}>{ROLE_LABELS[role]}</Badge>
-  )
-}
-
-// ─── Communication Channel / Message Type Badges ──────────────────────────────
-
-const CHANNEL_STYLES: Record<CommunicationChannel, string> = {
-  WHATSAPP: "bg-green-100 text-green-700",
-  EMAIL: "bg-blue-100 text-blue-700",
-}
-
-export function ChannelBadge({ channel }: { channel: CommunicationChannel }) {
-  return (
-    <Badge className={CHANNEL_STYLES[channel]}>{COMMUNICATION_CHANNEL_LABELS[channel]}</Badge>
-  )
-}
-
-export function MessageTypeBadge({ messageType }: { messageType: CommunicationMessageType }) {
-  return (
-    <Badge className="bg-slate-100 text-slate-600">{COMMUNICATION_MESSAGE_TYPE_LABELS[messageType]}</Badge>
   )
 }

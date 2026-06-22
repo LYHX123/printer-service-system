@@ -3,8 +3,6 @@ import { notFound } from "next/navigation"
 import { ChevronLeft, User, Wrench, MapPin, ShieldCheck, Phone, Mail, Gauge, Image as ImageIcon, PenTool, FileText } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getJob, getEngineers } from "@/lib/data/jobs"
-import { getCompanySettings } from "@/lib/data/settings"
-import { canSendCommunications } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { StatusBadge, PriorityBadge, EquipmentTypeBadge, WarrantyBadge } from "@/components/ui/badge"
@@ -12,8 +10,6 @@ import { SERVICE_TYPE_LABELS } from "@/types"
 import { StatusTimeline } from "@/components/jobs/StatusTimeline"
 import { TechnicianNotesForm } from "@/components/jobs/TechnicianNotesForm"
 import { JobActions } from "@/components/jobs/JobActions"
-import { QuickSendAction } from "@/components/communications/QuickSendAction"
-import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
 
@@ -28,10 +24,9 @@ export default async function JobDetailPage({
   const userRole = session!.user.role as string
   const userId = session!.user.id as string
 
-  const [job, engineers, company] = await Promise.all([
+  const [job, engineers] = await Promise.all([
     getJob(id, companyId),
     getEngineers(companyId),
-    getCompanySettings(companyId),
   ])
 
   if (!job) notFound()
@@ -41,16 +36,6 @@ export default async function JobDetailPage({
   const canAssign = ["ADMIN", "MANAGER"].includes(userRole)
   const isFinal = job.status === "DELIVERED" || job.status === "CANCELLED"
   const showMeter = job.equipment.type === "PRINTER" || job.equipment.type === "COPIER"
-  const canSend = canSendCommunications(userRole as import("@/types").Role)
-
-  const templateVariables = {
-    customer: job.customer.name,
-    jobNumber: job.jobNumber,
-    equipment: `${job.equipment.brand} ${job.equipment.model}`,
-    amount: formatCurrency(Number(job.totalCost)),
-    companyName: company?.name ?? "",
-    companyPhone: company?.phone ?? "",
-  }
 
   return (
     <div>
@@ -193,51 +178,6 @@ export default async function JobDetailPage({
               </div>
             </dl>
           </div>
-
-          {/* Communications */}
-          {canSend && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1"><T k="sendUpdate" /></h3>
-              <div className="divide-y divide-slate-100">
-                <QuickSendAction
-                  label={<T k="jobReceived" />}
-                  messageType="JOB_RECEIVED"
-                  customerId={job.customer.id}
-                  jobId={job.id}
-                  phone={job.customer.phone}
-                  email={job.customer.email}
-                  variables={templateVariables}
-                />
-                <QuickSendAction
-                  label={<T k="jobInProgress" />}
-                  messageType="JOB_IN_PROGRESS"
-                  customerId={job.customer.id}
-                  jobId={job.id}
-                  phone={job.customer.phone}
-                  email={job.customer.email}
-                  variables={templateVariables}
-                />
-                <QuickSendAction
-                  label={<T k="jobCompleted" />}
-                  messageType="JOB_COMPLETED"
-                  customerId={job.customer.id}
-                  jobId={job.id}
-                  phone={job.customer.phone}
-                  email={job.customer.email}
-                  variables={templateVariables}
-                />
-                <QuickSendAction
-                  label={<T k="readyForCollection" />}
-                  messageType="READY_FOR_COLLECTION"
-                  customerId={job.customer.id}
-                  jobId={job.id}
-                  phone={job.customer.phone}
-                  email={job.customer.email}
-                  variables={templateVariables}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right: main content */}

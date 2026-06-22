@@ -277,27 +277,3 @@ export const StockTransactionSchema = z
   })
 
 export type StockTransactionInput = z.infer<typeof StockTransactionSchema>
-
-// ─── Communications ─────────────────────────────────────────────────────────────
-
-export const CommunicationLogSchema = z.object({
-  customerId: z.string().min(1),
-  jobId: z.string().optional().or(z.literal("")),
-  quotationId: z.string().optional().or(z.literal("")),
-  channel: z.enum(["WHATSAPP", "EMAIL"]),
-  messageType: z.enum([
-    "JOB_RECEIVED",
-    "JOB_IN_PROGRESS",
-    "AWAITING_CUSTOMER_APPROVAL",
-    "QUOTATION_SENT",
-    "QUOTATION_APPROVED",
-    "JOB_COMPLETED",
-    "READY_FOR_COLLECTION",
-    "PAYMENT_REMINDER",
-    "GENERAL",
-  ]),
-  recipient: z.string().min(1).max(200),
-  messageContent: z.string().min(1).max(4000),
-})
-
-export type CommunicationLogInput = z.infer<typeof CommunicationLogSchema>

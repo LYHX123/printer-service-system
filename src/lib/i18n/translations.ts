@@ -77,7 +77,6 @@ export type TranslationKey =
   | "detail"
   | "overview"
   | "branches"
-  | "communications"
   | "name"
   | "type"
   | "category"
@@ -113,8 +112,6 @@ export type TranslationKey =
   | "createJobForCustomerDesc"
   | "noQuotations"
   | "createQuotationDesc"
-  | "noCommunicationHistory"
-  | "communicationHistoryDesc"
   // Equipment detail
   | "deviceDetails"
   | "purchaseDate"
@@ -141,7 +138,6 @@ export type TranslationKey =
   | "assignedTo"
   | "due"
   | "createdBy"
-  | "sendUpdate"
   | "problemDescription"
   | "internalNotes"
   | "technicianNotes"
@@ -150,17 +146,10 @@ export type TranslationKey =
   | "signature"
   | "repairReport"
   | "warrantyTo"
-  | "jobReceived"
-  | "jobInProgress"
-  | "jobCompleted"
-  | "readyForCollection"
   // Quotation detail
   | "details"
   | "createdLabel"
   | "validUntil"
-  | "sendToCustomer"
-  | "sendQuotation"
-  | "paymentReminder"
   | "unitPrice"
   | "subtotal"
   | "diagnosisFee"
@@ -214,8 +203,6 @@ export type TranslationKey =
   | "allStockLevels"
   | "allEngineers"
   | "allStaff"
-  | "allChannels"
-  | "allMessageTypes"
   | "allUsers"
   // Reports
   | "reportsDesc"
@@ -245,11 +232,6 @@ export type TranslationKey =
   | "avgCompletionTime"
   | "revenueGenerated"
   | "partsUsed"
-  | "communicationReport"
-  | "communicationReportDesc"
-  | "recipient"
-  | "channel"
-  | "messageType"
   | "costValue"
   | "sellingValue"
   | "reportDate"
@@ -265,8 +247,6 @@ export type TranslationKey =
   | "noRepairReportsFound"
   | "noQuotationsFoundReport"
   | "noProductivityData"
-  | "noCommunicationsFound"
-  | "communicationsWillAppear"
   // Settings
   | "companySettings"
   | "companySettingsDesc"
@@ -378,7 +358,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     detail: "Detail",
     overview: "Overview",
     branches: "Branches",
-    communications: "Communications",
     name: "Name",
     type: "Type",
     category: "Category",
@@ -414,8 +393,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     createJobForCustomerDesc: "Create a job for this customer when equipment needs servicing.",
     noQuotations: "No quotations",
     createQuotationDesc: "Create a quotation for this customer.",
-    noCommunicationHistory: "No communication history",
-    communicationHistoryDesc: "WhatsApp and email messages sent to this customer will appear here.",
     // Equipment detail
     deviceDetails: "Device Details",
     purchaseDate: "Purchase Date",
@@ -442,7 +419,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     assignedTo: "Assigned To",
     due: "Due",
     createdBy: "Created By",
-    sendUpdate: "Send Update",
     problemDescription: "Problem Description",
     internalNotes: "Internal Notes",
     technicianNotes: "Technician Notes",
@@ -451,17 +427,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     signature: "Signature",
     repairReport: "Repair Report",
     warrantyTo: "Warranty to",
-    jobReceived: "Job Received",
-    jobInProgress: "Job In Progress",
-    jobCompleted: "Job Completed",
-    readyForCollection: "Ready For Collection",
     // Quotation detail
     details: "Details",
     createdLabel: "Created",
     validUntil: "Valid until",
-    sendToCustomer: "Send to Customer",
-    sendQuotation: "Send Quotation",
-    paymentReminder: "Payment Reminder",
     unitPrice: "Unit Price",
     subtotal: "Subtotal",
     diagnosisFee: "Diagnosis Fee",
@@ -515,8 +484,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     allStockLevels: "All Stock Levels",
     allEngineers: "All Engineers",
     allStaff: "All Staff",
-    allChannels: "All Channels",
-    allMessageTypes: "All Message Types",
     allUsers: "All Users",
     // Reports
     repairReports: "Repair Reports",
@@ -537,11 +504,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     avgCompletionTime: "Avg. Completion Time",
     revenueGenerated: "Revenue Generated",
     partsUsed: "Parts Used",
-    communicationReport: "Communication Report",
-    communicationReportDesc: "WhatsApp and email communications sent to customers.",
-    recipient: "Recipient",
-    channel: "Channel",
-    messageType: "Message Type",
     costValue: "Cost Value",
     sellingValue: "Selling Value",
     reportDate: "Report Date",
@@ -566,8 +528,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     stockMovements: "Stock Movements",
     pdf: "PDF",
     noProductivityData: "No productivity data found",
-    noCommunicationsFound: "No communications found",
-    communicationsWillAppear: "Communications will appear here once sent from a customer, job, or quotation page.",
     // Settings
     companySettings: "Company Settings",
     companySettingsDesc: "Manage your company profile, branding, and regional preferences.",
@@ -678,7 +638,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     detail: "详情",
     overview: "概览",
     branches: "分支机构",
-    communications: "沟通记录",
     name: "名称",
     type: "类型",
     category: "分类",
@@ -714,8 +673,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     createJobForCustomerDesc: "当设备需要维修时，为该客户创建工单。",
     noQuotations: "暂无报价单",
     createQuotationDesc: "为该客户创建报价单。",
-    noCommunicationHistory: "暂无沟通记录",
-    communicationHistoryDesc: "发送给该客户的WhatsApp和邮件信息将显示在此处。",
     // Equipment detail
     deviceDetails: "设备详情",
     purchaseDate: "购买日期",
@@ -742,7 +699,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     assignedTo: "指派给",
     due: "截止日期",
     createdBy: "创建人",
-    sendUpdate: "发送更新",
     problemDescription: "问题描述",
     internalNotes: "内部备注",
     technicianNotes: "技术员备注",
@@ -751,17 +707,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     signature: "签名",
     repairReport: "维修报告",
     warrantyTo: "保修至",
-    jobReceived: "已接收工单",
-    jobInProgress: "工单处理中",
-    jobCompleted: "工单已完成",
-    readyForCollection: "可领取",
     // Quotation detail
     details: "详情",
     createdLabel: "创建时间",
     validUntil: "有效期至",
-    sendToCustomer: "发送给客户",
-    sendQuotation: "发送报价单",
-    paymentReminder: "付款提醒",
     unitPrice: "单价",
     subtotal: "小计",
     diagnosisFee: "诊断费",
@@ -815,8 +764,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     allStockLevels: "所有库存水平",
     allEngineers: "所有工程师",
     allStaff: "所有员工",
-    allChannels: "所有渠道",
-    allMessageTypes: "所有消息类型",
     allUsers: "所有用户",
     // Reports
     repairReports: "维修报告",
@@ -837,11 +784,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     avgCompletionTime: "平均完成时间",
     revenueGenerated: "创造的收入",
     partsUsed: "已用零件",
-    communicationReport: "沟通报告",
-    communicationReportDesc: "发送给客户的WhatsApp和电子邮件通讯记录。",
-    recipient: "收件人",
-    channel: "渠道",
-    messageType: "消息类型",
     costValue: "成本价值",
     sellingValue: "销售价值",
     reportDate: "报告日期",
@@ -866,8 +808,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     stockMovements: "库存变动",
     pdf: "PDF",
     noProductivityData: "未找到生产力数据",
-    noCommunicationsFound: "未找到沟通记录",
-    communicationsWillAppear: "从客户、工单或报价单页面发送的沟通记录将显示在此处。",
     // Settings
     companySettings: "公司设置",
     companySettingsDesc: "管理您的公司资料、品牌和区域设置。",

@@ -11,7 +11,6 @@ import {
   Package,
   BarChart3,
   TrendingUp,
-  MessageCircle,
   UserCog,
   Settings,
   Printer,
@@ -61,7 +60,6 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/reports", labelKey: "reports", label: "Reports", icon: BarChart3, module: "reports" },
       { href: "/reports/engineers", labelKey: "productivity", label: "Productivity", icon: TrendingUp, module: "productivity" },
-      { href: "/reports/communications", labelKey: null, label: "Communications", icon: MessageCircle, module: "communications" },
     ],
   },
   {
