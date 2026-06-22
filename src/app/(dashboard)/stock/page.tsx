@@ -15,6 +15,7 @@ import {
   STOCK_TYPE_LABELS,
   isStockType,
   itemNameTranslationKey,
+  stockCountTranslationKey,
 } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
 import type { Role } from "@/types"
@@ -73,7 +74,7 @@ export default async function StockPage({
                 </div>
                 <h3 className="mt-4 text-base font-semibold text-slate-900">{STOCK_TYPE_LABELS[st]}</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  {counts[st]} <T k="parts" />
+                  {counts[st]} <T k={stockCountTranslationKey(st, counts[st])} />
                 </p>
               </Link>
             )
@@ -98,7 +99,7 @@ export default async function StockPage({
 
       <PageHeader
         title={STOCK_TYPE_LABELS[stockType]}
-        subtitle={<>{parts.length} <T k="parts" /></>}
+        subtitle={<>{parts.length} <T k={stockCountTranslationKey(stockType, parts.length)} /></>}
         actions={
           canEdit && (
             <Link href={`/stock/new?type=${stockType}`}>

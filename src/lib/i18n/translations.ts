@@ -67,6 +67,10 @@ export type TranslationKey =
   | "supplier"
   | "unitCost"
   | "sellingPrice"
+  | "unitSingular"
+  | "unitPlural"
+  | "consumableSingular"
+  | "consumablePlural"
   // General / page chrome
   | "view"
   | "clear"
@@ -349,6 +353,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     supplier: "Supplier",
     unitCost: "Unit Cost",
     sellingPrice: "Selling Price",
+    unitSingular: "Unit",
+    unitPlural: "Units",
+    consumableSingular: "Consumable",
+    consumablePlural: "Consumables",
     // General / page chrome
     view: "View",
     clear: "Clear",
@@ -630,6 +638,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     supplier: "供应商",
     unitCost: "单位成本",
     sellingPrice: "销售价格",
+    unitSingular: "台",
+    unitPlural: "台",
+    consumableSingular: "耗材",
+    consumablePlural: "耗材",
     // General / page chrome
     view: "查看",
     clear: "清除",

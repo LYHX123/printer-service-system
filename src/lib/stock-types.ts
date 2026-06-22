@@ -1,4 +1,5 @@
 import type { PartCategory } from "@/types"
+import type { TranslationKey } from "@/lib/i18n/translations"
 
 /**
  * UI-facing stock buckets. The underlying PartCategory enum (11 values) is kept
@@ -47,4 +48,16 @@ export function isStockType(value: string | undefined): value is StockType {
 /** Equipment items are described by Model; Consumption/Parts items by Item Name. */
 export function itemNameTranslationKey(stockType: StockType): "model" | "itemName" {
   return stockType === "EQUIPMENT" ? "model" : "itemName"
+}
+
+const STOCK_TYPE_COUNT_LABELS: Record<StockType, { singular: TranslationKey; plural: TranslationKey }> = {
+  EQUIPMENT: { singular: "unitSingular", plural: "unitPlural" },
+  CONSUMPTION: { singular: "consumableSingular", plural: "consumablePlural" },
+  PARTS: { singular: "part", plural: "parts" },
+}
+
+/** Translation key for the "N Unit(s)/Consumable(s)/Part(s)" count label, by stock type and count. */
+export function stockCountTranslationKey(stockType: StockType, count: number): TranslationKey {
+  const labels = STOCK_TYPE_COUNT_LABELS[stockType]
+  return count === 1 ? labels.singular : labels.plural
 }
