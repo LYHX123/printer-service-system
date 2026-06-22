@@ -10,7 +10,9 @@ import { canManageInventory } from "@/lib/permissions"
 import type { SparePartInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
-export async function createSparePart(data: SparePartInput) {
+export async function createSparePart(
+  data: SparePartInput
+): Promise<{ error: string } | { success: true; id: string }> {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   if (!canManageInventory(session.user.role as Role)) return { error: "Forbidden" }
@@ -86,7 +88,7 @@ export async function createSparePart(data: SparePartInput) {
     return { error: "Failed to create spare part" }
   }
 
-  redirect(`/stock/${part.id}`)
+  return { success: true as const, id: part.id }
 }
 
 export async function updateSparePart(id: string, data: SparePartInput) {

@@ -119,17 +119,9 @@ export default async function StockPage({
       <Table
         columns={[
           {
-            key: "image",
-            label: "",
-            render: (row) => (
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                {row.imageUrl ? (
-                  <Image src={row.imageUrl} alt={row.name} width={40} height={40} className="h-full w-full object-cover" unoptimized />
-                ) : (
-                  <ImageOff className="h-4 w-4 text-slate-300" />
-                )}
-              </div>
-            ),
+            key: "brand",
+            label: <T k="brand" />,
+            render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
           },
           {
             key: "name",
@@ -141,16 +133,24 @@ export default async function StockPage({
             ),
           },
           {
-            key: "brand",
-            label: <T k="brand" />,
-            render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
-          },
-          {
             key: "quantity",
             label: <T k="quantity" />,
             className: "text-right",
             headerClassName: "text-right",
             render: (row) => <span className="font-mono font-semibold">{row.stock?.quantity ?? 0}</span>,
+          },
+          {
+            key: "image",
+            label: "Picture",
+            render: (row) => (
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                {row.imageUrl ? (
+                  <Image src={row.imageUrl} alt={row.name} width={40} height={40} className="h-full w-full object-cover" unoptimized />
+                ) : (
+                  <ImageOff className="h-4 w-4 text-slate-300" />
+                )}
+              </div>
+            ),
           },
         ]}
         data={parts}
