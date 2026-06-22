@@ -140,7 +140,7 @@ export default async function DashboardPage() {
                 const quantity = part.stock?.quantity ?? 0
                 return (
                   <li key={part.id} className="px-5 py-3">
-                    <Link href={`/stock/${part.id}`} className="flex items-center justify-between gap-2 group">
+                    <Link href={`/stock/${part.id}/edit`} className="flex items-center justify-between gap-2 group">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">{part.name}</p>
                         <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>

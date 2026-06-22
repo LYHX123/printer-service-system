@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { SparePartSchema } from "@/lib/schemas"
 import { generatePartNumber } from "@/lib/utils"
 import { canManageInventory } from "@/lib/permissions"
+import { getStockType } from "@/lib/stock-types"
 import type { SparePartInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -156,13 +157,13 @@ export async function updateSparePart(id: string, data: SparePartInput) {
       }
     })
 
-    revalidatePath(`/stock/${id}`)
+    revalidatePath(`/stock/${id}/edit`)
     revalidatePath("/stock")
   } catch {
     return { error: "Failed to update spare part" }
   }
 
-  redirect(`/stock/${id}`)
+  redirect(`/stock?type=${getStockType(category)}`)
 }
 
 export async function setSparePartActive(id: string, isActive: boolean) {
@@ -177,7 +178,7 @@ export async function setSparePartActive(id: string, isActive: boolean) {
 
     await prisma.sparePart.update({ where: { id }, data: { isActive } })
 
-    revalidatePath(`/stock/${id}`)
+    revalidatePath(`/stock/${id}/edit`)
     revalidatePath("/stock")
     return { success: true }
   } catch {

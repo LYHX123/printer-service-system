@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { T, TInput } from "@/components/ui/T"
 import { Table } from "@/components/ui/table"
+import { SparePartActions } from "@/components/inventory/SparePartActions"
 import {
   STOCK_TYPES,
   CATEGORIES_FOR_STOCK_TYPE,
@@ -135,33 +136,29 @@ export default async function StockPage({
           {
             key: "brand",
             label: <T k="brand" />,
-            className: "w-[25%] text-left",
-            headerClassName: "w-[25%] text-left",
+            className: "w-[20%] text-left",
+            headerClassName: "w-[20%] text-left",
             render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
           },
           {
             key: "name",
             label: <T k={itemNameKey} />,
-            className: "w-[45%] text-left",
-            headerClassName: "w-[45%] text-left",
-            render: (row) => (
-              <Link href={`/stock/${row.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
-                {row.name}
-              </Link>
-            ),
+            className: "w-[32%] text-left",
+            headerClassName: "w-[32%] text-left",
+            render: (row) => <span className="text-sm font-medium text-slate-900">{row.name}</span>,
           },
           {
             key: "quantity",
             label: <T k="quantity" />,
-            className: "w-[15%] text-center",
-            headerClassName: "w-[15%] text-center",
+            className: "w-[12%] text-center",
+            headerClassName: "w-[12%] text-center",
             render: (row) => <span className="font-mono font-semibold">{row.stock?.quantity ?? 0}</span>,
           },
           {
             key: "image",
             label: "Picture",
-            className: "w-[15%] text-center",
-            headerClassName: "w-[15%] text-center",
+            className: "w-[14%] text-center",
+            headerClassName: "w-[14%] text-center",
             render: (row) => (
               <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                 {row.imageUrl ? (
@@ -169,6 +166,17 @@ export default async function StockPage({
                 ) : (
                   <ImageOff className="h-6 w-6 text-slate-300" />
                 )}
+              </div>
+            ),
+          },
+          {
+            key: "actions",
+            label: "",
+            className: "w-[22%] text-right",
+            headerClassName: "w-[22%] text-right",
+            render: (row) => (
+              <div className="flex justify-end">
+                <SparePartActions partId={row.id} isActive={row.isActive} canEdit={canEdit} />
               </div>
             ),
           },

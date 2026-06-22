@@ -84,7 +84,7 @@ async function ValuationReport({ companyId }: { companyId: string }) {
             key: "partNumber",
             label: <T k="partNumber" />,
             render: (row) => (
-              <Link href={`/stock/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/stock/${row.id}/edit`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.partNumber}
               </Link>
             ),
@@ -147,7 +147,7 @@ async function LowStockReport({ companyId }: { companyId: string }) {
             key: "partNumber",
             label: <T k="partNumber" />,
             render: (row) => (
-              <Link href={`/stock/${row.id}`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/stock/${row.id}/edit`} className="font-mono text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.partNumber}
               </Link>
             ),
@@ -220,7 +220,7 @@ async function MovementsReport({
           {
             key: "part", label: <T k="part" />,
             render: (row) => (
-              <Link href={`/stock/${row.part.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/stock/${row.part.id}/edit`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.part.name}
                 <span className="block font-mono text-xs text-slate-400">{row.part.partNumber}</span>
               </Link>

@@ -86,7 +86,7 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
       }
     }
 
-    router.push(`/stock/${result.id}`)
+    router.push(`/stock?type=${stockType}`)
   }
 
   async function handlePictureSelect(file: File) {

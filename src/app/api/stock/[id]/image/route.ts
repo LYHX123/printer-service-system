@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     data: { imageUrl },
   })
 
-  revalidatePath(`/stock/${id}`)
+  revalidatePath(`/stock/${id}/edit`)
   revalidatePath("/stock")
 
   return NextResponse.json({ imageUrl })

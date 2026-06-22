@@ -167,7 +167,6 @@ export type TranslationKey =
   | "labour"
   | "parts"
   // Inventory detail / list
-  | "partDetails"
   | "compatibleWith"
   | "storageLocation"
   | "stock"
@@ -176,8 +175,6 @@ export type TranslationKey =
   | "lastCounted"
   | "transactionHistory"
   | "noStockTransactions"
-  | "usedInJobs"
-  | "noPartsUsedInJobs"
   | "archived"
   | "location"
   | "minQty"
@@ -453,7 +450,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     labour: "Labour",
     parts: "Parts",
     // Inventory detail / list
-    partDetails: "Part Details",
     compatibleWith: "Compatible With",
     storageLocation: "Storage Location",
     stock: "Stock",
@@ -462,8 +458,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     lastCounted: "Last Counted",
     transactionHistory: "Transaction History",
     noStockTransactions: "No stock transactions recorded yet.",
-    usedInJobs: "Used In Jobs",
-    noPartsUsedInJobs: "This part hasn't been used in any jobs yet.",
     archived: "Archived",
     location: "Location",
     minQty: "Min Qty",
@@ -738,7 +732,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     labour: "人工",
     parts: "备件",
     // Inventory detail / list
-    partDetails: "零件详情",
     compatibleWith: "适用型号",
     storageLocation: "存储位置",
     stock: "库存",
@@ -747,8 +740,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     lastCounted: "最后盘点日期",
     transactionHistory: "交易记录",
     noStockTransactions: "暂无库存交易记录。",
-    usedInJobs: "工单使用记录",
-    noPartsUsedInJobs: "该零件尚未在任何工单中使用。",
     archived: "已归档",
     location: "位置",
     minQty: "最低数量",
