@@ -35,7 +35,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
             user={{ name: user.name, email: user.email, role: user.role }}
             onMenuClick={() => setSidebarOpen(true)}
           />
-          <main className="flex-1 overflow-y-auto p-6 print:overflow-visible print:p-0">{children}</main>
+          <main className="flex-1 overflow-y-auto p-6 pb-96 print:overflow-visible print:p-0">{children}</main>
         </div>
       </div>
     </ToastProvider>
