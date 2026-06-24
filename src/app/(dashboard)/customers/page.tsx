@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Plus, Search } from "lucide-react"
+import { Plus, Search, Download } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomers } from "@/lib/data/customers"
 import { PageHeader } from "@/components/ui/page-header"
@@ -25,9 +25,14 @@ export default async function CustomersPage({
         title={<T k="customers" />}
         subtitle={<>{customers.length} <T k="customers" /> <T k="registered" /></>}
         actions={
-          <Link href="/customers/new">
-            <Button icon={<Plus className="h-4 w-4" />}><T k="newCustomer" /></Button>
-          </Link>
+          <div className="flex gap-2">
+            <a href="/api/customers/summary/pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" icon={<Download className="h-4 w-4" />}><T k="exportPdf" /></Button>
+            </a>
+            <Link href="/customers/new">
+              <Button icon={<Plus className="h-4 w-4" />}><T k="newCustomer" /></Button>
+            </Link>
+          </div>
         }
       />
 
