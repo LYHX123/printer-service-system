@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ChevronLeft, User, Wrench, MapPin, ShieldCheck, Phone, Mail, Gauge, Image as ImageIcon, PenTool, FileText } from "lucide-react"
+import { ChevronLeft, User, Wrench, MapPin, ShieldCheck, Phone, Gauge, Image as ImageIcon, PenTool, FileText } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getJob, getEngineers } from "@/lib/data/jobs"
 import { PageHeader } from "@/components/ui/page-header"
@@ -109,22 +109,16 @@ export default async function JobDetailPage({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="customer" /></h3>
             <div className="space-y-2">
-              <Link href={`/customers/${job.customer.id}`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
-                {job.customer.name}
+              <Link href={`/customers/${job.customer.id}/edit`} className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+                {job.customer.companyName}
               </Link>
-              {job.customer.companyName && (
-                <p className="text-xs text-slate-500">{job.customer.companyName}</p>
+              {job.customer.name && (
+                <p className="text-xs text-slate-500">{job.customer.name}</p>
               )}
               {job.customer.phone && (
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Phone className="h-3.5 w-3.5 text-slate-400" />
                   {job.customer.phone}
-                </div>
-              )}
-              {job.customer.email && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <Mail className="h-3.5 w-3.5 text-slate-400" />
-                  {job.customer.email}
                 </div>
               )}
               {job.branch && (

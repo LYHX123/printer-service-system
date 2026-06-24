@@ -20,19 +20,19 @@ export default async function EditCustomerPage({
 
   return (
     <div>
-      <Link href={`/customers/${id}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
+      <Link href="/customers" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Back to Customer
+        Back to Customers
       </Link>
-      <PageHeader title="Edit Customer" subtitle={customer.name} />
+      <PageHeader title="Edit Customer" subtitle={customer.companyName} />
       <CustomerForm
         customerId={id}
         defaultValues={{
-          name: customer.name,
-          companyName: customer.companyName ?? "",
+          companyName: customer.companyName,
+          pinNumber: customer.pinNumber ?? "",
+          name: customer.name ?? "",
           phone: customer.phone,
-          email: customer.email ?? "",
-          address: customer.address ?? "",
+          location: customer.location ?? "",
         }}
       />
     </div>

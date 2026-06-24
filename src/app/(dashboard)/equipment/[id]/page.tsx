@@ -107,12 +107,12 @@ export default async function EquipmentDetailPage({
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-slate-400 shrink-0" />
-                <Link href={`/customers/${equipment.customer.id}`} className="text-slate-900 hover:text-blue-600 font-medium transition-colors">
-                  {equipment.customer.name}
+                <Link href={`/customers/${equipment.customer.id}/edit`} className="text-slate-900 hover:text-blue-600 font-medium transition-colors">
+                  {equipment.customer.companyName}
                 </Link>
               </div>
-              {equipment.customer.companyName && (
-                <p className="ml-6 text-xs text-slate-500">{equipment.customer.companyName}</p>
+              {equipment.customer.name && (
+                <p className="ml-6 text-xs text-slate-500">{equipment.customer.name}</p>
               )}
               {equipment.customer.phone && (
                 <p className="ml-6 text-xs text-slate-500">{equipment.customer.phone}</p>

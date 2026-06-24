@@ -219,15 +219,15 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
         <View style={styles.twoCol}>
           <View style={[styles.col, styles.section]}>
             <Text style={styles.sectionTitle}>Customer Information</Text>
-            <View style={styles.row}><Text style={styles.label}>Name</Text><Text style={styles.value}>{quotation.customer.name}</Text></View>
-            {quotation.customer.companyName && (
-              <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{quotation.customer.companyName}</Text></View>
+            <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{quotation.customer.companyName}</Text></View>
+            {quotation.customer.name && (
+              <View style={styles.row}><Text style={styles.label}>Contact</Text><Text style={styles.value}>{quotation.customer.name}</Text></View>
             )}
             {quotation.customer.phone && (
               <View style={styles.row}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{quotation.customer.phone}</Text></View>
             )}
-            {quotation.customer.email && (
-              <View style={styles.row}><Text style={styles.label}>Email</Text><Text style={styles.value}>{quotation.customer.email}</Text></View>
+            {quotation.customer.location && (
+              <View style={styles.row}><Text style={styles.label}>Location</Text><Text style={styles.value}>{quotation.customer.location}</Text></View>
             )}
             {quotation.branch && (
               <View style={styles.row}><Text style={styles.label}>Branch / Site</Text><Text style={styles.value}>{quotation.branch.name}</Text></View>

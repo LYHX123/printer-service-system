@@ -293,15 +293,15 @@ export function RepairReportDocument({ job }: { job: ReportData }) {
         <View style={styles.twoCol}>
           <View style={[styles.col, styles.section]}>
             <Text style={styles.sectionTitle}>Customer Information</Text>
-            <View style={styles.row}><Text style={styles.label}>Name</Text><Text style={styles.value}>{job.customer.name}</Text></View>
-            {job.customer.companyName && (
-              <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{job.customer.companyName}</Text></View>
+            <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{job.customer.companyName}</Text></View>
+            {job.customer.name && (
+              <View style={styles.row}><Text style={styles.label}>Contact</Text><Text style={styles.value}>{job.customer.name}</Text></View>
             )}
             {job.customer.phone && (
               <View style={styles.row}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{job.customer.phone}</Text></View>
             )}
-            {job.customer.email && (
-              <View style={styles.row}><Text style={styles.label}>Email</Text><Text style={styles.value}>{job.customer.email}</Text></View>
+            {job.customer.location && (
+              <View style={styles.row}><Text style={styles.label}>Location</Text><Text style={styles.value}>{job.customer.location}</Text></View>
             )}
             {job.branch && (
               <View style={styles.row}><Text style={styles.label}>Branch / Site</Text><Text style={styles.value}>{job.branch.name}</Text></View>

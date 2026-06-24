@@ -100,13 +100,13 @@ export default async function QuotationDetailPage({
                 <User className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                 <div>
                   <Link
-                    href={`/customers/${quotation.customer.id}`}
+                    href={`/customers/${quotation.customer.id}/edit`}
                     className="font-medium text-slate-900 hover:text-blue-600 transition-colors"
                   >
-                    {quotation.customer.name}
+                    {quotation.customer.companyName}
                   </Link>
-                  {quotation.customer.companyName && (
-                    <p className="text-xs text-slate-500">{quotation.customer.companyName}</p>
+                  {quotation.customer.name && (
+                    <p className="text-xs text-slate-500">{quotation.customer.name}</p>
                   )}
                 </div>
               </div>

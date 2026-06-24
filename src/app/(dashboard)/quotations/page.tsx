@@ -117,9 +117,9 @@ export default async function QuotationsPage({
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm font-medium text-slate-900">{q.customer.name}</div>
-                      {q.customer.companyName && (
-                        <div className="text-xs text-slate-500">{q.customer.companyName}</div>
+                      <div className="text-sm font-medium text-slate-900">{q.customer.companyName}</div>
+                      {q.customer.name && (
+                        <div className="text-xs text-slate-500">{q.customer.name}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">

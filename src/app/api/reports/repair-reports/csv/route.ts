@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     ["Job Number", "Customer", "Engineer", "Service Type", "Status", "Report Date", "Completed Date", "Total Cost"],
     reports.map((r) => [
       r.jobNumber,
-      r.customer.name,
+      r.customer.companyName,
       r.assignedTo.name,
       SERVICE_TYPE_LABELS[r.serviceType],
       JOB_STATUS_LABELS[r.status],

@@ -25,7 +25,7 @@ export type RepairReportListItem = {
   createdAt: Date
   completedAt: Date | null
   totalCost: number
-  customer: Pick<Customer, "id" | "name" | "code">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName">
   assignedTo: Pick<User, "id" | "name">
 }
 
@@ -57,7 +57,7 @@ export async function getRepairReportList(
           serviceType: true,
           completedAt: true,
           totalCost: true,
-          customer: { select: { id: true, name: true, code: true } },
+          customer: { select: { id: true, name: true, code: true, companyName: true } },
           assignedTo: { select: { id: true, name: true } },
         },
       },
@@ -88,7 +88,7 @@ export type QuotationReportListItem = {
   serviceType: ServiceType
   createdAt: Date
   totalCost: number
-  customer: Pick<Customer, "id" | "name" | "code">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName">
   createdBy: Pick<User, "id" | "name">
 }
 
@@ -112,7 +112,7 @@ export async function getQuotationReportList(
       serviceType: true,
       createdAt: true,
       totalCost: true,
-      customer: { select: { id: true, name: true, code: true } },
+      customer: { select: { id: true, name: true, code: true, companyName: true } },
       createdBy: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },

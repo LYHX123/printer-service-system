@@ -34,6 +34,7 @@ export type TranslationKey =
   // Customers
   | "customerName"
   | "companyName"
+  | "pinNumber"
   | "phone"
   | "email"
   | "address"
@@ -315,8 +316,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     downloadPdf: "Download PDF",
     print: "Print",
     // Customers
-    customerName: "Customer Name",
+    customerName: "Contact Name",
     companyName: "Company Name",
+    pinNumber: "PIN No",
     phone: "Phone",
     email: "Email",
     address: "Address",
@@ -597,8 +599,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     downloadPdf: "下载PDF",
     print: "打印",
     // Customers
-    customerName: "客户名称",
+    customerName: "联系人",
     companyName: "公司名称",
+    pinNumber: "PIN 号",
     phone: "电话",
     email: "邮箱",
     address: "地址",

@@ -4,26 +4,14 @@ import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 // ─── Customer ─────────────────────────────────────────────────────────────────
 
 export const CustomerSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  companyName: z.string().max(100).optional().or(z.literal("")),
-  phone: z.string().min(1, "Phone is required").max(30),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  address: z.string().max(500).optional().or(z.literal("")),
+  companyName: z.string().min(1, "Company name is required").max(100),
+  pinNumber: z.string().max(30).optional().or(z.literal("")),
+  name: z.string().max(100).optional().or(z.literal("")),
+  phone: z.string().min(1, "Phone number is required").max(30),
+  location: z.string().max(500).optional().or(z.literal("")),
 })
 
 export type CustomerInput = z.infer<typeof CustomerSchema>
-
-// ─── Branch ───────────────────────────────────────────────────────────────────
-
-export const BranchSchema = z.object({
-  name: z.string().min(1, "Branch name is required").max(100),
-  address: z.string().max(500).optional().or(z.literal("")),
-  phone: z.string().max(30).optional().or(z.literal("")),
-  contactPerson: z.string().max(100).optional().or(z.literal("")),
-  isPrimary: z.boolean().default(false),
-})
-
-export type BranchInput = z.infer<typeof BranchSchema>
 
 // ─── Equipment ────────────────────────────────────────────────────────────────
 

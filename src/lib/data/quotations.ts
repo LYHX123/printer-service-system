@@ -56,7 +56,7 @@ export async function getQuotations(
 }
 
 export type QuotationDetail = Quotation & {
-  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "email">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "location">
   branch: Pick<CustomerBranch, "id" | "name" | "address"> | null
   equipment: Pick<Equipment, "id" | "brand" | "model" | "serialNumber" | "type"> | null
   createdBy: Pick<User, "id" | "name">
@@ -78,7 +78,7 @@ export async function getQuotation(
           code: true,
           companyName: true,
           phone: true,
-          email: true,
+          location: true,
         },
       },
       branch: { select: { id: true, name: true, address: true } },
@@ -126,7 +126,7 @@ export async function getQuotationForPdf(
           code: true,
           companyName: true,
           phone: true,
-          email: true,
+          location: true,
         },
       },
       branch: { select: { id: true, name: true, address: true } },

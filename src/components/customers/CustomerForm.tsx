@@ -6,7 +6,6 @@ import type { Resolver } from "react-hook-form"
 import { CustomerSchema, type CustomerInput } from "@/lib/schemas"
 import { createCustomer, updateCustomer } from "@/lib/actions/customers"
 import { FormField, Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
@@ -41,25 +40,25 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={t("customerName")} htmlFor="name" required error={errors.name?.message}>
-            <Input id="name" placeholder="e.g. Ahmad bin Abdullah" {...register("name")} error={errors.name?.message} />
+          <FormField label={t("companyName")} htmlFor="companyName" required error={errors.companyName?.message}>
+            <Input id="companyName" placeholder="e.g. ABC Sdn Bhd" {...register("companyName")} error={errors.companyName?.message} />
           </FormField>
-          <FormField label={t("companyName")} htmlFor="companyName" error={errors.companyName?.message}>
-            <Input id="companyName" placeholder="e.g. ABC Sdn Bhd" {...register("companyName")} />
+          <FormField label={t("pinNumber")} htmlFor="pinNumber" error={errors.pinNumber?.message}>
+            <Input id="pinNumber" placeholder="e.g. P000000000A" {...register("pinNumber")} />
           </FormField>
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FormField label={t("customerName")} htmlFor="name" error={errors.name?.message}>
+            <Input id="name" placeholder="e.g. Ahmad bin Abdullah" {...register("name")} />
+          </FormField>
           <FormField label={t("phone")} htmlFor="phone" required error={errors.phone?.message}>
             <Input id="phone" type="tel" placeholder="e.g. 012-3456789" {...register("phone")} error={errors.phone?.message} />
           </FormField>
-          <FormField label={t("email")} htmlFor="email" error={errors.email?.message}>
-            <Input id="email" type="email" placeholder="e.g. customer@email.com" {...register("email")} />
-          </FormField>
         </div>
 
-        <FormField label={t("address")} htmlFor="address" error={errors.address?.message}>
-          <Textarea id="address" placeholder="Full address" rows={3} {...register("address")} />
+        <FormField label={t("location")} htmlFor="location" error={errors.location?.message}>
+          <Input id="location" placeholder="e.g. Nairobi, Kenya" {...register("location")} />
         </FormField>
       </div>
 

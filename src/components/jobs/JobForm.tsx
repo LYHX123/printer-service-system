@@ -26,9 +26,9 @@ const ALL_PRIORITIES = Object.keys(PRIORITY_LABELS) as Array<keyof typeof PRIORI
 
 interface CustomerOption {
   id: string
-  name: string
+  name: string | null
   code: string
-  companyName: string | null
+  companyName: string
   branches: { id: string; name: string }[]
 }
 
@@ -132,7 +132,7 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
             <Select id="customerId" placeholder="Select customer…" {...register("customerId")} error={errors.customerId?.message}>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}{c.companyName ? ` — ${c.companyName}` : ""} ({c.code})
+                  {c.companyName}{c.name ? ` — ${c.name}` : ""} ({c.code})
                 </option>
               ))}
             </Select>

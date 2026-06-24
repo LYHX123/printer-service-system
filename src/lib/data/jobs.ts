@@ -22,7 +22,7 @@ export type JobListItem = Pick<
   | "receivedDate"
   | "dueDate"
 > & {
-  customer: Pick<Customer, "id" | "name" | "code">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName">
   equipment: Pick<Equipment, "id" | "brand" | "model" | "type">
   assignedTo: Pick<User, "id" | "name">
 }
@@ -48,6 +48,7 @@ export async function getJobs(
             OR: [
               { jobNumber: { contains: search, mode: "insensitive" } },
               { customer: { name: { contains: search, mode: "insensitive" } } },
+              { customer: { companyName: { contains: search, mode: "insensitive" } } },
               {
                 equipment: {
                   OR: [
@@ -69,7 +70,7 @@ export async function getJobs(
       priority: true,
       receivedDate: true,
       dueDate: true,
-      customer: { select: { id: true, name: true, code: true } },
+      customer: { select: { id: true, name: true, code: true, companyName: true } },
       equipment: { select: { id: true, brand: true, model: true, type: true } },
       assignedTo: { select: { id: true, name: true } },
     },
@@ -78,7 +79,7 @@ export async function getJobs(
 }
 
 export type JobDetail = ServiceJob & {
-  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "email">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone">
   branch: Pick<CustomerBranch, "id" | "name" | "address"> | null
   equipment: Pick<
     Equipment,
@@ -105,7 +106,6 @@ export async function getJob(
           code: true,
           companyName: true,
           phone: true,
-          email: true,
         },
       },
       branch: { select: { id: true, name: true, address: true } },

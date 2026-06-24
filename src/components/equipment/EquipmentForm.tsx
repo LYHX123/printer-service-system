@@ -20,9 +20,9 @@ const METER_TYPES: EquipmentType[] = ["PRINTER", "COPIER"]
 
 interface CustomerOption {
   id: string
-  name: string
+  name: string | null
   code: string
-  companyName?: string | null
+  companyName: string
   branches: { id: string; name: string }[]
 }
 
@@ -87,7 +87,7 @@ export function EquipmentForm({ customers, defaultValues, equipmentId }: Equipme
             >
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}{c.companyName ? ` — ${c.companyName}` : ""} ({c.code})
+                  {c.companyName}{c.name ? ` — ${c.name}` : ""} ({c.code})
                 </option>
               ))}
             </Select>

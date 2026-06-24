@@ -23,9 +23,9 @@ const ALL_SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[]
 
 interface CustomerOption {
   id: string
-  name: string
+  name: string | null
   code: string
-  companyName: string | null
+  companyName: string
   branches: { id: string; name: string }[]
 }
 
@@ -137,7 +137,7 @@ export function QuotationForm({
               >
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}{c.companyName ? ` — ${c.companyName}` : ""} ({c.code})
+                    {c.companyName}{c.name ? ` — ${c.name}` : ""} ({c.code})
                   </option>
                 ))}
               </Select>

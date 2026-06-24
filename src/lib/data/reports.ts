@@ -18,7 +18,7 @@ export type ReportData = ServiceJob & {
     | "id" | "name" | "address" | "phone" | "email" | "logoUrl" | "stampUrl"
     | "website" | "kraPin" | "vatPercent" | "currency" | "timezone"
   >
-  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "email" | "address">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "location">
   branch: Pick<CustomerBranch, "id" | "name" | "address" | "phone"> | null
   equipment: Pick<
     Equipment,
@@ -44,7 +44,7 @@ export async function getJobForReport(
         },
       },
       customer: {
-        select: { id: true, name: true, code: true, companyName: true, phone: true, email: true, address: true },
+        select: { id: true, name: true, code: true, companyName: true, phone: true, location: true },
       },
       branch: { select: { id: true, name: true, address: true, phone: true } },
       equipment: {

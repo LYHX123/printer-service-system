@@ -51,7 +51,7 @@ export async function getEquipmentList(
 }
 
 export type EquipmentDetail = Equipment & {
-  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "email">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone">
   branch: Pick<CustomerBranch, "id" | "name" | "address"> | null
   meterReadings: (MeterReading & {
     recordedBy: Pick<User, "id" | "name">
@@ -81,7 +81,7 @@ export async function getEquipment(
     where: { id, companyId },
     include: {
       customer: {
-        select: { id: true, name: true, code: true, companyName: true, phone: true, email: true },
+        select: { id: true, name: true, code: true, companyName: true, phone: true },
       },
       branch: { select: { id: true, name: true, address: true } },
       meterReadings: {

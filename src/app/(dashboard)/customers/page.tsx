@@ -5,8 +5,8 @@ import { getCustomers } from "@/lib/data/customers"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
-import { format } from "date-fns"
 import { T, NoResultsFor, TInput } from "@/components/ui/T"
+import { CustomerActions } from "@/components/customers/CustomerActions"
 
 export default async function CustomersPage({
   searchParams,
@@ -53,66 +53,35 @@ export default async function CustomersPage({
 
       <Table
         columns={[
-          { key: "code", label: <T k="code" />, className: "font-mono text-xs text-slate-500 whitespace-nowrap" },
+          {
+            key: "companyName",
+            label: <T k="companyName" />,
+            render: (row) => (
+              <Link href={`/customers/${row.id}/edit`} className="font-medium text-slate-900 hover:text-blue-600 transition-colors">
+                {row.companyName}
+              </Link>
+            ),
+          },
+          {
+            key: "pinNumber",
+            label: <T k="pinNumber" />,
+            render: (row) => <span className="text-slate-500 font-mono text-xs">{row.pinNumber ?? "—"}</span>,
+          },
           {
             key: "name",
-            label: <T k="customer" />,
-            render: (row) => (
-              <div>
-                <Link href={`/customers/${row.id}`} className="font-medium text-slate-900 hover:text-blue-600 transition-colors">
-                  {row.name}
-                </Link>
-                {row.companyName && (
-                  <p className="text-xs text-slate-400 mt-0.5">{row.companyName}</p>
-                )}
-              </div>
-            ),
+            label: <T k="customerName" />,
+            render: (row) => <span className="text-slate-600">{row.name ?? "—"}</span>,
           },
           { key: "phone", label: <T k="phone" />, className: "text-slate-600 whitespace-nowrap" },
           {
-            key: "email",
-            label: <T k="email" />,
-            render: (row) => <span className="text-slate-500">{row.email ?? "—"}</span>,
-          },
-          {
-            key: "equipment",
-            label: <T k="equipment" />,
-            className: "text-center",
-            headerClassName: "text-center",
-            render: (row) => (
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                {row._count.equipment}
-              </span>
-            ),
-          },
-          {
-            key: "jobs",
-            label: <T k="jobs" />,
-            className: "text-center",
-            headerClassName: "text-center",
-            render: (row) => (
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                {row._count.serviceJobs}
-              </span>
-            ),
-          },
-          {
-            key: "createdAt",
-            label: <T k="registered" />,
-            render: (row) => (
-              <span className="text-slate-500 text-xs whitespace-nowrap">
-                {format(new Date(row.createdAt), "dd MMM yyyy")}
-              </span>
-            ),
+            key: "location",
+            label: <T k="location" />,
+            render: (row) => <span className="text-slate-500">{row.location ?? "—"}</span>,
           },
           {
             key: "actions",
             label: "",
-            render: (row) => (
-              <Link href={`/customers/${row.id}`} className="text-xs text-blue-600 hover:underline whitespace-nowrap">
-                <T k="view" /> →
-              </Link>
-            ),
+            render: (row) => <CustomerActions customerId={row.id} isActive={row.isActive} />,
           },
         ]}
         data={customers}

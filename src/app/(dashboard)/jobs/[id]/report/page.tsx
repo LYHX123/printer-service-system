@@ -60,15 +60,15 @@ export default async function JobReportPage({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3">Customer Information</h3>
             <dl className="space-y-1.5 text-sm text-slate-600">
-              <div className="flex justify-between"><dt>Name</dt><dd className="font-medium text-slate-900">{job.customer.name}</dd></div>
-              {job.customer.companyName && (
-                <div className="flex justify-between"><dt>Company</dt><dd>{job.customer.companyName}</dd></div>
+              <div className="flex justify-between"><dt>Company</dt><dd className="font-medium text-slate-900">{job.customer.companyName}</dd></div>
+              {job.customer.name && (
+                <div className="flex justify-between"><dt>Contact</dt><dd>{job.customer.name}</dd></div>
               )}
               {job.customer.phone && (
                 <div className="flex justify-between"><dt>Phone</dt><dd>{job.customer.phone}</dd></div>
               )}
-              {job.customer.email && (
-                <div className="flex justify-between"><dt>Email</dt><dd>{job.customer.email}</dd></div>
+              {job.customer.location && (
+                <div className="flex justify-between"><dt>Location</dt><dd>{job.customer.location}</dd></div>
               )}
               {job.branch && (
                 <div className="flex justify-between"><dt>Branch / Site</dt><dd>{job.branch.name}</dd></div>

@@ -208,7 +208,7 @@ async function RepairReportsTab({
         <Select name="customerId" defaultValue={customerId ?? ""} className="w-52">
           <option value=""><T k="allCustomers" /></option>
           {customers.map((c) => (
-            <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+            <option key={c.id} value={c.id}>{c.companyName} ({c.code})</option>
           ))}
         </Select>
         <Select name="engineerId" defaultValue={engineerId ?? ""} className="w-52">
@@ -247,7 +247,7 @@ async function RepairReportsTab({
               </Link>
             ),
           },
-          { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.name}</span> },
+          { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.companyName}</span> },
           { key: "engineer", label: <T k="engineer" />, render: (row) => <span className="text-sm text-slate-600">{row.assignedTo.name}</span> },
           { key: "serviceType", label: <T k="serviceType" />, render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
           { key: "status", label: <T k="status" />, render: (row) => <StatusBadge status={row.status} /> },
@@ -313,7 +313,7 @@ async function QuotationsTab({
         <Select name="customerId" defaultValue={customerId ?? ""} className="w-52">
           <option value=""><T k="allCustomers" /></option>
           {customers.map((c) => (
-            <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+            <option key={c.id} value={c.id}>{c.companyName} ({c.code})</option>
           ))}
         </Select>
         <Select name="engineerId" defaultValue={engineerId ?? ""} className="w-52">
@@ -352,7 +352,7 @@ async function QuotationsTab({
               </Link>
             ),
           },
-          { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.name}</span> },
+          { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.companyName}</span> },
           { key: "createdBy", label: <T k="createdBy" />, render: (row) => <span className="text-sm text-slate-600">{row.createdBy.name}</span> },
           { key: "serviceType", label: <T k="serviceType" />, render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
           { key: "status", label: <T k="status" />, render: (row) => <QuotationStatusBadge status={row.status} /> },

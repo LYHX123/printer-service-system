@@ -105,8 +105,8 @@ export default async function JobsPage({
             key: "customer",
             label: <T k="customer" />,
             render: (row) => (
-              <Link href={`/customers/${row.customer.id}`} className="text-sm text-slate-700 hover:text-blue-600 transition-colors">
-                {row.customer.name}
+              <Link href={`/customers/${row.customer.id}/edit`} className="text-sm text-slate-700 hover:text-blue-600 transition-colors">
+                {row.customer.companyName}
               </Link>
             ),
           },

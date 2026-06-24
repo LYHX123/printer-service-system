@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     ["Quotation Number", "Customer", "Created By", "Service Type", "Status", "Date", "Total Cost"],
     quotations.map((q) => [
       q.quotationNumber,
-      q.customer.name,
+      q.customer.companyName,
       q.createdBy.name,
       SERVICE_TYPE_LABELS[q.serviceType],
       QUOTATION_STATUS_LABELS[q.status],

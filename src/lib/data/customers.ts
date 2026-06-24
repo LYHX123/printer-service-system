@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/prisma"
-import type { Customer, CustomerBranch, Equipment, ServiceJob, Quotation } from "@/types"
+import type { Customer } from "@/types"
 
 export type CustomerListItem = Pick<
   Customer,
-  "id" | "code" | "name" | "companyName" | "phone" | "email" | "createdAt"
-> & {
-  _count: { equipment: number; serviceJobs: number }
-}
+  "id" | "code" | "companyName" | "pinNumber" | "name" | "phone" | "location" | "isActive"
+>
 
 export async function getCustomers(
   companyId: string,
@@ -15,12 +13,14 @@ export async function getCustomers(
   return prisma.customer.findMany({
     where: {
       companyId,
+      isActive: true,
       ...(search
         ? {
             OR: [
               { name: { contains: search, mode: "insensitive" } },
               { code: { contains: search, mode: "insensitive" } },
               { companyName: { contains: search, mode: "insensitive" } },
+              { pinNumber: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -28,82 +28,15 @@ export async function getCustomers(
     select: {
       id: true,
       code: true,
-      name: true,
       companyName: true,
+      pinNumber: true,
+      name: true,
       phone: true,
-      email: true,
-      createdAt: true,
-      _count: { select: { equipment: true, serviceJobs: true } },
+      location: true,
+      isActive: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { companyName: "asc" },
   })
-}
-
-export type CustomerDetail = Customer & {
-  branches: CustomerBranch[]
-  equipment: (Equipment & { branch: Pick<CustomerBranch, "id" | "name"> | null })[]
-  serviceJobs: (Pick<
-    ServiceJob,
-    "id" | "jobNumber" | "status" | "serviceType" | "priority" | "receivedDate"
-  > & {
-    equipment: Pick<Equipment, "id" | "brand" | "model" | "type">
-  })[]
-  quotations: (Pick<
-    Quotation,
-    "id" | "quotationNumber" | "status" | "serviceType" | "totalCost" | "createdAt"
-  > & {
-    equipment: Pick<Equipment, "id" | "brand" | "model" | "type"> | null
-  })[]
-}
-
-export async function getCustomer(
-  id: string,
-  companyId: string
-): Promise<CustomerDetail | null> {
-  return prisma.customer.findFirst({
-    where: { id, companyId },
-    include: {
-      branches: {
-        orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
-      },
-      equipment: {
-        include: {
-          branch: { select: { id: true, name: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-      serviceJobs: {
-        select: {
-          id: true,
-          jobNumber: true,
-          status: true,
-          serviceType: true,
-          priority: true,
-          receivedDate: true,
-          equipment: {
-            select: { id: true, brand: true, model: true, type: true },
-          },
-        },
-        orderBy: { receivedDate: "desc" },
-        take: 50,
-      },
-      quotations: {
-        select: {
-          id: true,
-          quotationNumber: true,
-          status: true,
-          serviceType: true,
-          totalCost: true,
-          createdAt: true,
-          equipment: {
-            select: { id: true, brand: true, model: true, type: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      },
-    },
-  }) as Promise<CustomerDetail | null>
 }
 
 export async function getCustomerForEdit(
@@ -121,14 +54,14 @@ export async function getCustomersWithBranches(
 ): Promise<
   {
     id: string
-    name: string
+    name: string | null
     code: string
-    companyName: string | null
+    companyName: string
     branches: { id: string; name: string }[]
   }[]
 > {
   return prisma.customer.findMany({
-    where: { companyId },
+    where: { companyId, isActive: true },
     select: {
       id: true,
       name: true,
@@ -140,7 +73,7 @@ export async function getCustomersWithBranches(
         orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
       },
     },
-    orderBy: { name: "asc" },
+    orderBy: { companyName: "asc" },
   })
 }
 
@@ -149,8 +82,8 @@ export async function getCustomerOptions(
   companyId: string
 ): Promise<Pick<Customer, "id" | "name" | "code" | "companyName">[]> {
   return prisma.customer.findMany({
-    where: { companyId },
+    where: { companyId, isActive: true },
     select: { id: true, name: true, code: true, companyName: true },
-    orderBy: { name: "asc" },
+    orderBy: { companyName: "asc" },
   })
 }
