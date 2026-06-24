@@ -2,17 +2,16 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound, redirect } from "next/navigation"
 import {
-  ChevronLeft, User, MapPin, Wrench, ImageOff,
+  ChevronLeft, User, ImageOff,
   Package, Briefcase, FileText,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation } from "@/lib/data/quotations"
 import { canAccess } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
-import { QuotationStatusBadge, EquipmentTypeBadge } from "@/components/ui/badge"
+import { QuotationStatusBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
 import { formatCurrency } from "@/lib/utils"
-import { SERVICE_TYPE_LABELS } from "@/types"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
 
@@ -51,7 +50,7 @@ export default async function QuotationDetailPage({
           <span className="flex items-center gap-2 flex-wrap">
             <QuotationStatusBadge status={quotation.status} />
             <span className="text-slate-400 text-xs">
-              {SERVICE_TYPE_LABELS[quotation.serviceType]}
+              {format(new Date(quotation.createdAt), "dd MMM yyyy")}
             </span>
             {quotation.validUntil && (
               <span className="text-slate-400 text-xs">
@@ -109,35 +108,8 @@ export default async function QuotationDetailPage({
                   )}
                 </div>
               </div>
-              {quotation.branch && (
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-slate-600">{quotation.branch.name}</p>
-                    {quotation.branch.address && (
-                      <p className="text-xs text-slate-400">{quotation.branch.address}</p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
-
-          {/* Equipment info */}
-          {quotation.equipment && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="equipment" /></h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <EquipmentTypeBadge type={quotation.equipment.type} />
-                </div>
-                <p className="font-medium text-slate-900">
-                  {quotation.equipment.brand} {quotation.equipment.model}
-                </p>
-                <p className="font-mono text-xs text-slate-400">{quotation.equipment.serialNumber}</p>
-              </div>
-            </div>
-          )}
 
           {/* Metadata */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -148,7 +120,7 @@ export default async function QuotationDetailPage({
                 <dd className="text-slate-700">{quotation.createdBy.name}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-slate-500"><T k="createdLabel" /></dt>
+                <dt className="text-slate-500">Quotation Date</dt>
                 <dd className="text-slate-700">{format(new Date(quotation.createdAt), "dd MMM yyyy")}</dd>
               </div>
               {quotation.approvedAt && (
@@ -169,17 +141,6 @@ export default async function QuotationDetailPage({
 
         {/* Main content */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Problem description */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-slate-400" />
-              <T k="problemDescription" />
-            </h3>
-            <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-              {quotation.problemDesc}
-            </p>
-          </div>
-
           {/* Line items */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">

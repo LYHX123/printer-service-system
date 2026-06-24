@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { QuotationStatusBadge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { formatCurrency } from "@/lib/utils"
-import { QUOTATION_STATUS_LABELS, SERVICE_TYPE_LABELS } from "@/types"
+import { QUOTATION_STATUS_LABELS } from "@/types"
 import type { QuotationStatus, Role } from "@/types"
 import { format } from "date-fns"
 import { T, TInput } from "@/components/ui/T"
@@ -98,7 +98,7 @@ export default async function QuotationsPage({
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  {[<T key="quotationNumber" k="quotationNumber" />, <T key="customer" k="customer" />, <T key="equipment" k="equipment" />, <T key="serviceType" k="serviceType" />, <T key="total" k="total" />, <T key="status" k="status" />, <T key="date" k="date" />, ""].map((h, i) => (
+                  {[<T key="quotationNumber" k="quotationNumber" />, <T key="customer" k="customer" />, <T key="total" k="total" />, <T key="status" k="status" />, <T key="date" k="date" />, ""].map((h, i) => (
                     <th
                       key={i}
                       className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -121,16 +121,6 @@ export default async function QuotationsPage({
                       {q.customer.name && (
                         <div className="text-xs text-slate-500">{q.customer.name}</div>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {q.equipment ? (
-                        <span>{q.equipment.brand} {q.equipment.model}</span>
-                      ) : (
-                        <span className="text-slate-400 italic text-xs"><T k="notSpecified" /></span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500">
-                      {SERVICE_TYPE_LABELS[q.serviceType]}
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-slate-900 whitespace-nowrap">
                       {formatCurrency(Number(q.totalCost))}

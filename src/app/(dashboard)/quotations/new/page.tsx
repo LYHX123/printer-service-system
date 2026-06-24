@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomersWithBranches } from "@/lib/data/customers"
-import { getAllEquipmentForCompany } from "@/lib/data/equipment"
 import { getSparePartOptions } from "@/lib/data/inventory"
 import { canCreateQuotation } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
@@ -14,22 +13,20 @@ import type { Role } from "@/types"
 export default async function NewQuotationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ customerId?: string; equipmentId?: string }>
+  searchParams: Promise<{ customerId?: string }>
 }) {
   const session = await auth()
   if (!canCreateQuotation(session!.user.role as Role)) redirect("/quotations")
-  const { customerId, equipmentId } = await searchParams
+  const { customerId } = await searchParams
   const companyId = session!.user.companyId as string
 
-  const [customers, allEquipment, spareParts] = await Promise.all([
+  const [customers, spareParts] = await Promise.all([
     getCustomersWithBranches(companyId),
-    getAllEquipmentForCompany(companyId),
     getSparePartOptions(companyId),
   ])
 
   const defaultValues: Partial<QuotationInput> = {
     customerId: customerId ?? "",
-    equipmentId: equipmentId ?? "",
   }
 
   return (
@@ -47,7 +44,6 @@ export default async function NewQuotationPage({
       />
       <QuotationForm
         customers={customers}
-        allEquipment={allEquipment}
         spareParts={spareParts}
         defaultValues={defaultValues}
       />

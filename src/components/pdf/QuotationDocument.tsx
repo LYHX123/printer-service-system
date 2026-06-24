@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from "fs"
 import path from "path"
 import { format } from "date-fns"
 import { formatCurrency } from "@/lib/utils"
-import { EQUIPMENT_TYPE_LABELS, SERVICE_TYPE_LABELS, QUOTATION_STATUS_LABELS } from "@/types"
 import type { QuotationPdfData } from "@/lib/data/quotations"
 
 const styles = StyleSheet.create({
@@ -72,13 +71,6 @@ const styles = StyleSheet.create({
     maxWidth: "65%",
     textAlign: "right",
   },
-  twoCol: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  col: {
-    flex: 1,
-  },
   paragraph: {
     lineHeight: 1.5,
   },
@@ -93,7 +85,8 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 2,
+    alignItems: "center",
+    paddingVertical: 3,
     borderBottom: "0.5px solid #f1f5f9",
   },
   th: {
@@ -102,10 +95,17 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textTransform: "uppercase",
   },
-  cellPart: { width: "46%" },
+  cellImage: { width: "10%" },
+  cellPart: { width: "38%" },
   cellQty: { width: "12%", textAlign: "right" },
-  cellPrice: { width: "21%", textAlign: "right" },
-  cellSubtotal: { width: "21%", textAlign: "right" },
+  cellPrice: { width: "20%", textAlign: "right" },
+  cellSubtotal: { width: "20%", textAlign: "right" },
+  itemImage: {
+    width: 28,
+    height: 28,
+    objectFit: "cover",
+    borderRadius: 2,
+  },
   totals: {
     marginTop: 6,
     alignItems: "flex-end",
@@ -127,6 +127,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: "#94a3b8",
+    fontStyle: "italic",
+  },
+  validityNote: {
+    marginTop: 10,
+    fontSize: 8,
+    color: "#64748b",
     fontStyle: "italic",
   },
   footer: {
@@ -205,54 +211,29 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
           <View style={styles.reportMeta}>
             <Text style={styles.reportTitle}>Quotation</Text>
             <Text>Quotation No: {quotation.quotationNumber}</Text>
-            <Text>Status: {QUOTATION_STATUS_LABELS[quotation.status]}</Text>
-            <Text>Generated on: {generatedOn}</Text>
-          </View>
-        </View>
-
-        {/* Customer & Equipment */}
-        <View style={styles.twoCol}>
-          <View style={[styles.col, styles.section]}>
-            <Text style={styles.sectionTitle}>Customer Information</Text>
-            <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{quotation.customer.companyName}</Text></View>
-            {quotation.customer.pinNumber && (
-              <View style={styles.row}><Text style={styles.label}>PIN No</Text><Text style={styles.value}>{quotation.customer.pinNumber}</Text></View>
-            )}
-            {quotation.customer.name && (
-              <View style={styles.row}><Text style={styles.label}>Contact</Text><Text style={styles.value}>{quotation.customer.name}</Text></View>
-            )}
-            {quotation.customer.phone && (
-              <View style={styles.row}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{quotation.customer.phone}</Text></View>
-            )}
-            {quotation.customer.location && (
-              <View style={styles.row}><Text style={styles.label}>Location</Text><Text style={styles.value}>{quotation.customer.location}</Text></View>
-            )}
-            {quotation.branch && (
-              <View style={styles.row}><Text style={styles.label}>Branch / Site</Text><Text style={styles.value}>{quotation.branch.name}</Text></View>
-            )}
-          </View>
-
-          <View style={[styles.col, styles.section]}>
-            <Text style={styles.sectionTitle}>Quotation Details</Text>
-            <View style={styles.row}><Text style={styles.label}>Service Type</Text><Text style={styles.value}>{SERVICE_TYPE_LABELS[quotation.serviceType]}</Text></View>
-            {quotation.equipment && (
-              <>
-                <View style={styles.row}><Text style={styles.label}>Equipment</Text><Text style={styles.value}>{EQUIPMENT_TYPE_LABELS[quotation.equipment.type]}</Text></View>
-                <View style={styles.row}><Text style={styles.label}>Brand / Model</Text><Text style={styles.value}>{quotation.equipment.brand} {quotation.equipment.model}</Text></View>
-                <View style={styles.row}><Text style={styles.label}>Serial Number</Text><Text style={styles.value}>{quotation.equipment.serialNumber}</Text></View>
-              </>
-            )}
-            <View style={styles.row}><Text style={styles.label}>Created</Text><Text style={styles.value}>{format(new Date(quotation.createdAt), "dd MMM yyyy")}</Text></View>
+            <Text>Date: {format(new Date(quotation.createdAt), "dd MMM yyyy")}</Text>
             {quotation.validUntil && (
-              <View style={styles.row}><Text style={styles.label}>Valid Until</Text><Text style={styles.value}>{format(new Date(quotation.validUntil), "dd MMM yyyy")}</Text></View>
+              <Text>Valid Until: {format(new Date(quotation.validUntil), "dd MMM yyyy")}</Text>
             )}
           </View>
         </View>
 
-        {/* Problem description */}
+        {/* Customer */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Problem Description</Text>
-          <Text style={styles.paragraph}>{quotation.problemDesc}</Text>
+          <Text style={styles.sectionTitle}>Customer Information</Text>
+          <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{quotation.customer.companyName}</Text></View>
+          {quotation.customer.pinNumber && (
+            <View style={styles.row}><Text style={styles.label}>PIN No</Text><Text style={styles.value}>{quotation.customer.pinNumber}</Text></View>
+          )}
+          {quotation.customer.name && (
+            <View style={styles.row}><Text style={styles.label}>Contact</Text><Text style={styles.value}>{quotation.customer.name}</Text></View>
+          )}
+          {quotation.customer.phone && (
+            <View style={styles.row}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{quotation.customer.phone}</Text></View>
+          )}
+          {quotation.customer.location && (
+            <View style={styles.row}><Text style={styles.label}>Location</Text><Text style={styles.value}>{quotation.customer.location}</Text></View>
+          )}
         </View>
 
         {/* Quotation items */}
@@ -261,21 +242,28 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
           {quotation.items.length > 0 ? (
             <View style={styles.table}>
               <View style={styles.tableHeader}>
+                <Text style={[styles.th, styles.cellImage]}>Image</Text>
                 <Text style={[styles.th, styles.cellPart]}>Item</Text>
                 <Text style={[styles.th, styles.cellQty]}>Qty</Text>
                 <Text style={[styles.th, styles.cellPrice]}>Unit Price</Text>
                 <Text style={[styles.th, styles.cellSubtotal]}>Amount</Text>
               </View>
-              {quotation.items.map((item) => (
-                <View key={item.id} style={styles.tableRow}>
-                  <Text style={styles.cellPart}>
-                    {item.part ? (item.part.brand ? `${item.part.brand} — ${item.part.name}` : item.part.name) : item.description}
-                  </Text>
-                  <Text style={styles.cellQty}>{item.quantity}</Text>
-                  <Text style={styles.cellPrice}>{formatCurrency(Number(item.unitPrice), currency)}</Text>
-                  <Text style={styles.cellSubtotal}>{formatCurrency(Number(item.subtotal), currency)}</Text>
-                </View>
-              ))}
+              {quotation.items.map((item) => {
+                const itemImage = resolvePublicFile(item.part?.imageUrl)
+                return (
+                  <View key={item.id} style={styles.tableRow}>
+                    <View style={styles.cellImage}>
+                      {itemImage && <Image src={itemImage} style={styles.itemImage} />}
+                    </View>
+                    <Text style={styles.cellPart}>
+                      {item.part ? (item.part.brand ? `${item.part.brand} — ${item.part.name}` : item.part.name) : item.description}
+                    </Text>
+                    <Text style={styles.cellQty}>{item.quantity}</Text>
+                    <Text style={styles.cellPrice}>{formatCurrency(Number(item.unitPrice), currency)}</Text>
+                    <Text style={styles.cellSubtotal}>{formatCurrency(Number(item.subtotal), currency)}</Text>
+                  </View>
+                )
+              })}
             </View>
           ) : (
             <Text style={styles.emptyText}>No items listed.</Text>
@@ -297,6 +285,10 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
               <Text>{formatCurrency(totalCost, currency)}</Text>
             </View>
           </View>
+
+          <Text style={styles.validityNote}>
+            This quotation is valid for 15 days from the date of issue.
+          </Text>
         </View>
 
         {/* Remarks */}

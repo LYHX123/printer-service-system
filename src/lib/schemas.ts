@@ -104,18 +104,7 @@ export type QuotationItemInput = z.infer<typeof QuotationItemInputSchema>
 
 export const QuotationSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
-  branchId: z.string().optional().or(z.literal("")),
-  equipmentId: z.string().optional().or(z.literal("")),
-  serviceType: z.enum([
-    "REPAIR",
-    "MAINTENANCE",
-    "UPGRADE",
-    "REFURBISHMENT",
-    "INSTALLATION",
-    "INSPECTION",
-  ]),
   validUntil: z.string().optional().or(z.literal("")),
-  problemDesc: z.string().min(1, "Problem description is required").max(2000),
   vatPercent: z.coerce.number().min(0).max(100).default(DEFAULT_VAT_PERCENT),
   remarks: z.string().max(2000).optional().or(z.literal("")),
   internalNotes: z.string().max(2000).optional().or(z.literal("")),

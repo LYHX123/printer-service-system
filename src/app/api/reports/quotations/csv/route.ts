@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth"
 import { canAccess } from "@/lib/permissions"
 import { getQuotationReportList } from "@/lib/data/analytics"
 import { toCsv, csvResponse } from "@/lib/csv"
-import { QUOTATION_STATUS_LABELS, SERVICE_TYPE_LABELS } from "@/types"
+import { QUOTATION_STATUS_LABELS } from "@/types"
 import type { QuotationStatus, Role } from "@/types"
 
 const QUOTATION_STATUSES = Object.keys(QUOTATION_STATUS_LABELS) as QuotationStatus[]
@@ -30,12 +30,11 @@ export async function GET(request: Request) {
   const quotations = await getQuotationReportList(companyId, { from, to, customerId, engineerId, status })
 
   const csv = toCsv(
-    ["Quotation Number", "Customer", "Created By", "Service Type", "Status", "Date", "Total Cost"],
+    ["Quotation Number", "Customer", "Created By", "Status", "Date", "Total Cost"],
     quotations.map((q) => [
       q.quotationNumber,
       q.customer.companyName,
       q.createdBy.name,
-      SERVICE_TYPE_LABELS[q.serviceType],
       QUOTATION_STATUS_LABELS[q.status],
       format(new Date(q.createdAt), "yyyy-MM-dd"),
       Number(q.totalCost).toFixed(2),

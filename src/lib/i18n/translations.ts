@@ -171,7 +171,6 @@ export type TranslationKey =
   | "inStock"
   | "lowStock"
   | "outOfStock"
-  | "notSpecified"
   | "noPartsFound"
   | "addFirstPart"
   | "inCatalog"
@@ -442,7 +441,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     inStock: "In Stock",
     lowStock: "Low Stock",
     outOfStock: "Out of Stock",
-    notSpecified: "Not specified",
     noPartsFound: "No parts found",
     addFirstPart: "Add your first spare part to start tracking inventory.",
     inCatalog: "in catalog",
@@ -712,7 +710,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     inStock: "有库存",
     lowStock: "库存不足",
     outOfStock: "缺货",
-    notSpecified: "未指定",
     noPartsFound: "未找到零件",
     addFirstPart: "添加第一个备件以开始跟踪库存。",
     inCatalog: "在库",

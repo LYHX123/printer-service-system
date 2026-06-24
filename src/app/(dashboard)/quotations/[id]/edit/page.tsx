@@ -4,7 +4,6 @@ import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotationForEdit } from "@/lib/data/quotations"
 import { getCustomersWithBranches } from "@/lib/data/customers"
-import { getAllEquipmentForCompany } from "@/lib/data/equipment"
 import { getSparePartOptions } from "@/lib/data/inventory"
 import { canCreateQuotation } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
@@ -23,10 +22,9 @@ export default async function EditQuotationPage({
   const { id } = await params
   const companyId = session!.user.companyId as string
 
-  const [quotation, customers, allEquipment, spareParts] = await Promise.all([
+  const [quotation, customers, spareParts] = await Promise.all([
     getQuotationForEdit(id, companyId),
     getCustomersWithBranches(companyId),
-    getAllEquipmentForCompany(companyId),
     getSparePartOptions(companyId),
   ])
 
@@ -45,13 +43,9 @@ export default async function EditQuotationPage({
 
   const defaultValues: QuotationInput = {
     customerId: quotation.customerId,
-    branchId: quotation.branchId ?? "",
-    equipmentId: quotation.equipmentId ?? "",
-    serviceType: quotation.serviceType,
     validUntil: quotation.validUntil
       ? format(new Date(quotation.validUntil), "yyyy-MM-dd")
       : "",
-    problemDesc: quotation.problemDesc,
     vatPercent: Number(quotation.vatPercent),
     remarks: quotation.remarks ?? "",
     internalNotes: quotation.internalNotes ?? "",
@@ -79,7 +73,6 @@ export default async function EditQuotationPage({
       />
       <QuotationForm
         customers={customers}
-        allEquipment={allEquipment}
         spareParts={spareParts}
         defaultValues={defaultValues}
         quotationId={id}

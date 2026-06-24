@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import Image from "next/image"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -16,12 +16,8 @@ import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { formatCurrency } from "@/lib/utils"
 import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
-import { SERVICE_TYPE_LABELS, EQUIPMENT_TYPE_LABELS } from "@/types"
-import type { EquipmentType, ServiceType } from "@/types"
 import type { SparePartOption } from "@/lib/data/inventory"
 import { StockItemSearch } from "./StockItemSearch"
-
-const ALL_SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[]
 
 interface CustomerOption {
   id: string
@@ -29,21 +25,10 @@ interface CustomerOption {
   code: string
   companyName: string
   pinNumber: string | null
-  branches: { id: string; name: string }[]
-}
-
-interface EquipmentOption {
-  id: string
-  brand: string
-  model: string
-  serialNumber: string
-  type: EquipmentType
-  customerId: string
 }
 
 interface QuotationFormProps {
   customers: CustomerOption[]
-  allEquipment: EquipmentOption[]
   spareParts: SparePartOption[]
   defaultValues?: Partial<QuotationInput>
   quotationId?: string
@@ -51,7 +36,6 @@ interface QuotationFormProps {
 
 export function QuotationForm({
   customers,
-  allEquipment,
   spareParts,
   defaultValues,
   quotationId,
@@ -64,13 +48,11 @@ export function QuotationForm({
     register,
     handleSubmit,
     watch,
-    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm<QuotationInput>({
     resolver: zodResolver(QuotationSchema) as Resolver<QuotationInput>,
     defaultValues: {
-      serviceType: "REPAIR",
       vatPercent: DEFAULT_VAT_PERCENT,
       items: [],
       ...defaultValues,
@@ -84,21 +66,8 @@ export function QuotationForm({
   const vatPercent = Number(watch("vatPercent")) || 0
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
-  const branches = selectedCustomer?.branches ?? []
 
   const partsById = useMemo(() => new Map(spareParts.map((p) => [p.id, p])), [spareParts])
-
-  const customerEquipment = useMemo(
-    () => allEquipment.filter((e) => e.customerId === selectedCustomerId),
-    [allEquipment, selectedCustomerId]
-  )
-
-  useEffect(() => {
-    if (!isEdit) {
-      setValue("equipmentId", "")
-      setValue("branchId", "")
-    }
-  }, [selectedCustomerId, setValue, isEdit])
 
   const subtotal = (watchedItems ?? []).reduce(
     (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
@@ -124,7 +93,7 @@ export function QuotationForm({
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="space-y-5">
 
-        {/* Customer + Branch */}
+        {/* Customer */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
           <h2 className="text-sm font-semibold text-slate-900">Customer</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -142,17 +111,8 @@ export function QuotationForm({
                 ))}
               </Select>
             </FormField>
-            <FormField label="Branch / Site" htmlFor="branchId" error={errors.branchId?.message}>
-              <Select
-                id="branchId"
-                placeholder="None (main location)"
-                {...register("branchId")}
-                disabled={!selectedCustomerId || branches.length === 0}
-              >
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </Select>
+            <FormField label="Valid Until" htmlFor="validUntil" error={errors.validUntil?.message}>
+              <Input id="validUntil" type="date" {...register("validUntil")} />
             </FormField>
           </div>
 
@@ -169,48 +129,6 @@ export function QuotationForm({
               </div>
             </div>
           )}
-
-          {/* Equipment (optional for quotation) */}
-          <FormField label="Equipment" htmlFor="equipmentId" error={errors.equipmentId?.message}>
-            <Select
-              id="equipmentId"
-              placeholder={selectedCustomerId ? "Select equipment (optional)…" : "Select a customer first"}
-              {...register("equipmentId")}
-              disabled={!selectedCustomerId}
-            >
-              {customerEquipment.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {EQUIPMENT_TYPE_LABELS[e.type]} — {e.brand} {e.model} ({e.serialNumber})
-                </option>
-              ))}
-            </Select>
-            {selectedCustomerId && customerEquipment.length === 0 && (
-              <p className="mt-1 text-xs text-amber-600">No equipment registered for this customer.</p>
-            )}
-          </FormField>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <FormField label="Service Type" htmlFor="serviceType" required error={errors.serviceType?.message}>
-              <Select id="serviceType" {...register("serviceType")} error={errors.serviceType?.message}>
-                {ALL_SERVICE_TYPES.map((st) => (
-                  <option key={st} value={st}>{SERVICE_TYPE_LABELS[st]}</option>
-                ))}
-              </Select>
-            </FormField>
-            <FormField label="Valid Until" htmlFor="validUntil" error={errors.validUntil?.message}>
-              <Input id="validUntil" type="date" {...register("validUntil")} />
-            </FormField>
-          </div>
-
-          <FormField label="Problem Description" htmlFor="problemDesc" required error={errors.problemDesc?.message}>
-            <Textarea
-              id="problemDesc"
-              rows={3}
-              placeholder="Describe the fault or service scope…"
-              {...register("problemDesc")}
-              error={errors.problemDesc?.message}
-            />
-          </FormField>
         </div>
 
         {/* Stock Items */}
@@ -333,7 +251,7 @@ export function QuotationForm({
             <Textarea
               id="remarks"
               rows={2}
-              placeholder="e.g. Quotation valid for 30 days. Price excludes site visit charges."
+              placeholder="e.g. Quotation valid for 15 days. Price excludes site visit charges."
               {...register("remarks")}
             />
           </FormField>

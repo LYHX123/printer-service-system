@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canCreateQuotation } from "@/lib/permissions"
 import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
-import { generateQuotationNumber, generateJobNumber } from "@/lib/utils"
+import { generateQuotationNumber } from "@/lib/utils"
 import { QUOTATION_STATUS_TRANSITIONS } from "@/types"
 import type { QuotationInput, QuotationStatusInput } from "@/lib/schemas"
 import type { Role } from "@/types"
@@ -26,10 +26,7 @@ export async function createQuotation(data: QuotationInput) {
   const parsed = QuotationSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const {
-    customerId, branchId, equipmentId, serviceType, validUntil, problemDesc,
-    vatPercent, remarks, internalNotes, items,
-  } = parsed.data
+  const { customerId, validUntil, vatPercent, remarks, internalNotes, items } = parsed.data
 
   let quotation: { id: string }
   try {
@@ -65,11 +62,7 @@ export async function createQuotation(data: QuotationInput) {
         quotationNumber,
         companyId,
         customerId,
-        branchId: branchId || null,
-        equipmentId: equipmentId || null,
-        serviceType,
         validUntil: validUntil ? new Date(validUntil) : null,
-        problemDesc,
         subtotal,
         vatPercent,
         totalCost,
@@ -109,10 +102,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
   const parsed = QuotationSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const {
-    customerId, branchId, equipmentId, serviceType, validUntil, problemDesc,
-    vatPercent, remarks, internalNotes, items,
-  } = parsed.data
+  const { customerId, validUntil, vatPercent, remarks, internalNotes, items } = parsed.data
 
   try {
     const existing = await prisma.quotation.findFirst({
@@ -145,11 +135,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
         where: { id },
         data: {
           customerId,
-          branchId: branchId || null,
-          equipmentId: equipmentId || null,
-          serviceType,
           validUntil: validUntil ? new Date(validUntil) : null,
-          problemDesc,
           subtotal,
           vatPercent,
           totalCost,
@@ -217,88 +203,4 @@ export async function updateQuotationStatus(id: string, data: QuotationStatusInp
   } catch {
     return { error: "Failed to update status" }
   }
-}
-
-export async function convertToJob(quotationId: string) {
-  const session = await auth()
-  if (!session?.user) return { error: "Unauthorized" }
-  const companyId = session.user.companyId as string
-  const userId = session.user.id as string
-
-  let jobId: string
-  try {
-    const quotation = await prisma.quotation.findFirst({
-      where: { id: quotationId, companyId },
-      select: {
-        id: true,
-        status: true,
-        customerId: true,
-        branchId: true,
-        equipmentId: true,
-        serviceType: true,
-        problemDesc: true,
-        internalNotes: true,
-      },
-    })
-    if (!quotation) return { error: "Quotation not found" }
-    if (quotation.status !== "APPROVED") {
-      return { error: "Only approved quotations can be converted to a job" }
-    }
-    if (!quotation.equipmentId) {
-      return { error: "Quotation must have equipment linked before converting to a job" }
-    }
-
-    const year = new Date().getFullYear()
-    const count = await prisma.serviceJob.count({
-      where: {
-        companyId,
-        receivedDate: {
-          gte: new Date(`${year}-01-01`),
-          lt: new Date(`${year + 1}-01-01`),
-        },
-      },
-    })
-    const jobNumber = generateJobNumber(count + 1)
-
-    const job = await prisma.serviceJob.create({
-      data: {
-        jobNumber,
-        companyId,
-        customerId: quotation.customerId,
-        branchId: quotation.branchId,
-        equipmentId: quotation.equipmentId,
-        serviceType: quotation.serviceType,
-        assignedToId: userId,
-        createdById: userId,
-        problemDesc: quotation.problemDesc,
-        internalNotes: quotation.internalNotes,
-        quotationId: quotation.id,
-      },
-      select: { id: true },
-    })
-
-    await prisma.jobStatusLog.create({
-      data: {
-        jobId: job.id,
-        changedById: userId,
-        fromStatus: "",
-        toStatus: "RECEIVED",
-        note: `Created from quotation`,
-      },
-    })
-
-    await prisma.quotation.update({
-      where: { id: quotationId },
-      data: { status: "CONVERTED" },
-    })
-
-    revalidatePath(`/quotations/${quotationId}`)
-    revalidatePath("/quotations")
-    revalidatePath("/jobs")
-    jobId = job.id
-  } catch {
-    return { error: "Failed to convert quotation to job" }
-  }
-
-  redirect(`/jobs/${jobId}`)
 }

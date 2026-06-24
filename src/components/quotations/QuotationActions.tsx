@@ -2,12 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Pencil, Send, CheckCircle, XCircle, Briefcase, Download } from "lucide-react"
+import { Pencil, Send, CheckCircle, XCircle, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Modal } from "@/components/ui/modal"
 import { QuotationStatusModal } from "./QuotationStatusModal"
-import { convertToJob } from "@/lib/actions/quotations"
-import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { QuotationStatus, Role } from "@/types"
 
@@ -20,26 +17,12 @@ interface QuotationActionsProps {
 }
 
 export function QuotationActions({ quotationId, status, role }: QuotationActionsProps) {
-  const toast = useToast()
   const { t } = useLanguage()
   const [statusModal, setStatusModal] = useState<ModalTargetStatus | null>(null)
-  const [convertOpen, setConvertOpen] = useState(false)
-  const [converting, setConverting] = useState(false)
 
   const canEdit = status === "DRAFT" || status === "SENT"
   // Opened to all roles.
   const canManage = true
-
-  async function handleConvert() {
-    setConverting(true)
-    const result = await convertToJob(quotationId)
-    if (result?.error) {
-      toast.error(result.error)
-      setConverting(false)
-      setConvertOpen(false)
-    }
-    // on success: redirect happens server-side
-  }
 
   return (
     <>
@@ -87,16 +70,6 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
             </Button>
           </>
         )}
-
-        {status === "APPROVED" && canManage && (
-          <Button
-            size="sm"
-            icon={<Briefcase className="h-3.5 w-3.5" />}
-            onClick={() => setConvertOpen(true)}
-          >
-            Convert to Job
-          </Button>
-        )}
       </div>
 
       {statusModal && (
@@ -107,37 +80,6 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
           onClose={() => setStatusModal(null)}
         />
       )}
-
-      <Modal
-        isOpen={convertOpen}
-        onClose={() => setConvertOpen(false)}
-        title="Convert to Service Job"
-        description="This will create a new service job from this quotation and mark it as converted. You can reassign the engineer on the job page."
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setConvertOpen(false)}
-              disabled={converting}
-            >
-              {t("cancel")}
-            </Button>
-            <Button
-              type="button"
-              loading={converting}
-              onClick={handleConvert}
-              icon={!converting ? <Briefcase className="h-3.5 w-3.5" /> : undefined}
-            >
-              Convert to Job
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-slate-600">
-          A new job will be created with the same customer, equipment, and service type. The job will be assigned to you initially.
-        </p>
-      </Modal>
     </>
   )
 }

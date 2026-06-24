@@ -85,7 +85,6 @@ export type QuotationReportListItem = {
   id: string
   quotationNumber: string
   status: QuotationStatus
-  serviceType: ServiceType
   createdAt: Date
   totalCost: number
   customer: Pick<Customer, "id" | "name" | "code" | "companyName">
@@ -109,7 +108,6 @@ export async function getQuotationReportList(
       id: true,
       quotationNumber: true,
       status: true,
-      serviceType: true,
       createdAt: true,
       totalCost: true,
       customer: { select: { id: true, name: true, code: true, companyName: true } },

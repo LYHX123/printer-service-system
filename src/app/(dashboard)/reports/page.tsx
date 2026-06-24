@@ -354,7 +354,6 @@ async function QuotationsTab({
           },
           { key: "customer", label: <T k="customer" />, render: (row) => <span className="text-sm text-slate-900">{row.customer.companyName}</span> },
           { key: "createdBy", label: <T k="createdBy" />, render: (row) => <span className="text-sm text-slate-600">{row.createdBy.name}</span> },
-          { key: "serviceType", label: <T k="serviceType" />, render: (row) => <span className="text-sm text-slate-600">{SERVICE_TYPE_LABELS[row.serviceType]}</span> },
           { key: "status", label: <T k="status" />, render: (row) => <QuotationStatusBadge status={row.status} /> },
           {
             key: "createdAt", label: <T k="date" />,

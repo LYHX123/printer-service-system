@@ -3,8 +3,6 @@ import type {
   Quotation,
   QuotationItem,
   Customer,
-  CustomerBranch,
-  Equipment,
   ServiceJob,
   User,
   Company,
@@ -27,10 +25,9 @@ export type QuotationItemWithPart = QuotationItem & { part: QuotationItemPart | 
 
 export type QuotationListItem = Pick<
   Quotation,
-  "id" | "quotationNumber" | "serviceType" | "status" | "totalCost" | "createdAt" | "validUntil"
+  "id" | "quotationNumber" | "status" | "totalCost" | "createdAt" | "validUntil"
 > & {
   customer: Pick<Customer, "id" | "name" | "code" | "companyName">
-  equipment: Pick<Equipment, "id" | "brand" | "model" | "type"> | null
   createdBy: Pick<User, "id" | "name">
 }
 
@@ -56,13 +53,11 @@ export async function getQuotations(
     select: {
       id: true,
       quotationNumber: true,
-      serviceType: true,
       status: true,
       totalCost: true,
       createdAt: true,
       validUntil: true,
       customer: { select: { id: true, name: true, code: true, companyName: true } },
-      equipment: { select: { id: true, brand: true, model: true, type: true } },
       createdBy: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -71,8 +66,6 @@ export async function getQuotations(
 
 export type QuotationDetail = Quotation & {
   customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "pinNumber" | "phone" | "location">
-  branch: Pick<CustomerBranch, "id" | "name" | "address"> | null
-  equipment: Pick<Equipment, "id" | "brand" | "model" | "serialNumber" | "type"> | null
   createdBy: Pick<User, "id" | "name">
   items: QuotationItemWithPart[]
   convertedJob: Pick<ServiceJob, "id" | "jobNumber"> | null
@@ -94,16 +87,6 @@ export async function getQuotation(
           pinNumber: true,
           phone: true,
           location: true,
-        },
-      },
-      branch: { select: { id: true, name: true, address: true } },
-      equipment: {
-        select: {
-          id: true,
-          brand: true,
-          model: true,
-          serialNumber: true,
-          type: true,
         },
       },
       createdBy: { select: { id: true, name: true } },
@@ -143,16 +126,6 @@ export async function getQuotationForPdf(
           pinNumber: true,
           phone: true,
           location: true,
-        },
-      },
-      branch: { select: { id: true, name: true, address: true } },
-      equipment: {
-        select: {
-          id: true,
-          brand: true,
-          model: true,
-          serialNumber: true,
-          type: true,
         },
       },
       createdBy: { select: { id: true, name: true } },
