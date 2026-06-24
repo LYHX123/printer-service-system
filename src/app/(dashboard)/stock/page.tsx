@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { redirect } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, ImageOff } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, ImageOff, ArrowLeftRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { canAccess, canManageInventory } from "@/lib/permissions"
 import { getSpareParts, getStockTypeCounts } from "@/lib/data/inventory"
@@ -102,11 +102,16 @@ export default async function StockPage({
         title={STOCK_TYPE_LABELS[stockType]}
         subtitle={<>{parts.length} <T k={stockCountTranslationKey(stockType, parts.length)} /></>}
         actions={
-          canEdit && (
-            <Link href={`/stock/new?type=${stockType}`}>
-              <Button icon={<Plus className="h-4 w-4" />}>{ADD_BUTTON_LABELS[stockType]}</Button>
+          <div className="flex gap-2">
+            <Link href="/stock/movements">
+              <Button variant="outline" icon={<ArrowLeftRight className="h-4 w-4" />}>Movement History</Button>
             </Link>
-          )
+            {canEdit && (
+              <Link href={`/stock/new?type=${stockType}`}>
+                <Button icon={<Plus className="h-4 w-4" />}>{ADD_BUTTON_LABELS[stockType]}</Button>
+              </Link>
+            )}
+          </div>
         }
       />
 
@@ -136,29 +141,29 @@ export default async function StockPage({
           {
             key: "brand",
             label: <T k="brand" />,
-            className: "w-[20%] text-left",
-            headerClassName: "w-[20%] text-left",
+            className: "w-[16%] text-left",
+            headerClassName: "w-[16%] text-left",
             render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
           },
           {
             key: "name",
             label: <T k={itemNameKey} />,
-            className: "w-[32%] text-left",
-            headerClassName: "w-[32%] text-left",
+            className: "w-[26%] text-left",
+            headerClassName: "w-[26%] text-left",
             render: (row) => <span className="text-sm font-medium text-slate-900">{row.name}</span>,
           },
           {
             key: "quantity",
             label: <T k="quantity" />,
-            className: "w-[12%] text-center",
-            headerClassName: "w-[12%] text-center",
+            className: "w-[10%] text-center",
+            headerClassName: "w-[10%] text-center",
             render: (row) => <span className="font-mono font-semibold">{row.stock?.quantity ?? 0}</span>,
           },
           {
             key: "image",
             label: "Picture",
-            className: "w-[14%] text-center",
-            headerClassName: "w-[14%] text-center",
+            className: "w-[12%] text-center",
+            headerClassName: "w-[12%] text-center",
             render: (row) => (
               <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                 {row.imageUrl ? (
@@ -172,11 +177,18 @@ export default async function StockPage({
           {
             key: "actions",
             label: "",
-            className: "w-[22%] text-right",
-            headerClassName: "w-[22%] text-right",
+            className: "w-[36%] text-right",
+            headerClassName: "w-[36%] text-right",
             render: (row) => (
               <div className="flex justify-end">
-                <SparePartActions partId={row.id} isActive={row.isActive} canEdit={canEdit} />
+                <SparePartActions
+                  partId={row.id}
+                  partName={row.name}
+                  unit={row.unit}
+                  currentQuantity={row.stock?.quantity ?? 0}
+                  isActive={row.isActive}
+                  canEdit={canEdit}
+                />
               </div>
             ),
           },

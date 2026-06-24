@@ -205,19 +205,23 @@ export function StockLevelBadge({ level }: { level: "in_stock" | "low" | "out" }
 
 // ─── Transaction Type Badge ────────────────────────────────────────────────────
 
-const TRANSACTION_TYPE_STYLES: Record<"IN" | "OUT" | "ADJUSTMENT", string> = {
+const TRANSACTION_TYPE_STYLES: Record<"IN" | "OUT" | "RETURN" | "DAMAGE" | "ADJUSTMENT", string> = {
   IN: "bg-green-100 text-green-700",
   OUT: "bg-red-100 text-red-700",
+  RETURN: "bg-teal-100 text-teal-700",
+  DAMAGE: "bg-orange-100 text-orange-700",
   ADJUSTMENT: "bg-blue-100 text-blue-700",
 }
 
-const TRANSACTION_TYPE_LABELS_LOCAL: Record<"IN" | "OUT" | "ADJUSTMENT", string> = {
+const TRANSACTION_TYPE_LABELS_LOCAL: Record<"IN" | "OUT" | "RETURN" | "DAMAGE" | "ADJUSTMENT", string> = {
   IN: "Stock In",
   OUT: "Stock Out",
+  RETURN: "Return",
+  DAMAGE: "Damage",
   ADJUSTMENT: "Adjustment",
 }
 
-export function TransactionTypeBadge({ type }: { type: "IN" | "OUT" | "ADJUSTMENT" }) {
+export function TransactionTypeBadge({ type }: { type: "IN" | "OUT" | "RETURN" | "DAMAGE" | "ADJUSTMENT" }) {
   return <Badge className={TRANSACTION_TYPE_STYLES[type]}>{TRANSACTION_TYPE_LABELS_LOCAL[type]}</Badge>
 }
 

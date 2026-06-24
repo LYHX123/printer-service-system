@@ -250,3 +250,25 @@ export const SparePartSchema = z.object({
 })
 
 export type SparePartInput = z.infer<typeof SparePartSchema>
+
+// ─── Stock Movement ─────────────────────────────────────────────────────────────
+
+export const StockMovementSchema = z
+  .object({
+    type: z.enum(["IN", "OUT", "RETURN", "DAMAGE", "ADJUSTMENT"]),
+    quantity: z.coerce.number().int(),
+    date: z.string().optional().or(z.literal("")),
+    reference: z.string().max(100).optional().or(z.literal("")),
+    remark: z.string().max(500).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "ADJUSTMENT") {
+      if (data.quantity < 0) {
+        ctx.addIssue({ code: "custom", path: ["quantity"], message: "Quantity cannot be negative" })
+      }
+    } else if (data.quantity < 1) {
+      ctx.addIssue({ code: "custom", path: ["quantity"], message: "Quantity must be at least 1" })
+    }
+  })
+
+export type StockMovementInput = z.infer<typeof StockMovementSchema>

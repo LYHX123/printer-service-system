@@ -88,6 +88,7 @@ export type TranslationKey =
   | "type"
   | "category"
   | "date"
+  | "selectDate"
   | "reference"
   | "job"
   | "by"
@@ -373,6 +374,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     type: "Type",
     category: "Category",
     date: "Date",
+    selectDate: "Select Date",
     reference: "Reference",
     job: "Job",
     by: "By",
@@ -657,6 +659,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     type: "类型",
     category: "分类",
     date: "日期",
+    selectDate: "选择日期",
     reference: "参考",
     job: "工单",
     by: "操作人",

@@ -223,9 +223,16 @@ export async function getInventoryValuation(companyId: string): Promise<{
 
 export async function getStockMovements(
   companyId: string,
-  opts?: { partId?: string; type?: TransactionType; from?: string; to?: string }
+  opts?: {
+    partId?: string
+    type?: TransactionType
+    from?: string
+    to?: string
+    categories?: PartCategory[]
+    search?: string
+  }
 ): Promise<InventoryTransactionWithRelations[]> {
-  const { partId, type, from, to } = opts ?? {}
+  const { partId, type, from, to, categories, search } = opts ?? {}
   return prisma.inventoryTransaction.findMany({
     where: {
       companyId,
@@ -239,9 +246,24 @@ export async function getStockMovements(
             },
           }
         : {}),
+      ...(categories || search
+        ? {
+            part: {
+              ...(categories ? { category: { in: categories } } : {}),
+              ...(search
+                ? {
+                    OR: [
+                      { name: { contains: search, mode: "insensitive" } },
+                      { partNumber: { contains: search, mode: "insensitive" } },
+                    ],
+                  }
+                : {}),
+            },
+          }
+        : {}),
     },
     include: {
-      part: { select: { id: true, partNumber: true, name: true, unit: true } },
+      part: { select: { id: true, partNumber: true, name: true, unit: true, category: true } },
       performedBy: { select: { id: true, name: true } },
       job: { select: { id: true, jobNumber: true } },
     },

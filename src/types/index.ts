@@ -125,7 +125,7 @@ export type SparePartWithStock = SparePart & {
 }
 
 export type InventoryTransactionWithRelations = InventoryTransaction & {
-  part: Pick<SparePart, "id" | "partNumber" | "name" | "unit">
+  part: Pick<SparePart, "id" | "partNumber" | "name" | "unit" | "category">
   performedBy: Pick<User, "id" | "name">
   job: Pick<ServiceJob, "id" | "jobNumber"> | null
 }
@@ -225,6 +225,8 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   IN: "Stock In",
   OUT: "Stock Out",
+  RETURN: "Return",
+  DAMAGE: "Damage",
   ADJUSTMENT: "Adjustment",
 }
 
