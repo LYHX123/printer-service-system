@@ -315,12 +315,8 @@ model Quotation {
   status          QuotationStatus @default(DRAFT)
   validUntil      DateTime?
   problemDesc     String
-  labourCost      Decimal         @default(0) @db.Decimal(10, 2)
-  partsCost       Decimal         @default(0) @db.Decimal(10, 2)
-  diagnosisFee    Decimal         @default(0) @db.Decimal(10, 2)
-  transportFee    Decimal         @default(0) @db.Decimal(10, 2)
+  subtotal        Decimal         @default(0) @db.Decimal(10, 2)
   vatPercent      Decimal         @default(0) @db.Decimal(5, 2)
-  discountAmount  Decimal         @default(0) @db.Decimal(10, 2)
   totalCost       Decimal         @default(0) @db.Decimal(10, 2)
   remarks         String?         // customer-facing remarks on quotation
   internalNotes   String?
@@ -341,15 +337,17 @@ model Quotation {
 }
 
 model QuotationItem {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   quotationId String
-  description String
-  quantity    Int      @default(1)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  subtotal    Decimal  @db.Decimal(10, 2)
-  createdAt   DateTime @default(now())
+  partId      String?
+  description String?    // legacy free-text item; new items are always stock-linked via partId
+  quantity    Int        @default(1)
+  unitPrice   Decimal    @db.Decimal(10, 2)
+  subtotal    Decimal    @db.Decimal(10, 2)
+  createdAt   DateTime   @default(now())
 
-  quotation Quotation @relation(fields: [quotationId], references: [id])
+  quotation Quotation  @relation(fields: [quotationId], references: [id])
+  part      SparePart? @relation(fields: [partId], references: [id])
 }
 
 model JobPhoto {
@@ -441,6 +439,7 @@ model SparePart {
   transactions       InventoryTransaction[]
   jobParts           JobPart[]
   purchaseOrderItems PurchaseOrderItem[]
+  quotationItems     QuotationItem[]
 }
 
 model InventoryStock {

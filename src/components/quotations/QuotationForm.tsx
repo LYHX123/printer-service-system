@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useMemo } from "react"
+import Image from "next/image"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
-import { Plus, Trash2 } from "lucide-react"
+import { ImageOff, Trash2 } from "lucide-react"
 import { QuotationSchema, type QuotationInput } from "@/lib/schemas"
 import { createQuotation, updateQuotation } from "@/lib/actions/quotations"
 import { FormField, Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 import { SERVICE_TYPE_LABELS, EQUIPMENT_TYPE_LABELS } from "@/types"
 import type { EquipmentType, ServiceType } from "@/types"
 import type { SparePartOption } from "@/lib/data/inventory"
+import { StockItemSearch } from "./StockItemSearch"
 
 const ALL_SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[]
 
@@ -26,6 +28,7 @@ interface CustomerOption {
   name: string | null
   code: string
   companyName: string
+  pinNumber: string | null
   branches: { id: string; name: string }[]
 }
 
@@ -68,11 +71,7 @@ export function QuotationForm({
     resolver: zodResolver(QuotationSchema) as Resolver<QuotationInput>,
     defaultValues: {
       serviceType: "REPAIR",
-      labourCost: 0,
-      diagnosisFee: 0,
-      transportFee: 0,
       vatPercent: DEFAULT_VAT_PERCENT,
-      discountAmount: 0,
       items: [],
       ...defaultValues,
     },
@@ -82,14 +81,12 @@ export function QuotationForm({
 
   const selectedCustomerId = watch("customerId")
   const watchedItems = watch("items")
-  const labourCost = Number(watch("labourCost")) || 0
-  const diagnosisFee = Number(watch("diagnosisFee")) || 0
-  const transportFee = Number(watch("transportFee")) || 0
   const vatPercent = Number(watch("vatPercent")) || 0
-  const discountAmount = Number(watch("discountAmount")) || 0
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
   const branches = selectedCustomer?.branches ?? []
+
+  const partsById = useMemo(() => new Map(spareParts.map((p) => [p.id, p])), [spareParts])
 
   const customerEquipment = useMemo(
     () => allEquipment.filter((e) => e.customerId === selectedCustomerId),
@@ -103,13 +100,16 @@ export function QuotationForm({
     }
   }, [selectedCustomerId, setValue, isEdit])
 
-  const partsCost = (watchedItems ?? []).reduce(
+  const subtotal = (watchedItems ?? []).reduce(
     (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
     0
   )
-  const subtotal = labourCost + partsCost + diagnosisFee + transportFee
   const vatAmount = (subtotal * vatPercent) / 100
-  const total = Math.max(0, subtotal + vatAmount - discountAmount)
+  const total = subtotal + vatAmount
+
+  function addStockItem(part: SparePartOption) {
+    append({ partId: part.id, quantity: 1, unitPrice: Number(part.sellingPrice) })
+  }
 
   async function onSubmit(data: QuotationInput) {
     const result = isEdit
@@ -156,6 +156,20 @@ export function QuotationForm({
             </FormField>
           </div>
 
+          {/* Auto-filled from selected customer */}
+          {selectedCustomer && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 rounded-lg bg-slate-50 p-4">
+              <div>
+                <p className="text-xs font-medium text-slate-500">{t("companyName")}</p>
+                <p className="text-sm font-medium text-slate-900">{selectedCustomer.companyName}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500">{t("pinNumber")}</p>
+                <p className="text-sm font-medium text-slate-900">{selectedCustomer.pinNumber || "—"}</p>
+              </div>
+            </div>
+          )}
+
           {/* Equipment (optional for quotation) */}
           <FormField label="Equipment" htmlFor="equipmentId" error={errors.equipmentId?.message}>
             <Select
@@ -199,63 +213,50 @@ export function QuotationForm({
           </FormField>
         </div>
 
-        {/* Spare Parts Line Items */}
+        {/* Stock Items */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">{t("spareParts")}</h2>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              icon={<Plus className="h-3.5 w-3.5" />}
-              onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}
-            >
-              Add Part
-            </Button>
-          </div>
+          <h2 className="text-sm font-semibold text-slate-900">Quotation Items</h2>
+
+          <StockItemSearch spareParts={spareParts} onSelect={addStockItem} />
+
+          {errors.items?.message && (
+            <p className="text-xs text-red-600">{errors.items.message}</p>
+          )}
 
           {fields.length === 0 ? (
-            <p className="text-sm text-slate-400 italic py-2">No spare parts added. Click &quot;Add Part&quot; to include parts in this quotation.</p>
+            <p className="text-sm text-slate-400 italic py-2">No items added yet. Search for a stock item above to add it.</p>
           ) : (
             <div className="space-y-3">
               <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 pb-1 border-b border-slate-100">
-                <div className="col-span-6">Description</div>
-                <div className="col-span-2 text-right">Qty</div>
+                <div className="col-span-5">Item</div>
+                <div className="col-span-2 text-right">Quantity</div>
                 <div className="col-span-2 text-right">Unit Price</div>
-                <div className="col-span-1 text-right">Subtotal</div>
+                <div className="col-span-2 text-right">Amount</div>
                 <div className="col-span-1" />
               </div>
               {fields.map((field, index) => {
+                const itemPartId = watchedItems?.[index]?.partId
+                const part = itemPartId ? partsById.get(itemPartId) : undefined
                 const qty = Number(watchedItems?.[index]?.quantity) || 0
                 const price = Number(watchedItems?.[index]?.unitPrice) || 0
-                const rowSubtotal = qty * price
+                const amount = qty * price
                 return (
-                  <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-                    <div className="col-span-12 sm:col-span-6 space-y-1.5">
-                      {spareParts.length > 0 && (
-                        <Select
-                          aria-label="Select inventory part"
-                          defaultValue=""
-                          onChange={(e) => {
-                            const part = spareParts.find((p) => p.id === e.target.value)
-                            if (!part) return
-                            setValue(`items.${index}.description`, `${part.partNumber} — ${part.name}`, { shouldValidate: true })
-                            setValue(`items.${index}.unitPrice`, Number(part.sellingPrice), { shouldValidate: true })
-                          }}
-                        >
-                          <option value="">— Select from inventory (optional) —</option>
-                          {spareParts.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.partNumber} — {p.name} ({formatCurrency(Number(p.sellingPrice))}, {p.stock?.quantity ?? 0} {p.unit} in stock)
-                            </option>
-                          ))}
-                        </Select>
-                      )}
-                      <Input
-                        placeholder="Part or service description"
-                        {...register(`items.${index}.description`)}
-                        error={errors.items?.[index]?.description?.message}
-                      />
+                  <div key={field.id} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-12 sm:col-span-5 flex items-center gap-2">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                        {part?.imageUrl ? (
+                          <Image src={part.imageUrl} alt={part.name} width={40} height={40} className="h-full w-full object-cover" unoptimized />
+                        ) : (
+                          <ImageOff className="h-4 w-4 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {part ? (part.brand ? `${part.brand} — ${part.name}` : part.name) : "Unknown item"}
+                        </p>
+                        {part && <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>}
+                      </div>
+                      <input type="hidden" {...register(`items.${index}.partId`)} />
                     </div>
                     <div className="col-span-4 sm:col-span-2">
                       <Input
@@ -276,14 +277,14 @@ export function QuotationForm({
                         error={errors.items?.[index]?.unitPrice?.message}
                       />
                     </div>
-                    <div className="col-span-2 sm:col-span-1 text-right text-sm text-slate-600 pt-2 font-medium">
-                      {formatCurrency(rowSubtotal)}
+                    <div className="col-span-2 sm:col-span-2 text-right text-sm text-slate-600 font-medium">
+                      {formatCurrency(amount)}
                     </div>
                     <div className="col-span-1 flex justify-end">
                       <button
                         type="button"
                         onClick={() => remove(index)}
-                        className="mt-1.5 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -297,22 +298,10 @@ export function QuotationForm({
 
         {/* Cost Summary */}
         <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-900 mb-5">Cost Breakdown</h2>
+          <h2 className="text-sm font-semibold text-slate-900 mb-5">Cost Summary</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FormField label={`${t("labourCost")} (KES)`} htmlFor="labourCost" error={errors.labourCost?.message}>
-              <Input id="labourCost" type="number" min="0" step="0.01" placeholder="0.00" {...register("labourCost")} />
-            </FormField>
-            <FormField label="Diagnosis Fee (KES)" htmlFor="diagnosisFee" error={errors.diagnosisFee?.message}>
-              <Input id="diagnosisFee" type="number" min="0" step="0.01" placeholder="0.00" {...register("diagnosisFee")} />
-            </FormField>
-            <FormField label="Transport Fee (KES)" htmlFor="transportFee" error={errors.transportFee?.message}>
-              <Input id="transportFee" type="number" min="0" step="0.01" placeholder="0.00" {...register("transportFee")} />
-            </FormField>
             <FormField label={`${t("vat")} (%)`} htmlFor="vatPercent" error={errors.vatPercent?.message}>
               <Input id="vatPercent" type="number" min="0" max="100" step="0.01" placeholder="0.00" {...register("vatPercent")} />
-            </FormField>
-            <FormField label="Discount (KES)" htmlFor="discountAmount" error={errors.discountAmount?.message}>
-              <Input id="discountAmount" type="number" min="0" step="0.01" placeholder="0.00" {...register("discountAmount")} />
             </FormField>
           </div>
 
@@ -320,26 +309,6 @@ export function QuotationForm({
           <div className="mt-5 pt-4 border-t border-slate-100">
             <div className="ml-auto max-w-xs space-y-1.5 text-sm">
               <div className="flex justify-between text-slate-600">
-                <span>{t("labourCost")}</span>
-                <span>{formatCurrency(labourCost)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>{t("spareParts")}</span>
-                <span>{formatCurrency(partsCost)}</span>
-              </div>
-              {diagnosisFee > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>Diagnosis</span>
-                  <span>{formatCurrency(diagnosisFee)}</span>
-                </div>
-              )}
-              {transportFee > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>Transport</span>
-                  <span>{formatCurrency(transportFee)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-slate-600 border-t border-slate-100 pt-1.5">
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
@@ -347,12 +316,6 @@ export function QuotationForm({
                 <div className="flex justify-between text-slate-600">
                   <span>{t("vat")} ({vatPercent}%)</span>
                   <span>{formatCurrency(vatAmount)}</span>
-                </div>
-              )}
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-red-600">
-                  <span>Discount</span>
-                  <span>({formatCurrency(discountAmount)})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-slate-900 text-base border-t border-slate-200 pt-2 mt-1">

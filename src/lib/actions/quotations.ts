@@ -11,17 +11,9 @@ import { QUOTATION_STATUS_TRANSITIONS } from "@/types"
 import type { QuotationInput, QuotationStatusInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
-function computeTotal(
-  labourCost: number,
-  partsCost: number,
-  diagnosisFee: number,
-  transportFee: number,
-  vatPercent: number,
-  discountAmount: number
-): number {
-  const subtotal = labourCost + partsCost + diagnosisFee + transportFee
+function computeTotal(subtotal: number, vatPercent: number): number {
   const vatAmount = (subtotal * vatPercent) / 100
-  return Math.max(0, subtotal + vatAmount - discountAmount)
+  return subtotal + vatAmount
 }
 
 export async function createQuotation(data: QuotationInput) {
@@ -36,12 +28,20 @@ export async function createQuotation(data: QuotationInput) {
 
   const {
     customerId, branchId, equipmentId, serviceType, validUntil, problemDesc,
-    labourCost, diagnosisFee, transportFee, vatPercent, discountAmount,
-    remarks, internalNotes, items,
+    vatPercent, remarks, internalNotes, items,
   } = parsed.data
 
   let quotation: { id: string }
   try {
+    const parts = await prisma.sparePart.findMany({
+      where: { id: { in: items.map((i) => i.partId) }, companyId },
+      select: { id: true, name: true, brand: true },
+    })
+    const partMap = new Map(parts.map((p) => [p.id, p]))
+    if (parts.length !== new Set(items.map((i) => i.partId)).size) {
+      return { error: "One or more stock items are invalid" }
+    }
+
     const year = new Date().getFullYear()
     const count = await prisma.quotation.count({
       where: {
@@ -54,13 +54,11 @@ export async function createQuotation(data: QuotationInput) {
     })
     const quotationNumber = generateQuotationNumber(count + 1)
 
-    const partsCost = items.reduce(
+    const subtotal = items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
       0
     )
-    const totalCost = computeTotal(
-      labourCost, partsCost, diagnosisFee, transportFee, vatPercent, discountAmount
-    )
+    const totalCost = computeTotal(subtotal, vatPercent)
 
     quotation = await prisma.quotation.create({
       data: {
@@ -72,23 +70,23 @@ export async function createQuotation(data: QuotationInput) {
         serviceType,
         validUntil: validUntil ? new Date(validUntil) : null,
         problemDesc,
-        labourCost,
-        partsCost,
-        diagnosisFee,
-        transportFee,
+        subtotal,
         vatPercent,
-        discountAmount,
         totalCost,
         remarks: remarks || null,
         internalNotes: internalNotes || null,
         createdById: userId,
         items: {
-          create: items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            subtotal: item.quantity * item.unitPrice,
-          })),
+          create: items.map((item) => {
+            const part = partMap.get(item.partId)!
+            return {
+              partId: item.partId,
+              description: [part.brand, part.name].filter(Boolean).join(" "),
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              subtotal: item.quantity * item.unitPrice,
+            }
+          }),
         },
       },
       select: { id: true },
@@ -113,8 +111,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
 
   const {
     customerId, branchId, equipmentId, serviceType, validUntil, problemDesc,
-    labourCost, diagnosisFee, transportFee, vatPercent, discountAmount,
-    remarks, internalNotes, items,
+    vatPercent, remarks, internalNotes, items,
   } = parsed.data
 
   try {
@@ -127,13 +124,20 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       return { error: "Only draft or sent quotations can be edited" }
     }
 
-    const partsCost = items.reduce(
+    const parts = await prisma.sparePart.findMany({
+      where: { id: { in: items.map((i) => i.partId) }, companyId },
+      select: { id: true, name: true, brand: true },
+    })
+    const partMap = new Map(parts.map((p) => [p.id, p]))
+    if (parts.length !== new Set(items.map((i) => i.partId)).size) {
+      return { error: "One or more stock items are invalid" }
+    }
+
+    const subtotal = items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
       0
     )
-    const totalCost = computeTotal(
-      labourCost, partsCost, diagnosisFee, transportFee, vatPercent, discountAmount
-    )
+    const totalCost = computeTotal(subtotal, vatPercent)
 
     await prisma.$transaction(async (tx) => {
       await tx.quotationItem.deleteMany({ where: { quotationId: id } })
@@ -146,12 +150,8 @@ export async function updateQuotation(id: string, data: QuotationInput) {
           serviceType,
           validUntil: validUntil ? new Date(validUntil) : null,
           problemDesc,
-          labourCost,
-          partsCost,
-          diagnosisFee,
-          transportFee,
+          subtotal,
           vatPercent,
-          discountAmount,
           totalCost,
           remarks: remarks || null,
           internalNotes: internalNotes || null,
@@ -159,13 +159,17 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       })
       if (items.length > 0) {
         await tx.quotationItem.createMany({
-          data: items.map((item) => ({
-            quotationId: id,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            subtotal: item.quantity * item.unitPrice,
-          })),
+          data: items.map((item) => {
+            const part = partMap.get(item.partId)!
+            return {
+              quotationId: id,
+              partId: item.partId,
+              description: [part.brand, part.name].filter(Boolean).join(" "),
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              subtotal: item.quantity * item.unitPrice,
+            }
+          }),
         })
       }
     })

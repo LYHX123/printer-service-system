@@ -54,8 +54,6 @@ export type TranslationKey =
   | "workPerformed"
   // Quotations
   | "quotationNumber"
-  | "labourCost"
-  | "spareParts"
   | "vat"
   | "total"
   | "approved"
@@ -154,14 +152,9 @@ export type TranslationKey =
   | "validUntil"
   | "unitPrice"
   | "subtotal"
-  | "diagnosisFee"
-  | "transportFee"
-  | "discount"
   | "remarks"
   | "convertedToJob"
-  | "noSparePartsListed"
   | "costSummary"
-  | "labour"
   | "parts"
   // Inventory detail / list
   | "compatibleWith"
@@ -332,8 +325,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     workPerformed: "Work Performed",
     // Quotations
     quotationNumber: "Quotation #",
-    labourCost: "Labour Cost",
-    spareParts: "Spare Parts",
     vat: "VAT",
     total: "Total",
     approved: "Approved",
@@ -432,14 +423,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     validUntil: "Valid until",
     unitPrice: "Unit Price",
     subtotal: "Subtotal",
-    diagnosisFee: "Diagnosis Fee",
-    transportFee: "Transport Fee",
-    discount: "Discount",
     remarks: "Remarks",
     convertedToJob: "Converted to job",
-    noSparePartsListed: "No spare parts listed.",
     costSummary: "Cost Summary",
-    labour: "Labour",
     parts: "Parts",
     // Inventory detail / list
     compatibleWith: "Compatible With",
@@ -609,8 +595,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     workPerformed: "已完成的工作",
     // Quotations
     quotationNumber: "报价单号",
-    labourCost: "人工费",
-    spareParts: "备件",
     vat: "增值税",
     total: "总计",
     approved: "已批准",
@@ -709,14 +693,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     validUntil: "有效期至",
     unitPrice: "单价",
     subtotal: "小计",
-    diagnosisFee: "诊断费",
-    transportFee: "交通费",
-    discount: "折扣",
     remarks: "备注",
     convertedToJob: "已转换为工单",
-    noSparePartsListed: "未列出备件。",
     costSummary: "费用汇总",
-    labour: "人工",
     parts: "备件",
     // Inventory detail / list
     compatibleWith: "适用型号",

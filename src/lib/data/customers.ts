@@ -57,6 +57,7 @@ export async function getCustomersWithBranches(
     name: string | null
     code: string
     companyName: string
+    pinNumber: string | null
     branches: { id: string; name: string }[]
   }[]
 > {
@@ -67,6 +68,7 @@ export async function getCustomersWithBranches(
       name: true,
       code: true,
       companyName: true,
+      pinNumber: true,
       branches: {
         where: { isActive: true },
         select: { id: true, name: true },

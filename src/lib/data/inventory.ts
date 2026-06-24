@@ -99,25 +99,29 @@ export async function getSparePartForEdit(
 /** Lightweight list for quotation / repair report part pickers */
 export type SparePartOption = Pick<
   SparePart,
-  "id" | "partNumber" | "name" | "category" | "unit" | "sellingPrice"
+  "id" | "partNumber" | "name" | "brand" | "category" | "unit" | "imageUrl"
 > & {
+  sellingPrice: number
   stock: Pick<InventoryStock, "quantity"> | null
 }
 
 export async function getSparePartOptions(companyId: string): Promise<SparePartOption[]> {
-  return prisma.sparePart.findMany({
+  const parts = await prisma.sparePart.findMany({
     where: { companyId, isActive: true },
     select: {
       id: true,
       partNumber: true,
       name: true,
+      brand: true,
       category: true,
       unit: true,
       sellingPrice: true,
+      imageUrl: true,
       stock: { select: { quantity: true } },
     },
     orderBy: { name: "asc" },
   })
+  return parts.map((p) => ({ ...p, sellingPrice: Number(p.sellingPrice) }))
 }
 
 export async function getLowStockParts(companyId: string): Promise<SparePartListItem[]> {

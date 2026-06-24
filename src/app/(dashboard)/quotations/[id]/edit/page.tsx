@@ -52,18 +52,16 @@ export default async function EditQuotationPage({
       ? format(new Date(quotation.validUntil), "yyyy-MM-dd")
       : "",
     problemDesc: quotation.problemDesc,
-    labourCost: Number(quotation.labourCost),
-    diagnosisFee: Number(quotation.diagnosisFee),
-    transportFee: Number(quotation.transportFee),
     vatPercent: Number(quotation.vatPercent),
-    discountAmount: Number(quotation.discountAmount),
     remarks: quotation.remarks ?? "",
     internalNotes: quotation.internalNotes ?? "",
-    items: quotation.items.map((item) => ({
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-    })),
+    items: quotation.items
+      .filter((item) => item.partId)
+      .map((item) => ({
+        partId: item.partId!,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+      })),
   }
 
   return (

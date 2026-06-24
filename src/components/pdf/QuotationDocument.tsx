@@ -181,14 +181,9 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
   const currency = quotation.company.currency
   const generatedOn = formatDateInTimezone(new Date(), quotation.company.timezone)
 
-  const labourCost = Number(quotation.labourCost)
-  const partsCost = Number(quotation.partsCost)
-  const diagnosisFee = Number(quotation.diagnosisFee)
-  const transportFee = Number(quotation.transportFee)
   const vatPercent = Number(quotation.vatPercent)
-  const discountAmount = Number(quotation.discountAmount)
   const totalCost = Number(quotation.totalCost)
-  const subtotal = labourCost + partsCost + diagnosisFee + transportFee
+  const subtotal = Number(quotation.subtotal)
   const vatAmount = (subtotal * vatPercent) / 100
 
   return (
@@ -220,6 +215,9 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
           <View style={[styles.col, styles.section]}>
             <Text style={styles.sectionTitle}>Customer Information</Text>
             <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{quotation.customer.companyName}</Text></View>
+            {quotation.customer.pinNumber && (
+              <View style={styles.row}><Text style={styles.label}>PIN No</Text><Text style={styles.value}>{quotation.customer.pinNumber}</Text></View>
+            )}
             {quotation.customer.name && (
               <View style={styles.row}><Text style={styles.label}>Contact</Text><Text style={styles.value}>{quotation.customer.name}</Text></View>
             )}
@@ -257,20 +255,22 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
           <Text style={styles.paragraph}>{quotation.problemDesc}</Text>
         </View>
 
-        {/* Spare parts */}
+        {/* Quotation items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Spare Parts</Text>
+          <Text style={styles.sectionTitle}>Quotation Items</Text>
           {quotation.items.length > 0 ? (
             <View style={styles.table}>
               <View style={styles.tableHeader}>
-                <Text style={[styles.th, styles.cellPart]}>Description</Text>
+                <Text style={[styles.th, styles.cellPart]}>Item</Text>
                 <Text style={[styles.th, styles.cellQty]}>Qty</Text>
                 <Text style={[styles.th, styles.cellPrice]}>Unit Price</Text>
-                <Text style={[styles.th, styles.cellSubtotal]}>Subtotal</Text>
+                <Text style={[styles.th, styles.cellSubtotal]}>Amount</Text>
               </View>
               {quotation.items.map((item) => (
                 <View key={item.id} style={styles.tableRow}>
-                  <Text style={styles.cellPart}>{item.description}</Text>
+                  <Text style={styles.cellPart}>
+                    {item.part ? (item.part.brand ? `${item.part.brand} — ${item.part.name}` : item.part.name) : item.description}
+                  </Text>
                   <Text style={styles.cellQty}>{item.quantity}</Text>
                   <Text style={styles.cellPrice}>{formatCurrency(Number(item.unitPrice), currency)}</Text>
                   <Text style={styles.cellSubtotal}>{formatCurrency(Number(item.subtotal), currency)}</Text>
@@ -278,34 +278,10 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
               ))}
             </View>
           ) : (
-            <Text style={styles.emptyText}>No spare parts listed.</Text>
+            <Text style={styles.emptyText}>No items listed.</Text>
           )}
 
           <View style={styles.totals}>
-            {labourCost > 0 && (
-              <View style={styles.totalRow}>
-                <Text>Labour</Text>
-                <Text>{formatCurrency(labourCost, currency)}</Text>
-              </View>
-            )}
-            {partsCost > 0 && (
-              <View style={styles.totalRow}>
-                <Text>Parts ({quotation.items.length} item{quotation.items.length !== 1 ? "s" : ""})</Text>
-                <Text>{formatCurrency(partsCost, currency)}</Text>
-              </View>
-            )}
-            {diagnosisFee > 0 && (
-              <View style={styles.totalRow}>
-                <Text>Diagnosis Fee</Text>
-                <Text>{formatCurrency(diagnosisFee, currency)}</Text>
-              </View>
-            )}
-            {transportFee > 0 && (
-              <View style={styles.totalRow}>
-                <Text>Transport Fee</Text>
-                <Text>{formatCurrency(transportFee, currency)}</Text>
-              </View>
-            )}
             <View style={styles.totalRow}>
               <Text>Subtotal</Text>
               <Text>{formatCurrency(subtotal, currency)}</Text>
@@ -314,12 +290,6 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
               <View style={styles.totalRow}>
                 <Text>VAT ({vatPercent}%)</Text>
                 <Text>{formatCurrency(vatAmount, currency)}</Text>
-              </View>
-            )}
-            {discountAmount > 0 && (
-              <View style={styles.totalRow}>
-                <Text>Discount</Text>
-                <Text>({formatCurrency(discountAmount, currency)})</Text>
               </View>
             )}
             <View style={styles.totalRowFinal}>

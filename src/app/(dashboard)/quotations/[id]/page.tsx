@@ -1,7 +1,8 @@
 import Link from "next/link"
+import Image from "next/image"
 import { notFound, redirect } from "next/navigation"
 import {
-  ChevronLeft, User, MapPin, Wrench, Calendar, Clock,
+  ChevronLeft, User, MapPin, Wrench, ImageOff,
   Package, Briefcase, FileText,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
@@ -11,7 +12,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { QuotationStatusBadge, EquipmentTypeBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
 import { formatCurrency } from "@/lib/utils"
-import { SERVICE_TYPE_LABELS, QUOTATION_STATUS_LABELS } from "@/types"
+import { SERVICE_TYPE_LABELS } from "@/types"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
 
@@ -29,14 +30,9 @@ export default async function QuotationDetailPage({
   const quotation = await getQuotation(id, companyId)
   if (!quotation) notFound()
 
-  const partsCost = Number(quotation.partsCost)
-  const labourCost = Number(quotation.labourCost)
-  const diagnosisFee = Number(quotation.diagnosisFee)
-  const transportFee = Number(quotation.transportFee)
+  const subtotal = Number(quotation.subtotal)
   const vatPercent = Number(quotation.vatPercent)
-  const discountAmount = Number(quotation.discountAmount)
   const totalCost = Number(quotation.totalCost)
-  const subtotal = labourCost + partsCost + diagnosisFee + transportFee
   const vatAmount = (subtotal * vatPercent) / 100
 
   return (
@@ -107,6 +103,9 @@ export default async function QuotationDetailPage({
                   </Link>
                   {quotation.customer.name && (
                     <p className="text-xs text-slate-500">{quotation.customer.name}</p>
+                  )}
+                  {quotation.customer.pinNumber && (
+                    <p className="text-xs text-slate-400"><T k="pinNumber" />: {quotation.customer.pinNumber}</p>
                   )}
                 </div>
               </div>
@@ -185,25 +184,41 @@ export default async function QuotationDetailPage({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <Package className="h-4 w-4 text-slate-400" />
-              <T k="spareParts" />
+              Quotation Items
             </h3>
             {quotation.items.length === 0 ? (
-              <p className="text-sm text-slate-400 italic"><T k="noSparePartsListed" /></p>
+              <p className="text-sm text-slate-400 italic">No items added yet.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-xs font-semibold text-slate-500 uppercase border-b border-slate-100">
-                      <th className="pb-2 text-left"><T k="description" /></th>
+                      <th className="pb-2 text-left">Item</th>
                       <th className="pb-2 text-right"><T k="quantity" /></th>
                       <th className="pb-2 text-right"><T k="unitPrice" /></th>
-                      <th className="pb-2 text-right"><T k="subtotal" /></th>
+                      <th className="pb-2 text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {quotation.items.map((item) => (
                       <tr key={item.id}>
-                        <td className="py-2 text-slate-700">{item.description}</td>
+                        <td className="py-2 text-slate-700">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                              {item.part?.imageUrl ? (
+                                <Image src={item.part.imageUrl} alt={item.part.name} width={36} height={36} className="h-full w-full object-cover" unoptimized />
+                              ) : (
+                                <ImageOff className="h-3.5 w-3.5 text-slate-300" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900">
+                                {item.part ? (item.part.brand ? `${item.part.brand} — ${item.part.name}` : item.part.name) : item.description}
+                              </p>
+                              {item.part && <p className="text-xs text-slate-400 font-mono">{item.part.partNumber}</p>}
+                            </div>
+                          </div>
+                        </td>
                         <td className="py-2 text-right text-slate-600">{item.quantity}</td>
                         <td className="py-2 text-right text-slate-600">{formatCurrency(Number(item.unitPrice))}</td>
                         <td className="py-2 text-right font-medium text-slate-700">{formatCurrency(Number(item.subtotal))}</td>
@@ -219,31 +234,7 @@ export default async function QuotationDetailPage({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="costSummary" /></h3>
             <div className="max-w-sm ml-auto space-y-2 text-sm">
-              {labourCost > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span><T k="labour" /></span>
-                  <span>{formatCurrency(labourCost)}</span>
-                </div>
-              )}
-              {partsCost > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span><T k="parts" /> ({quotation.items.length})</span>
-                  <span>{formatCurrency(partsCost)}</span>
-                </div>
-              )}
-              {diagnosisFee > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span><T k="diagnosisFee" /></span>
-                  <span>{formatCurrency(diagnosisFee)}</span>
-                </div>
-              )}
-              {transportFee > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span><T k="transportFee" /></span>
-                  <span>{formatCurrency(transportFee)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-slate-700 border-t border-slate-100 pt-2">
+              <div className="flex justify-between text-slate-700">
                 <span><T k="subtotal" /></span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
@@ -251,12 +242,6 @@ export default async function QuotationDetailPage({
                 <div className="flex justify-between text-slate-600">
                   <span><T k="vat" /> ({vatPercent}%)</span>
                   <span>{formatCurrency(vatAmount)}</span>
-                </div>
-              )}
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-red-600">
-                  <span><T k="discount" /></span>
-                  <span>({formatCurrency(discountAmount)})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-slate-900 text-base border-t border-slate-200 pt-2">

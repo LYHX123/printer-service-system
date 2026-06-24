@@ -9,7 +9,21 @@ import type {
   User,
   Company,
   QuotationStatus,
+  SparePart,
 } from "@/types"
+
+const QUOTATION_ITEM_PART_SELECT = {
+  id: true,
+  partNumber: true,
+  name: true,
+  brand: true,
+  unit: true,
+  imageUrl: true,
+} as const
+
+type QuotationItemPart = Pick<SparePart, "id" | "partNumber" | "name" | "brand" | "unit" | "imageUrl">
+
+export type QuotationItemWithPart = QuotationItem & { part: QuotationItemPart | null }
 
 export type QuotationListItem = Pick<
   Quotation,
@@ -56,11 +70,11 @@ export async function getQuotations(
 }
 
 export type QuotationDetail = Quotation & {
-  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "phone" | "location">
+  customer: Pick<Customer, "id" | "name" | "code" | "companyName" | "pinNumber" | "phone" | "location">
   branch: Pick<CustomerBranch, "id" | "name" | "address"> | null
   equipment: Pick<Equipment, "id" | "brand" | "model" | "serialNumber" | "type"> | null
   createdBy: Pick<User, "id" | "name">
-  items: QuotationItem[]
+  items: QuotationItemWithPart[]
   convertedJob: Pick<ServiceJob, "id" | "jobNumber"> | null
 }
 
@@ -77,6 +91,7 @@ export async function getQuotation(
           name: true,
           code: true,
           companyName: true,
+          pinNumber: true,
           phone: true,
           location: true,
         },
@@ -92,7 +107,7 @@ export async function getQuotation(
         },
       },
       createdBy: { select: { id: true, name: true } },
-      items: { orderBy: { createdAt: "asc" } },
+      items: { orderBy: { createdAt: "asc" }, include: { part: { select: QUOTATION_ITEM_PART_SELECT } } },
       convertedJob: { select: { id: true, jobNumber: true } },
     },
   }) as Promise<QuotationDetail | null>
@@ -125,6 +140,7 @@ export async function getQuotationForPdf(
           name: true,
           code: true,
           companyName: true,
+          pinNumber: true,
           phone: true,
           location: true,
         },
@@ -140,7 +156,7 @@ export async function getQuotationForPdf(
         },
       },
       createdBy: { select: { id: true, name: true } },
-      items: { orderBy: { createdAt: "asc" } },
+      items: { orderBy: { createdAt: "asc" }, include: { part: { select: QUOTATION_ITEM_PART_SELECT } } },
       convertedJob: { select: { id: true, jobNumber: true } },
     },
   }) as Promise<QuotationPdfData | null>

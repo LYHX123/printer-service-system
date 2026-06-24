@@ -95,7 +95,7 @@ export type TechnicianNotesInput = z.infer<typeof TechnicianNotesSchema>
 // ─── Quotation ────────────────────────────────────────────────────────────────
 
 export const QuotationItemInputSchema = z.object({
-  description: z.string().min(1, "Description required").max(500),
+  partId: z.string().min(1, "Stock item is required"),
   quantity: z.coerce.number().int().min(1, "Min 1"),
   unitPrice: z.coerce.number().min(0, "Must be ≥ 0"),
 })
@@ -116,14 +116,10 @@ export const QuotationSchema = z.object({
   ]),
   validUntil: z.string().optional().or(z.literal("")),
   problemDesc: z.string().min(1, "Problem description is required").max(2000),
-  labourCost: z.coerce.number().min(0).default(0),
-  diagnosisFee: z.coerce.number().min(0).default(0),
-  transportFee: z.coerce.number().min(0).default(0),
   vatPercent: z.coerce.number().min(0).max(100).default(DEFAULT_VAT_PERCENT),
-  discountAmount: z.coerce.number().min(0).default(0),
   remarks: z.string().max(2000).optional().or(z.literal("")),
   internalNotes: z.string().max(2000).optional().or(z.literal("")),
-  items: z.array(QuotationItemInputSchema).default([]),
+  items: z.array(QuotationItemInputSchema).min(1, "Add at least one stock item"),
 })
 
 // ─── Company Settings ──────────────────────────────────────────────────────────
