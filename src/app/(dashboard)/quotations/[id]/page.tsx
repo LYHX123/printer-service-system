@@ -132,12 +132,9 @@ export default async function QuotationDetailPage({
                 <div className="flex items-center gap-2">
                   <EquipmentTypeBadge type={quotation.equipment.type} />
                 </div>
-                <Link
-                  href={`/equipment/${quotation.equipment.id}`}
-                  className="block font-medium text-slate-900 hover:text-blue-600 transition-colors"
-                >
+                <p className="font-medium text-slate-900">
                   {quotation.equipment.brand} {quotation.equipment.model}
-                </Link>
+                </p>
                 <p className="font-mono text-xs text-slate-400">{quotation.equipment.serialNumber}</p>
               </div>
             </div>

@@ -94,9 +94,9 @@ export default async function JobDetailPage({
               <div className="flex items-center gap-2">
                 <EquipmentTypeBadge type={job.equipment.type} />
               </div>
-              <Link href={`/equipment/${job.equipment.id}`} className="block text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <p className="text-sm font-medium text-slate-900">
                 {job.equipment.brand} {job.equipment.model}
-              </Link>
+              </p>
               <p className="font-mono text-xs text-slate-400">{job.equipment.serialNumber}</p>
               {job.equipment.warrantyExpiry && (
                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-2">

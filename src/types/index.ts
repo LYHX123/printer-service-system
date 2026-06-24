@@ -5,7 +5,6 @@ import type {
   CustomerBranch,
   CustomerContract,
   Equipment,
-  EquipmentPhoto,
   MeterReading,
   ServiceJob,
   Quotation,
@@ -40,7 +39,6 @@ export type {
   CustomerBranch,
   CustomerContract,
   Equipment,
-  EquipmentPhoto,
   MeterReading,
   ServiceJob,
   Quotation,
@@ -99,14 +97,6 @@ export type QuotationWithRelations = Quotation & {
   createdBy: Pick<User, "id" | "name">
   items: QuotationItem[]
   convertedJob: Pick<ServiceJob, "id" | "jobNumber"> | null
-}
-
-export type EquipmentWithRelations = Equipment & {
-  customer: Customer
-  branch: CustomerBranch | null
-  photos: EquipmentPhoto[]
-  meterReadings: MeterReading[]
-  serviceJobs: Pick<ServiceJob, "id" | "jobNumber" | "status" | "serviceType" | "receivedDate">[]
 }
 
 export type CustomerContractWithRelations = CustomerContract & {
@@ -281,23 +271,6 @@ export const EQUIPMENT_PART_CATEGORIES: Record<EquipmentType, PartCategory[]> = 
   PROJECTOR: ["PROJECTOR_PART"],
   CCTV_SYSTEM: ["CCTV_PART"],
   OTHER: ["GENERAL"],
-}
-
-/** Spec notes template shown in the equipment form by type */
-export const EQUIPMENT_NOTES_PLACEHOLDER: Record<EquipmentType, string> = {
-  PRINTER:
-    "e.g. Interface: USB/Network, Paper size: A4/A3, PPM: 30, Drum condition: Fair",
-  COPIER:
-    "e.g. Functions: Print/Copy/Scan/Fax, PPM: 25, Paper capacity: 500 sheets",
-  LAPTOP:
-    "e.g. Processor: Intel i5-12th Gen, RAM: 8GB, Storage: 512GB SSD, Display: 15.6\", Battery: Replaceable",
-  DESKTOP_COMPUTER:
-    "e.g. Processor: Intel i7-12th Gen, RAM: 16GB, Storage: 1TB HDD + 256GB SSD, GPU: Integrated",
-  PROJECTOR:
-    "e.g. Resolution: XGA 1024x768, Brightness: 3000 lumens, Lamp hours: 2500h, Interface: HDMI/VGA",
-  CCTV_SYSTEM:
-    "e.g. Camera count: 8, DVR/NVR: Hikvision NVR, Resolution: 2MP 1080p, Storage: 2TB HDD",
-  OTHER: "Enter equipment specifications and relevant details",
 }
 
 /** Technician notes placeholder by equipment type (AI input field) */

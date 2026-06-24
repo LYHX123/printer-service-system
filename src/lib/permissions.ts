@@ -15,7 +15,6 @@ import type { Role } from "@/types"
 export type Module =
   | "dashboard"
   | "customers"
-  | "equipment"
   | "jobs"
   | "quotations"
   | "reports"
@@ -27,7 +26,6 @@ export type Module =
 const MODULE_ACCESS: Record<Module, Role[]> = {
   dashboard: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   customers: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  equipment: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   quotations: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   reports: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],

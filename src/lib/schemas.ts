@@ -13,34 +13,6 @@ export const CustomerSchema = z.object({
 
 export type CustomerInput = z.infer<typeof CustomerSchema>
 
-// ─── Equipment ────────────────────────────────────────────────────────────────
-
-export const EquipmentSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
-  branchId: z.string().optional().or(z.literal("")),
-  serialNumber: z.string().min(1, "Serial number is required").max(100),
-  assetNumber: z.string().max(100).optional().or(z.literal("")),
-  brand: z.string().min(1, "Brand is required").max(100),
-  model: z.string().min(1, "Model is required").max(100),
-  type: z.enum([
-    "PRINTER",
-    "COPIER",
-    "LAPTOP",
-    "DESKTOP_COMPUTER",
-    "PROJECTOR",
-    "CCTV_SYSTEM",
-    "OTHER",
-  ]),
-  purchaseDate: z.string().optional().or(z.literal("")),
-  warrantyExpiry: z.string().optional().or(z.literal("")),
-  notes: z.string().max(2000).optional().or(z.literal("")),
-  // Meter reading fields — only used for PRINTER/COPIER on registration
-  initialBlackPages: z.coerce.number().int().min(0).optional(),
-  initialColorPages: z.coerce.number().int().min(0).optional(),
-})
-
-export type EquipmentInput = z.infer<typeof EquipmentSchema>
-
 // ─── Job ──────────────────────────────────────────────────────────────────────
 
 export const JobSchema = z.object({

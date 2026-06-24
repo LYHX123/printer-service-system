@@ -116,9 +116,9 @@ export default async function JobsPage({
             render: (row) => (
               <div className="flex items-center gap-2">
                 <EquipmentTypeIcon type={row.equipment.type} className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <Link href={`/equipment/${row.equipment.id}`} className="text-sm text-slate-700 hover:text-blue-600 transition-colors">
+                <span className="text-sm text-slate-700">
                   {row.equipment.brand} {row.equipment.model}
-                </Link>
+                </span>
               </div>
             ),
           },

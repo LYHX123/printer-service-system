@@ -16,7 +16,6 @@ const SECTION_LABEL_KEYS: Record<string, TranslationKey> = {
   dashboard: "dashboard",
   quotations: "quotations",
   customers: "customers",
-  equipment: "equipment",
   jobs: "jobs",
   inventory: "inventory",
   reports: "reports",

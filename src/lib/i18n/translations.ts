@@ -40,7 +40,6 @@ export type TranslationKey =
   | "email"
   | "address"
   // Equipment
-  | "equipmentType"
   | "brand"
   | "model"
   | "itemName"
@@ -98,7 +97,6 @@ export type TranslationKey =
   | "description"
   | "priority"
   | "searchCustomersPlaceholder"
-  | "searchEquipmentPlaceholder"
   | "searchJobsPlaceholder"
   | "searchQuotationsPlaceholder"
   | "searchPartsPlaceholder"
@@ -107,15 +105,12 @@ export type TranslationKey =
   | "summary"
   | "customerCode"
   | "totalJobs"
-  | "registerEquipment"
   | "newQuotation"
   | "newJob"
   | "newCustomer"
   | "newUser"
   | "inYourCompany"
   | "addPart"
-  | "noEquipmentRegistered"
-  | "registerEquipmentDesc"
   | "noServiceJobs"
   | "createJobForCustomerDesc"
   | "noQuotations"
@@ -137,7 +132,6 @@ export type TranslationKey =
   | "received"
   | "completed"
   | "warranty"
-  | "noQuotationsForEquipment"
   | "noMeterReadings"
   | "manual"
   // Job detail
@@ -191,8 +185,6 @@ export type TranslationKey =
   // List pages — empty states & filters
   | "noCustomersFound"
   | "registerFirstCustomer"
-  | "noEquipmentFound"
-  | "registerFirstEquipment"
   | "noJobsFound"
   | "createFirstJob"
   | "noQuotationsFound"
@@ -326,7 +318,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     email: "Email",
     address: "Address",
     // Equipment
-    equipmentType: "Equipment Type",
     brand: "Brand",
     model: "Model",
     itemName: "Item Name",
@@ -384,7 +375,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     description: "Description",
     priority: "Priority",
     searchCustomersPlaceholder: "Search by name, code or company…",
-    searchEquipmentPlaceholder: "Serial, brand, model…",
     searchJobsPlaceholder: "Job #, customer, equipment…",
     searchQuotationsPlaceholder: "Search by Q# or customer…",
     searchPartsPlaceholder: "Part number, name, brand…",
@@ -393,15 +383,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     summary: "Summary",
     customerCode: "Customer Code",
     totalJobs: "Total Jobs",
-    registerEquipment: "Register Equipment",
     newQuotation: "New Quotation",
     newJob: "New Job",
     newCustomer: "New Customer",
     newUser: "New User",
     inYourCompany: "in your company",
     addPart: "Add Part",
-    noEquipmentRegistered: "No equipment registered",
-    registerEquipmentDesc: "Register equipment for this customer to track service history.",
     noServiceJobs: "No service jobs",
     createJobForCustomerDesc: "Create a job for this customer when equipment needs servicing.",
     noQuotations: "No quotations",
@@ -423,7 +410,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     received: "Received",
     completed: "Completed",
     warranty: "Warranty",
-    noQuotationsForEquipment: "No quotations for this equipment yet.",
     noMeterReadings: "No meter readings recorded yet.",
     manual: "Manual",
     // Job detail
@@ -477,8 +463,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // List pages — empty states & filters
     noCustomersFound: "No customers found",
     registerFirstCustomer: "Register your first customer to get started.",
-    noEquipmentFound: "No equipment found",
-    registerFirstEquipment: "Register your first piece of equipment to get started.",
     noJobsFound: "No jobs found",
     createFirstJob: "Create your first service job to get started.",
     noQuotationsFound: "No quotations found",
@@ -611,7 +595,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     email: "邮箱",
     address: "地址",
     // Equipment
-    equipmentType: "设备类型",
     brand: "品牌",
     model: "型号",
     itemName: "物品名称",
@@ -669,7 +652,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     description: "描述",
     priority: "优先级",
     searchCustomersPlaceholder: "按名称、编号或公司搜索…",
-    searchEquipmentPlaceholder: "序列号、品牌、型号…",
     searchJobsPlaceholder: "工单号、客户、设备…",
     searchQuotationsPlaceholder: "按报价单号或客户搜索…",
     searchPartsPlaceholder: "零件编号、名称、品牌…",
@@ -678,15 +660,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     summary: "摘要",
     customerCode: "客户编码",
     totalJobs: "工单总数",
-    registerEquipment: "登记设备",
     newQuotation: "新建报价单",
     newJob: "新建工单",
     newCustomer: "新建客户",
     newUser: "新建用户",
     inYourCompany: "位于贵公司",
     addPart: "新增零件",
-    noEquipmentRegistered: "暂无注册设备",
-    registerEquipmentDesc: "为该客户登记设备以跟踪服务历史。",
     noServiceJobs: "暂无服务工单",
     createJobForCustomerDesc: "当设备需要维修时，为该客户创建工单。",
     noQuotations: "暂无报价单",
@@ -708,7 +687,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     received: "接收日期",
     completed: "完成日期",
     warranty: "保修",
-    noQuotationsForEquipment: "该设备暂无报价单。",
     noMeterReadings: "暂无读数记录。",
     manual: "手动",
     // Job detail
@@ -762,8 +740,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // List pages — empty states & filters
     noCustomersFound: "未找到客户",
     registerFirstCustomer: "注册第一个客户以开始使用。",
-    noEquipmentFound: "未找到设备",
-    registerFirstEquipment: "登记第一台设备以开始使用。",
     noJobsFound: "未找到工单",
     createFirstJob: "创建第一个服务工单以开始使用。",
     noQuotationsFound: "未找到报价单",

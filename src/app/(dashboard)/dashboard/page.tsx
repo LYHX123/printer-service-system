@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   DollarSign,
   Users,
-  HardDrive,
   Wrench,
   FileText,
   PackageX,
@@ -74,13 +73,6 @@ export default async function DashboardPage() {
           value="—"
           href="/customers"
           icon={<Users className="h-5 w-5 text-slate-600" />}
-          iconBg="bg-slate-100"
-        />
-        <MetricCard
-          label="Equipment Registered"
-          value="—"
-          href="/equipment"
-          icon={<HardDrive className="h-5 w-5 text-slate-600" />}
           iconBg="bg-slate-100"
         />
         <MetricCard
