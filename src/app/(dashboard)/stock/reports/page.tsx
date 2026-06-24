@@ -9,6 +9,7 @@ import {
   getStockMovements,
   getStockLevel,
 } from "@/lib/data/inventory"
+import { getLowStockThreshold } from "@/lib/stock-types"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
 import { Tabs } from "@/components/ui/tabs"
@@ -161,11 +162,11 @@ async function LowStockReport({ companyId }: { companyId: string }) {
           },
           {
             key: "reorderLevel", label: <T k="minQty" />, className: "text-right", headerClassName: "text-right",
-            render: (row) => <span className="font-mono text-slate-500">{row.reorderLevel}</span>,
+            render: (row) => <span className="font-mono text-slate-500">{getLowStockThreshold(row.category)}</span>,
           },
           {
             key: "status", label: <T k="status" />,
-            render: (row) => <StockLevelBadge level={getStockLevel(row.stock?.quantity ?? 0, row.reorderLevel)} />,
+            render: (row) => <StockLevelBadge level={getStockLevel(row.stock?.quantity ?? 0, getLowStockThreshold(row.category))} />,
           },
         ]}
         data={parts}

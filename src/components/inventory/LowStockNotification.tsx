@@ -52,7 +52,8 @@ export function LowStockNotification({ alerts }: { alerts: LowStockAlert[] }) {
               {alert.name}
             </p>
             <p className="text-xs text-slate-500">
-              Qty: <span className="font-mono">{alert.quantity}</span>
+              Qty: <span className="font-mono">{alert.quantity}</span> / Minimum:{" "}
+              <span className="font-mono">{alert.threshold}</span>
             </p>
             <Link
               href={`/stock?type=${alert.stockType}`}

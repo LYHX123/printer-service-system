@@ -16,6 +16,7 @@ import { MetricCard } from "@/components/ui/metric-card"
 import { StockLevelBadge } from "@/components/ui/badge"
 import { canAccess } from "@/lib/permissions"
 import { getLowStockCount, getLowStockParts, getStockLevel } from "@/lib/data/inventory"
+import { getLowStockThreshold } from "@/lib/stock-types"
 import type { Role } from "@/types"
 
 export default async function DashboardPage() {
@@ -90,7 +91,7 @@ export default async function DashboardPage() {
           iconBg="bg-slate-100"
         />
         <MetricCard
-          label="Parts Low Stock"
+          label="Low Stock Items"
           value={canViewInventory ? lowStockCount : "—"}
           href="/stock"
           icon={<Wrench className="h-5 w-5 text-slate-600" />}
@@ -138,6 +139,7 @@ export default async function DashboardPage() {
             <ul className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
               {lowStockParts.slice(0, 8).map((part) => {
                 const quantity = part.stock?.quantity ?? 0
+                const threshold = getLowStockThreshold(part.category)
                 return (
                   <li key={part.id} className="px-5 py-3">
                     <Link href={`/stock/${part.id}/edit`} className="flex items-center justify-between gap-2 group">
@@ -146,8 +148,8 @@ export default async function DashboardPage() {
                         <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-mono text-slate-500">{quantity}/{part.reorderLevel} {part.unit}</span>
-                        <StockLevelBadge level={getStockLevel(quantity, part.reorderLevel)} />
+                        <span className="text-xs font-mono text-slate-500">Qty: {quantity} / Minimum: {threshold}</span>
+                        <StockLevelBadge level={getStockLevel(quantity, threshold)} />
                       </div>
                     </Link>
                   </li>

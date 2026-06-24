@@ -34,6 +34,17 @@ export function getStockType(category: PartCategory): StockType {
   return CATEGORY_TO_STOCK_TYPE[category]
 }
 
+/** Default low-stock alert thresholds by stock type. Quantity at or below this triggers a low-stock alert. */
+export const LOW_STOCK_THRESHOLDS: Record<StockType, number> = {
+  EQUIPMENT: 2,
+  CONSUMPTION: 5,
+  PARTS: 2,
+}
+
+export function getLowStockThreshold(category: PartCategory): number {
+  return LOW_STOCK_THRESHOLDS[getStockType(category)]
+}
+
 /** Category used when creating a new item under a given stock type (DB enum value stays hidden from the UI). */
 export const DEFAULT_CATEGORY_FOR_STOCK_TYPE: Record<StockType, PartCategory> = {
   EQUIPMENT: "LAPTOP_PART",
@@ -62,12 +73,13 @@ export function stockCountTranslationKey(stockType: StockType, count: number): T
   return count === 1 ? labels.singular : labels.plural
 }
 
-/** A spare part whose quantity has dropped to or below the low-stock notification threshold. */
+/** A spare part whose quantity has dropped to or below its category's low-stock threshold. */
 export type LowStockAlert = {
   id: string
   stockType: StockType
   brand: string | null
   name: string
   quantity: number
+  threshold: number
   isOutOfStock: boolean
 }
