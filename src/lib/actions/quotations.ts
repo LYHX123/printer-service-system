@@ -85,7 +85,8 @@ export async function createQuotation(data: QuotationInput) {
     })
 
     revalidatePath("/quotations")
-  } catch {
+  } catch (err) {
+    console.error("createQuotation failed:", err)
     return { error: "Failed to create quotation" }
   }
 
