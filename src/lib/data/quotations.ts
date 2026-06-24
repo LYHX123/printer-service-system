@@ -25,8 +25,9 @@ export type QuotationItemWithPart = QuotationItem & { part: QuotationItemPart | 
 
 export type QuotationListItem = Pick<
   Quotation,
-  "id" | "quotationNumber" | "status" | "totalCost" | "createdAt" | "validUntil"
+  "id" | "quotationNumber" | "status" | "createdAt" | "validUntil"
 > & {
+  totalCost: number
   customer: Pick<Customer, "id" | "name" | "code" | "companyName">
   createdBy: Pick<User, "id" | "name">
 }
@@ -36,7 +37,7 @@ export async function getQuotations(
   opts?: { search?: string; status?: QuotationStatus }
 ): Promise<QuotationListItem[]> {
   const { search, status } = opts ?? {}
-  return prisma.quotation.findMany({
+  const quotations = await prisma.quotation.findMany({
     where: {
       companyId,
       ...(status ? { status } : {}),
@@ -61,7 +62,9 @@ export async function getQuotations(
       createdBy: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },
-  }) as Promise<QuotationListItem[]>
+  })
+
+  return quotations.map((q) => ({ ...q, totalCost: Number(q.totalCost) }))
 }
 
 export type QuotationDetail = Quotation & {
