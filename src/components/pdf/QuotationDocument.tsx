@@ -2,8 +2,10 @@ import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/render
 import { existsSync, readFileSync } from "fs"
 import path from "path"
 import { format } from "date-fns"
-import { formatCurrency } from "@/lib/utils"
 import type { QuotationPdfData } from "@/lib/data/quotations"
+import type { QuotationItemWithPart } from "@/lib/data/quotations"
+
+const MIN_VISIBLE_ROWS = 5
 
 const styles = StyleSheet.create({
   page: {
@@ -12,128 +14,150 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#1e293b",
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    borderBottom: "2px solid #1e293b",
-    paddingBottom: 10,
-    marginBottom: 12,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    objectFit: "contain",
-    marginRight: 10,
-  },
-  companyBlock: {
-    flexDirection: "row",
+  headerWrap: {
+    position: "relative",
     alignItems: "center",
+    marginBottom: 8,
+  },
+  logoTopRight: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 50,
+    height: 50,
+    objectFit: "contain",
   },
   companyName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 700,
-    marginBottom: 2,
+    textAlign: "center",
   },
   companyMeta: {
-    fontSize: 8,
-    color: "#64748b",
+    fontSize: 8.5,
+    color: "#334155",
+    textAlign: "center",
+    marginTop: 2,
   },
-  reportMeta: {
-    alignItems: "flex-end",
+  titleBlock: {
+    alignItems: "center",
+    borderTop: "1.5px solid #1e293b",
+    borderBottom: "1.5px solid #1e293b",
+    paddingVertical: 4,
+    marginBottom: 10,
   },
-  reportTitle: {
+  titleText: {
     fontSize: 12,
     fontWeight: 700,
-    marginBottom: 4,
+    letterSpacing: 1,
   },
-  section: {
-    marginBottom: 10,
-    breakInside: "avoid",
-  },
-  sectionTitle: {
-    fontSize: 10,
-    fontWeight: 700,
-    marginBottom: 4,
-    backgroundColor: "#f1f5f9",
-    padding: 4,
-  },
-  row: {
+  metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  customerLabel: {
+    fontSize: 9,
+    fontWeight: 700,
     marginBottom: 2,
   },
-  label: {
-    color: "#64748b",
+  customerValue: {
+    fontSize: 9,
+    marginBottom: 1,
   },
-  value: {
-    fontWeight: 700,
-    maxWidth: "65%",
-    textAlign: "right",
+  dateBlock: {
+    alignItems: "flex-end",
   },
-  paragraph: {
-    lineHeight: 1.5,
+  dateRow: {
+    fontSize: 9,
+    marginBottom: 1,
   },
   table: {
     width: "100%",
   },
   tableHeader: {
     flexDirection: "row",
-    borderBottom: "1px solid #cbd5e1",
-    paddingBottom: 3,
-    marginBottom: 3,
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+    borderTop: "1px solid #1e293b",
+    borderBottom: "1px solid #1e293b",
+    paddingVertical: 4,
   },
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 3,
-    borderBottom: "0.5px solid #f1f5f9",
+    minHeight: 34,
+    borderBottom: "0.5px solid #cbd5e1",
+    paddingVertical: 2,
   },
   th: {
     fontWeight: 700,
-    color: "#64748b",
-    fontSize: 8,
+    color: "#1e293b",
+    fontSize: 7.5,
     textTransform: "uppercase",
+    textAlign: "center",
   },
-  cellImage: { width: "10%" },
-  cellPart: { width: "38%" },
-  cellQty: { width: "12%", textAlign: "right" },
-  cellPrice: { width: "20%", textAlign: "right" },
-  cellSubtotal: { width: "20%", textAlign: "right" },
+  cellNo: { width: "6%", textAlign: "center", fontSize: 8.5 },
+  cellItemNo: { width: "12%", textAlign: "center", fontSize: 8 },
+  cellDesc: { width: "26%", fontSize: 8.5, paddingHorizontal: 2 },
+  cellUnit: { width: "8%", textAlign: "center", fontSize: 8.5 },
+  cellQty: { width: "7%", textAlign: "center", fontSize: 8.5 },
+  cellPrice: { width: "14%", textAlign: "right", fontSize: 8.5, paddingRight: 4 },
+  cellAmount: { width: "14%", textAlign: "right", fontSize: 8.5, paddingRight: 4 },
+  cellSample: { width: "13%", alignItems: "center" },
   itemImage: {
     width: 28,
     height: 28,
     objectFit: "cover",
     borderRadius: 2,
   },
+  bottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  noteBlock: {
+    maxWidth: "55%",
+  },
+  noteTitle: {
+    fontSize: 9,
+    fontWeight: 700,
+    marginBottom: 2,
+  },
+  noteItem: {
+    fontSize: 8,
+    color: "#334155",
+  },
   totals: {
-    marginTop: 6,
     alignItems: "flex-end",
   },
   totalRow: {
     flexDirection: "row",
-    width: 200,
+    width: 190,
     justifyContent: "space-between",
     marginBottom: 2,
+    fontSize: 9,
   },
   totalRowFinal: {
     flexDirection: "row",
-    width: 200,
+    width: 190,
     justifyContent: "space-between",
     borderTop: "1px solid #1e293b",
     paddingTop: 3,
     marginTop: 2,
     fontWeight: 700,
+    fontSize: 9.5,
   },
-  emptyText: {
-    color: "#94a3b8",
-    fontStyle: "italic",
+  remarksBlock: {
+    marginTop: 14,
   },
-  validityNote: {
-    marginTop: 10,
-    fontSize: 8,
-    color: "#64748b",
-    fontStyle: "italic",
+  remarksTitle: {
+    fontSize: 9,
+    fontWeight: 700,
+    marginBottom: 2,
+  },
+  remarksText: {
+    fontSize: 8.5,
+    lineHeight: 1.4,
   },
   footer: {
     position: "absolute",
@@ -182,9 +206,15 @@ function formatDateInTimezone(date: Date, timezone: string): string {
   return `${get("day")} ${get("month")} ${get("year")}, ${get("hour")}:${get("minute")}`
 }
 
+function formatAmount(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
 export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }) {
   const logo = resolvePublicFile(quotation.company.logoUrl)
-  const currency = quotation.company.currency
   const generatedOn = formatDateInTimezone(new Date(), quotation.company.timezone)
 
   const vatPercent = Number(quotation.vatPercent)
@@ -192,110 +222,105 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
   const subtotal = Number(quotation.subtotal)
   const vatAmount = (subtotal * vatPercent) / 100
 
+  const rows: (QuotationItemWithPart | null)[] = [...quotation.items]
+  while (rows.length < MIN_VISIBLE_ROWS) rows.push(null)
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.companyBlock}>
-            {logo && <Image src={logo} style={styles.logo} />}
-            <View>
-              <Text style={styles.companyName}>{quotation.company.name}</Text>
-              {quotation.company.address && <Text style={styles.companyMeta}>{quotation.company.address}</Text>}
-              <Text style={styles.companyMeta}>
-                {[quotation.company.phone, quotation.company.email, quotation.company.website].filter(Boolean).join("  •  ")}
-              </Text>
-              {quotation.company.kraPin && <Text style={styles.companyMeta}>KRA PIN: {quotation.company.kraPin}</Text>}
-            </View>
-          </View>
-          <View style={styles.reportMeta}>
-            <Text style={styles.reportTitle}>Quotation</Text>
-            <Text>Quotation No: {quotation.quotationNumber}</Text>
-            <Text>Date: {format(new Date(quotation.createdAt), "dd MMM yyyy")}</Text>
-            {quotation.validUntil && (
-              <Text>Valid Until: {format(new Date(quotation.validUntil), "dd MMM yyyy")}</Text>
-            )}
-          </View>
-        </View>
-
-        {/* Customer */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Customer Information</Text>
-          <View style={styles.row}><Text style={styles.label}>Company</Text><Text style={styles.value}>{quotation.customer.companyName}</Text></View>
-          {quotation.customer.pinNumber && (
-            <View style={styles.row}><Text style={styles.label}>PIN No</Text><Text style={styles.value}>{quotation.customer.pinNumber}</Text></View>
+        <View style={styles.headerWrap}>
+          {logo && <Image src={logo} style={styles.logoTopRight} />}
+          <Text style={styles.companyName}>{quotation.company.name}</Text>
+          {quotation.company.address && (
+            <Text style={styles.companyMeta}>{quotation.company.address}</Text>
           )}
-          {quotation.customer.name && (
-            <View style={styles.row}><Text style={styles.label}>Contact</Text><Text style={styles.value}>{quotation.customer.name}</Text></View>
-          )}
-          {quotation.customer.phone && (
-            <View style={styles.row}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{quotation.customer.phone}</Text></View>
-          )}
-          {quotation.customer.location && (
-            <View style={styles.row}><Text style={styles.label}>Location</Text><Text style={styles.value}>{quotation.customer.location}</Text></View>
+          {quotation.company.kraPin && (
+            <Text style={styles.companyMeta}>PIN: {quotation.company.kraPin}</Text>
           )}
         </View>
 
-        {/* Quotation items */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quotation Items</Text>
-          {quotation.items.length > 0 ? (
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.th, styles.cellImage]}>Image</Text>
-                <Text style={[styles.th, styles.cellPart]}>Item</Text>
-                <Text style={[styles.th, styles.cellQty]}>Qty</Text>
-                <Text style={[styles.th, styles.cellPrice]}>Unit Price</Text>
-                <Text style={[styles.th, styles.cellSubtotal]}>Amount</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.titleText}>QUOTATION LIST</Text>
+        </View>
+
+        {/* Customer + Date/Quotation No */}
+        <View style={styles.metaRow}>
+          <View>
+            <Text style={styles.customerLabel}>CUSTOMER:</Text>
+            <Text style={styles.customerValue}>{quotation.customer.companyName}</Text>
+            <Text style={styles.customerValue}>PIN: {quotation.customer.pinNumber || "—"}</Text>
+          </View>
+          <View style={styles.dateBlock}>
+            <Text style={styles.dateRow}>Date: {format(new Date(quotation.createdAt), "dd MMM yyyy")}</Text>
+            <Text style={styles.dateRow}>Quotation No.: {quotation.quotationNumber}</Text>
+          </View>
+        </View>
+
+        {/* Items table */}
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.th, styles.cellNo]}>No.</Text>
+            <Text style={[styles.th, styles.cellItemNo]}>Item No</Text>
+            <Text style={[styles.th, styles.cellDesc]}>Description</Text>
+            <Text style={[styles.th, styles.cellUnit]}>Unit</Text>
+            <Text style={[styles.th, styles.cellQty]}>Qty</Text>
+            <Text style={[styles.th, styles.cellPrice]}>Unit Price (KES)</Text>
+            <Text style={[styles.th, styles.cellAmount]}>Amount (KES)</Text>
+            <Text style={[styles.th, styles.cellSample]}>Sample</Text>
+          </View>
+          {rows.map((item, index) => {
+            const itemImage = item ? resolvePublicFile(item.part?.imageUrl) : undefined
+            return (
+              <View key={item?.id ?? `blank-${index}`} style={styles.tableRow}>
+                <Text style={styles.cellNo}>{index + 1}</Text>
+                <Text style={styles.cellItemNo}>{item?.part?.partNumber ?? ""}</Text>
+                <Text style={styles.cellDesc}>
+                  {item
+                    ? item.part
+                      ? (item.part.brand ? `${item.part.brand} — ${item.part.name}` : item.part.name)
+                      : item.description
+                    : ""}
+                </Text>
+                <Text style={styles.cellUnit}>{item?.part?.unit ?? ""}</Text>
+                <Text style={styles.cellQty}>{item ? item.quantity : ""}</Text>
+                <Text style={styles.cellPrice}>{item ? formatAmount(Number(item.unitPrice)) : ""}</Text>
+                <Text style={styles.cellAmount}>{item ? formatAmount(Number(item.subtotal)) : ""}</Text>
+                <View style={styles.cellSample}>
+                  {itemImage && <Image src={itemImage} style={styles.itemImage} />}
+                </View>
               </View>
-              {quotation.items.map((item) => {
-                const itemImage = resolvePublicFile(item.part?.imageUrl)
-                return (
-                  <View key={item.id} style={styles.tableRow}>
-                    <View style={styles.cellImage}>
-                      {itemImage && <Image src={itemImage} style={styles.itemImage} />}
-                    </View>
-                    <Text style={styles.cellPart}>
-                      {item.part ? (item.part.brand ? `${item.part.brand} — ${item.part.name}` : item.part.name) : item.description}
-                    </Text>
-                    <Text style={styles.cellQty}>{item.quantity}</Text>
-                    <Text style={styles.cellPrice}>{formatCurrency(Number(item.unitPrice), currency)}</Text>
-                    <Text style={styles.cellSubtotal}>{formatCurrency(Number(item.subtotal), currency)}</Text>
-                  </View>
-                )
-              })}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>No items listed.</Text>
-          )}
+            )
+          })}
+        </View>
 
+        {/* Note + Totals */}
+        <View style={styles.bottomRow}>
+          <View style={styles.noteBlock}>
+            <Text style={styles.noteTitle}>NOTE:</Text>
+            <Text style={styles.noteItem}>1. QUOTATION VALIDITY SHALL BE WITHIN 15 DAYS</Text>
+          </View>
           <View style={styles.totals}>
             <View style={styles.totalRow}>
-              <Text>Subtotal</Text>
-              <Text>{formatCurrency(subtotal, currency)}</Text>
+              <Text>Subtotal (KES)</Text>
+              <Text>{formatAmount(subtotal)}</Text>
             </View>
-            {vatPercent > 0 && (
-              <View style={styles.totalRow}>
-                <Text>VAT ({vatPercent}%)</Text>
-                <Text>{formatCurrency(vatAmount, currency)}</Text>
-              </View>
-            )}
+            <View style={styles.totalRow}>
+              <Text>VAT {vatPercent > 0 ? `(${vatPercent}%)` : ""}</Text>
+              <Text>{formatAmount(vatAmount)}</Text>
+            </View>
             <View style={styles.totalRowFinal}>
-              <Text>Total</Text>
-              <Text>{formatCurrency(totalCost, currency)}</Text>
+              <Text>Total (KES)</Text>
+              <Text>{formatAmount(totalCost)}</Text>
             </View>
           </View>
-
-          <Text style={styles.validityNote}>
-            This quotation is valid for 15 days from the date of issue.
-          </Text>
         </View>
 
-        {/* Remarks */}
+        {/* Remarks (only shown when filled in) */}
         {quotation.remarks && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Remarks</Text>
-            <Text style={styles.paragraph}>{quotation.remarks}</Text>
+          <View style={styles.remarksBlock}>
+            <Text style={styles.remarksTitle}>Remarks</Text>
+            <Text style={styles.remarksText}>{quotation.remarks}</Text>
           </View>
         )}
 
