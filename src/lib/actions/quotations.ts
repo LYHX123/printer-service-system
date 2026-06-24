@@ -39,17 +39,16 @@ export async function createQuotation(data: QuotationInput) {
       return { error: "One or more stock items are invalid" }
     }
 
-    const year = new Date().getFullYear()
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1)
     const count = await prisma.quotation.count({
       where: {
         companyId,
-        createdAt: {
-          gte: new Date(`${year}-01-01`),
-          lt: new Date(`${year + 1}-01-01`),
-        },
+        createdAt: { gte: monthStart, lt: monthEnd },
       },
     })
-    const quotationNumber = generateQuotationNumber(count + 1)
+    const quotationNumber = generateQuotationNumber(now, count + 1)
 
     const subtotal = items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,

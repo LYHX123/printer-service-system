@@ -23,9 +23,10 @@ export function generateCustomerCode(sequence: number): string {
   return `CUST-${String(sequence).padStart(4, "0")}`
 }
 
-export function generateQuotationNumber(sequence: number): string {
-  const year = new Date().getFullYear()
-  return `Q-${year}-${String(sequence).padStart(4, "0")}`
+export function generateQuotationNumber(date: Date, sequence: number): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  return `QT${year}${month}-${String(sequence).padStart(3, "0")}`
 }
 
 export function generatePartNumber(sequence: number): string {

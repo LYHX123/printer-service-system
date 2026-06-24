@@ -304,7 +304,7 @@ model ServiceJob {
 
 model Quotation {
   id              String          @id @default(uuid())
-  quotationNumber String          @unique  // Q-YYYY-NNNN
+  quotationNumber String          @unique  // QTYYYYMM-NNN
   companyId       String
   customerId      String
   status          QuotationStatus @default(DRAFT)
