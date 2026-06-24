@@ -27,7 +27,8 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
   const [converting, setConverting] = useState(false)
 
   const canEdit = status === "DRAFT" || status === "SENT"
-  const canManage = role === "ADMIN" || role === "MANAGER"
+  // Opened to all roles.
+  const canManage = true
 
   async function handleConvert() {
     setConverting(true)

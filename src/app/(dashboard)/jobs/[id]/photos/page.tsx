@@ -14,12 +14,12 @@ export default async function JobPhotosPage({
   const session = await auth()
   const { id } = await params
   const companyId = session!.user.companyId as string
-  const userRole = session!.user.role as string
 
   const job = await getJob(id, companyId)
   if (!job) notFound()
 
-  const canDelete = ["ADMIN", "MANAGER"].includes(userRole)
+  // Opened to all roles.
+  const canDelete = true
   const beforePhotos = job.photos.filter((p) => p.photoType === "BEFORE")
   const afterPhotos = job.photos.filter((p) => p.photoType === "AFTER")
 

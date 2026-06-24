@@ -2,11 +2,13 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ChevronLeft, User, Wrench, MapPin, ShieldCheck, Phone, Gauge, Image as ImageIcon, PenTool, FileText } from "lucide-react"
 import { auth } from "@/lib/auth"
+import { canUpdateJobStatus } from "@/lib/permissions"
 import { getJob, getEngineers } from "@/lib/data/jobs"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { StatusBadge, PriorityBadge, EquipmentTypeBadge, WarrantyBadge } from "@/components/ui/badge"
 import { SERVICE_TYPE_LABELS } from "@/types"
+import type { Role } from "@/types"
 import { StatusTimeline } from "@/components/jobs/StatusTimeline"
 import { TechnicianNotesForm } from "@/components/jobs/TechnicianNotesForm"
 import { JobActions } from "@/components/jobs/JobActions"
@@ -32,8 +34,8 @@ export default async function JobDetailPage({
   if (!job) notFound()
   if (userRole === "ENGINEER" && job.assignedTo.id !== userId) notFound()
 
-  const canUpdateStatus = ["ADMIN", "MANAGER", "ENGINEER"].includes(userRole)
-  const canAssign = ["ADMIN", "MANAGER"].includes(userRole)
+  const canUpdateStatus = canUpdateJobStatus(userRole as Role)
+  const canAssign = true
   const isFinal = job.status === "DELIVERED" || job.status === "CANCELLED"
   const showMeter = job.equipment.type === "PRINTER" || job.equipment.type === "COPIER"
 

@@ -3,13 +3,13 @@ import type { Role } from "@/types"
 /**
  * Centralized RBAC permission model for Phase 7.
  *
- * Role summary:
- * - ADMIN: full access to everything.
- * - MANAGER: customers, equipment, jobs, quotations, reports, inventory — no user/settings management.
- * - ENGINEER: assigned jobs, equipment details, photo/signature uploads, job status updates,
- *   view-only inventory — no quotations, no reports.
- * - RECEPTIONIST: customers, equipment, create/view jobs, create quotations —
- *   no reports, no inventory, no user management.
+ * Per explicit request, all edit/manage permissions below are open to every
+ * role (ADMIN, MANAGER, ENGINEER, RECEPTIONIST) across every module,
+ * including Users and Settings. The only remaining role-specific behavior is
+ * `isRestrictedToAssignedJobs`, which scopes the Jobs *list* for Engineers to
+ * jobs assigned to them — that's a data-visibility scope, not an edit gate,
+ * and was left as-is since it wasn't part of the "open all edit permissions"
+ * request.
  */
 
 export type Module =
@@ -26,15 +26,15 @@ export type Module =
 
 const MODULE_ACCESS: Record<Module, Role[]> = {
   dashboard: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  customers: ["ADMIN", "MANAGER", "RECEPTIONIST"],
+  customers: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   equipment: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  quotations: ["ADMIN", "MANAGER", "RECEPTIONIST"],
-  reports: ["ADMIN", "MANAGER"],
-  productivity: ["ADMIN", "MANAGER", "ENGINEER"],
-  inventory: ["ADMIN", "MANAGER", "ENGINEER"],
-  users: ["ADMIN"],
-  settings: ["ADMIN"],
+  quotations: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+  reports: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+  productivity: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+  inventory: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+  users: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+  settings: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
 }
 
 /** Whether a role can access a given module/section at all. */
@@ -42,9 +42,9 @@ export function canAccess(role: Role, module: Module): boolean {
   return MODULE_ACCESS[module].includes(role)
 }
 
-/** Receptionist & above can create jobs; Engineer can only update jobs assigned to them. */
-export function canCreateJob(role: Role): boolean {
-  return role === "ADMIN" || role === "MANAGER" || role === "RECEPTIONIST"
+/** Opened to all roles. */
+export function canCreateJob(_role: Role): boolean {
+  return true
 }
 
 /** Engineers see only jobs assigned to them; other roles see all company jobs. */
@@ -52,43 +52,45 @@ export function isRestrictedToAssignedJobs(role: Role): boolean {
   return role === "ENGINEER"
 }
 
-/** Admin, Manager and Receptionist can create quotations. */
-export function canCreateQuotation(role: Role): boolean {
-  return role === "ADMIN" || role === "MANAGER" || role === "RECEPTIONIST"
+/** Opened to all roles. */
+export function canCreateQuotation(_role: Role): boolean {
+  return true
 }
 
-/** Engineers (and above) can update job status, upload photos and signatures. */
-export function canUpdateJobStatus(role: Role): boolean {
-  return role === "ADMIN" || role === "MANAGER" || role === "ENGINEER"
+/** Opened to all roles. */
+export function canUpdateJobStatus(_role: Role): boolean {
+  return true
 }
 
-export function canUploadJobMedia(role: Role): boolean {
-  return role === "ADMIN" || role === "MANAGER" || role === "ENGINEER"
+/** Opened to all roles. */
+export function canUploadJobMedia(_role: Role): boolean {
+  return true
 }
 
-/** Only Admin manages users and company settings. */
-export function canManageUsers(role: Role): boolean {
-  return role === "ADMIN"
+/** Opened to all roles. */
+export function canManageUsers(_role: Role): boolean {
+  return true
 }
 
-export function canManageSettings(role: Role): boolean {
-  return role === "ADMIN"
+/** Opened to all roles. */
+export function canManageSettings(_role: Role): boolean {
+  return true
 }
 
-/** Admin and Manager can manage inventory (spare parts, purchase orders, stock transactions). */
-export function canManageInventory(role: Role): boolean {
-  return role === "ADMIN" || role === "MANAGER"
+/** Opened to all roles — manage inventory (spare parts, purchase orders, stock transactions). */
+export function canManageInventory(_role: Role): boolean {
+  return true
 }
 
 /** Alias for clarity at call sites that gate edit/create/delete actions. */
 export const canEditInventory = canManageInventory
 
-/** Admin and Manager can view reports. */
-export function canViewReports(role: Role): boolean {
-  return canAccess(role, "reports")
+/** Opened to all roles. */
+export function canViewReports(_role: Role): boolean {
+  return true
 }
 
-/** Admin and Manager can view productivity for all engineers; Engineers see only their own. */
-export function canViewAllProductivity(role: Role): boolean {
-  return role === "ADMIN" || role === "MANAGER"
+/** Opened to all roles. */
+export function canViewAllProductivity(_role: Role): boolean {
+  return true
 }
