@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   Package,
+  BookOpen,
   UserCog,
   Settings,
   Printer,
@@ -49,6 +50,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Operations",
     items: [
       { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
+      { href: "/ledger", labelKey: "ledger", label: "Ledger", icon: BookOpen, module: "ledger" },
     ],
   },
   {

@@ -18,6 +18,7 @@ export type Module =
   | "jobs"
   | "quotations"
   | "inventory"
+  | "ledger"
   | "users"
   | "settings"
 
@@ -27,6 +28,7 @@ const MODULE_ACCESS: Record<Module, Role[]> = {
   jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   quotations: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   inventory: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+  ledger: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   users: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   settings: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
 }
@@ -78,4 +80,9 @@ export function canManageInventory(_role: Role): boolean {
 
 /** Alias for clarity at call sites that gate edit/create/delete actions. */
 export const canEditInventory = canManageInventory
+
+/** Opened to all roles — manage the Ledger module (income/expense book, sales ledger). */
+export function canManageLedger(_role: Role): boolean {
+  return true
+}
 

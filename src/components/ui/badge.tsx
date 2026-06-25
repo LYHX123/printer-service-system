@@ -21,7 +21,11 @@ import type {
   ContractStatus,
   Role,
   PartCategory,
+  LedgerEntryType,
+  LedgerPaymentMethod,
+  SalesPaymentStatus,
 } from "@/types"
+import type { TranslationKey } from "@/lib/i18n/translations"
 import {
   JOB_STATUS_LABELS,
   PRIORITY_LABELS,
@@ -252,4 +256,51 @@ export function RoleBadge({ role }: { role: Role }) {
   return (
     <Badge className={ROLE_STYLES[role]}>{ROLE_LABELS[role]}</Badge>
   )
+}
+
+// ─── Ledger Entry Type Badge ──────────────────────────────────────────────────
+
+const LEDGER_ENTRY_TYPE_STYLES: Record<LedgerEntryType, string> = {
+  INCOME: "bg-green-100 text-green-700",
+  EXPENSE: "bg-red-100 text-red-700",
+}
+
+export function LedgerEntryTypeBadge({ type }: { type: LedgerEntryType }) {
+  const { t } = useLanguage()
+  return (
+    <Badge className={LEDGER_ENTRY_TYPE_STYLES[type]}>
+      {type === "INCOME" ? t("income") : t("expense")}
+    </Badge>
+  )
+}
+
+// ─── Sales Payment Status Badge ───────────────────────────────────────────────
+
+const SALES_PAYMENT_STATUS_STYLES: Record<SalesPaymentStatus, string> = {
+  PAID: "bg-green-100 text-green-700",
+  PARTIAL: "bg-orange-100 text-orange-700",
+  UNPAID: "bg-red-100 text-red-700",
+}
+
+export function SalesPaymentStatusBadge({ status }: { status: SalesPaymentStatus }) {
+  const { t } = useLanguage()
+  const label = status === "PAID" ? t("paid") : status === "PARTIAL" ? t("partial") : t("unpaid")
+  return (
+    <Badge className={SALES_PAYMENT_STATUS_STYLES[status]}>{label}</Badge>
+  )
+}
+
+// ─── Payment Method Label ─────────────────────────────────────────────────────
+
+const PAYMENT_METHOD_TRANSLATION_KEYS: Record<LedgerPaymentMethod, TranslationKey> = {
+  CASH: "paymentMethodCash",
+  BANK_TRANSFER: "paymentMethodBankTransfer",
+  CHEQUE: "paymentMethodCheque",
+  CARD: "paymentMethodCard",
+  OTHER: "paymentMethodOther",
+}
+
+export function PaymentMethodLabel({ method }: { method: LedgerPaymentMethod }) {
+  const { t } = useLanguage()
+  return <>{t(PAYMENT_METHOD_TRANSLATION_KEYS[method])}</>
 }

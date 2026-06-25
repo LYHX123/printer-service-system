@@ -18,6 +18,7 @@ const SECTION_LABEL_KEYS: Record<string, TranslationKey> = {
   customers: "customers",
   jobs: "jobs",
   inventory: "inventory",
+  ledger: "ledger",
   users: "users",
   settings: "settings",
 }
@@ -25,6 +26,8 @@ const SECTION_LABEL_KEYS: Record<string, TranslationKey> = {
 const SUBSECTION_LABELS: Record<string, string> = {
   new: "New",
   edit: "Edit",
+  "income-expense": "Income & Expense Book",
+  sales: "Sales Ledger",
 }
 
 function segmentLabel(seg: string, parentSeg: string | undefined, t: (key: TranslationKey) => string): string {

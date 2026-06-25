@@ -30,6 +30,12 @@ import type {
   CommunicationLog,
   CommunicationChannel,
   CommunicationMessageType,
+  LedgerCategory,
+  LedgerEntry,
+  SalesLedgerEntry,
+  LedgerEntryType,
+  LedgerPaymentMethod,
+  SalesPaymentStatus,
 } from "@/generated/prisma/client"
 
 export type {
@@ -64,6 +70,12 @@ export type {
   CommunicationLog,
   CommunicationChannel,
   CommunicationMessageType,
+  LedgerCategory,
+  LedgerEntry,
+  SalesLedgerEntry,
+  LedgerEntryType,
+  LedgerPaymentMethod,
+  SalesPaymentStatus,
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -118,6 +130,12 @@ export type InventoryTransactionWithRelations = InventoryTransaction & {
   part: Pick<SparePart, "id" | "partNumber" | "name" | "unit" | "category">
   performedBy: Pick<User, "id" | "name">
   job: Pick<ServiceJob, "id" | "jobNumber"> | null
+}
+
+export type LedgerEntryWithRelations = Omit<LedgerEntry, "amount"> & {
+  amount: number
+  category: Pick<LedgerCategory, "id" | "name" | "type">
+  createdBy: Pick<User, "id" | "name">
 }
 
 // ─── Status transitions ───────────────────────────────────────────────────────
@@ -236,6 +254,41 @@ export const COMMUNICATION_MESSAGE_TYPE_LABELS: Record<CommunicationMessageType,
   PAYMENT_REMINDER: "Payment Reminder",
   GENERAL: "General",
 }
+
+export const LEDGER_ENTRY_TYPE_LABELS: Record<LedgerEntryType, string> = {
+  INCOME: "Income",
+  EXPENSE: "Expense",
+}
+
+export const LEDGER_PAYMENT_METHOD_LABELS: Record<LedgerPaymentMethod, string> = {
+  CASH: "Cash",
+  BANK_TRANSFER: "Bank Transfer",
+  CHEQUE: "Cheque",
+  CARD: "Card",
+  OTHER: "Other",
+}
+
+export const SALES_PAYMENT_STATUS_LABELS: Record<SalesPaymentStatus, string> = {
+  UNPAID: "Unpaid",
+  PARTIAL: "Partial",
+  PAID: "Paid",
+}
+
+export const DEFAULT_EXPENSE_CATEGORIES = [
+  "Rent",
+  "Salary",
+  "Transport",
+  "Office Supplies",
+  "Utilities",
+  "Repair Cost",
+  "Other",
+]
+
+export const DEFAULT_INCOME_CATEGORIES = [
+  "Sales Income",
+  "Service Income",
+  "Other Income",
+]
 
 export const PART_CATEGORY_LABELS: Record<PartCategory, string> = {
   TONER: "Toner",

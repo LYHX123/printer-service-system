@@ -236,6 +236,59 @@ export type TranslationKey =
   | "noRepairReportsFound"
   | "noQuotationsFoundReport"
   | "noProductivityData"
+  // Ledger
+  | "ledger"
+  | "ledgerDesc"
+  | "incomeExpenseBook"
+  | "incomeExpenseBookDesc"
+  | "salesLedger"
+  | "salesLedgerDesc"
+  | "income"
+  | "expense"
+  | "amount"
+  | "paymentMethod"
+  | "referenceNo"
+  | "remark"
+  | "totalIncome"
+  | "totalExpense"
+  | "addIncome"
+  | "addExpense"
+  | "editEntry"
+  | "archiveRecord"
+  | "restoreRecord"
+  | "addCategory"
+  | "categoryName"
+  | "newCategory"
+  | "noLedgerEntriesFound"
+  | "noLedgerEntriesDesc"
+  | "allPaymentMethods"
+  | "paymentMethodCash"
+  | "paymentMethodBankTransfer"
+  | "paymentMethodCheque"
+  | "paymentMethodCard"
+  | "paymentMethodOther"
+  | "salesCustomerName"
+  | "orderNo"
+  | "invoiceAmount"
+  | "amountReceived"
+  | "balance"
+  | "paymentStatus"
+  | "paid"
+  | "partial"
+  | "unpaid"
+  | "allPaymentStatuses"
+  | "totalInvoiceAmount"
+  | "totalReceived"
+  | "totalBalance"
+  | "addSalesRecord"
+  | "editSalesRecord"
+  | "noSalesLedgerFound"
+  | "noSalesLedgerDesc"
+  | "searchSalesLedgerPlaceholder"
+  | "fromDate"
+  | "toDate"
+  | "statusActive"
+  | "statusArchived"
   // Settings
   | "companySettings"
   | "companySettingsDesc"
@@ -506,6 +559,59 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     stockMovements: "Stock Movements",
     pdf: "PDF",
     noProductivityData: "No productivity data found",
+    // Ledger
+    ledger: "Ledger",
+    ledgerDesc: "Track company income, expenses, and sales invoices.",
+    incomeExpenseBook: "Income & Expense Book",
+    incomeExpenseBookDesc: "Simple tracking of company income and expenses.",
+    salesLedger: "Sales Ledger",
+    salesLedgerDesc: "Track sales invoices and customer payment status.",
+    income: "Income",
+    expense: "Expense",
+    amount: "Amount",
+    paymentMethod: "Payment Method",
+    referenceNo: "Reference No",
+    remark: "Remark",
+    totalIncome: "Total Income",
+    totalExpense: "Total Expense",
+    addIncome: "Add Income",
+    addExpense: "Add Expense",
+    editEntry: "Edit Entry",
+    archiveRecord: "Archive",
+    restoreRecord: "Restore",
+    addCategory: "Add Category",
+    categoryName: "Category Name",
+    newCategory: "+ Create new category…",
+    noLedgerEntriesFound: "No records found",
+    noLedgerEntriesDesc: "Add your first income or expense record to get started.",
+    allPaymentMethods: "All Payment Methods",
+    paymentMethodCash: "Cash",
+    paymentMethodBankTransfer: "Bank Transfer",
+    paymentMethodCheque: "Cheque",
+    paymentMethodCard: "Card",
+    paymentMethodOther: "Other",
+    salesCustomerName: "Customer Name",
+    orderNo: "Order No / Reference No",
+    invoiceAmount: "Invoice Amount",
+    amountReceived: "Amount Received",
+    balance: "Balance",
+    paymentStatus: "Payment Status",
+    paid: "Paid",
+    partial: "Partial",
+    unpaid: "Unpaid",
+    allPaymentStatuses: "All Payment Statuses",
+    totalInvoiceAmount: "Total Invoice Amount",
+    totalReceived: "Total Received",
+    totalBalance: "Total Balance",
+    addSalesRecord: "Add Sales Record",
+    editSalesRecord: "Edit Sales Record",
+    noSalesLedgerFound: "No sales ledger records found",
+    noSalesLedgerDesc: "Add your first sales record to get started.",
+    searchSalesLedgerPlaceholder: "Search by customer name or order no…",
+    fromDate: "From Date",
+    toDate: "To Date",
+    statusActive: "Active",
+    statusArchived: "Archived",
     // Settings
     companySettings: "Company Settings",
     companySettingsDesc: "Manage your company profile, branding, and regional preferences.",
@@ -775,6 +881,59 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     stockMovements: "库存变动",
     pdf: "PDF",
     noProductivityData: "未找到生产力数据",
+    // Ledger
+    ledger: "台账",
+    ledgerDesc: "追踪公司收支与销售发票。",
+    incomeExpenseBook: "收支账",
+    incomeExpenseBookDesc: "简单记录公司的收入与支出。",
+    salesLedger: "销售账",
+    salesLedgerDesc: "追踪销售发票和客户付款状态。",
+    income: "收入",
+    expense: "支出",
+    amount: "金额",
+    paymentMethod: "付款方式",
+    referenceNo: "参考编号",
+    remark: "备注",
+    totalIncome: "总收入",
+    totalExpense: "总支出",
+    addIncome: "新增收入",
+    addExpense: "新增支出",
+    editEntry: "编辑记录",
+    archiveRecord: "归档",
+    restoreRecord: "恢复",
+    addCategory: "新增分类",
+    categoryName: "分类名称",
+    newCategory: "+ 新建分类…",
+    noLedgerEntriesFound: "未找到记录",
+    noLedgerEntriesDesc: "添加第一笔收入或支出记录以开始使用。",
+    allPaymentMethods: "所有付款方式",
+    paymentMethodCash: "现金",
+    paymentMethodBankTransfer: "银行转账",
+    paymentMethodCheque: "支票",
+    paymentMethodCard: "银行卡",
+    paymentMethodOther: "其他",
+    salesCustomerName: "客户名称",
+    orderNo: "订单号 / 参考编号",
+    invoiceAmount: "发票金额",
+    amountReceived: "已收金额",
+    balance: "余额",
+    paymentStatus: "付款状态",
+    paid: "已付款",
+    partial: "部分付款",
+    unpaid: "未付款",
+    allPaymentStatuses: "所有付款状态",
+    totalInvoiceAmount: "总发票金额",
+    totalReceived: "总已收金额",
+    totalBalance: "总余额",
+    addSalesRecord: "新增销售记录",
+    editSalesRecord: "编辑销售记录",
+    noSalesLedgerFound: "未找到销售账记录",
+    noSalesLedgerDesc: "添加第一笔销售记录以开始使用。",
+    searchSalesLedgerPlaceholder: "按客户名称或订单号搜索…",
+    fromDate: "起始日期",
+    toDate: "结束日期",
+    statusActive: "进行中",
+    statusArchived: "已归档",
     // Settings
     companySettings: "公司设置",
     companySettingsDesc: "管理您的公司资料、品牌和区域设置。",

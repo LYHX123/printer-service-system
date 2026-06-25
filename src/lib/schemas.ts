@@ -229,3 +229,45 @@ export const StockMovementSchema = z
   })
 
 export type StockMovementInput = z.infer<typeof StockMovementSchema>
+
+// ─── Ledger: Income & Expense Book ─────────────────────────────────────────────
+
+const NEW_CATEGORY_VALUE = "__new__"
+
+export const LedgerEntrySchema = z
+  .object({
+    type: z.enum(["INCOME", "EXPENSE"]),
+    categoryId: z.string().min(1, "Category is required"),
+    newCategoryName: z.string().max(60).optional().or(z.literal("")),
+    date: z.string().min(1, "Date is required"),
+    amount: z.coerce.number().positive("Amount must be greater than 0"),
+    paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CHEQUE", "CARD", "OTHER"]),
+    referenceNo: z.string().max(100).optional().or(z.literal("")),
+    remark: z.string().max(500).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.categoryId === NEW_CATEGORY_VALUE && !data.newCategoryName?.trim()) {
+      ctx.addIssue({ code: "custom", path: ["newCategoryName"], message: "Category name is required" })
+    }
+  })
+
+export type LedgerEntryInput = z.infer<typeof LedgerEntrySchema>
+
+// ─── Ledger: Sales Ledger ───────────────────────────────────────────────────────
+
+export const SalesLedgerEntrySchema = z
+  .object({
+    date: z.string().min(1, "Date is required"),
+    customerName: z.string().min(1, "Customer name is required").max(150),
+    orderNo: z.string().max(100).optional().or(z.literal("")),
+    invoiceAmount: z.coerce.number().min(0, "Must be ≥ 0"),
+    amountReceived: z.coerce.number().min(0, "Must be ≥ 0").default(0),
+    remark: z.string().max(500).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.amountReceived > data.invoiceAmount) {
+      ctx.addIssue({ code: "custom", path: ["amountReceived"], message: "Cannot exceed invoice amount" })
+    }
+  })
+
+export type SalesLedgerEntryInput = z.infer<typeof SalesLedgerEntrySchema>
