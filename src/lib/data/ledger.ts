@@ -11,20 +11,22 @@ import type {
 
 // ─── Categories ─────────────────────────────────────────────────────────────────
 
-/** Ensures default categories exist for a company, then returns all active categories (optionally filtered by type). */
+/** Ensures default categories exist for a company (seeded independently per type), then returns all active categories (optionally filtered by type). */
 export async function getLedgerCategories(
   companyId: string,
   type?: LedgerEntryType
 ): Promise<LedgerCategory[]> {
-  const existingCount = await prisma.ledgerCategory.count({ where: { companyId } })
-  if (existingCount === 0) {
-    await prisma.ledgerCategory.createMany({
-      data: [
-        ...DEFAULT_INCOME_CATEGORIES.map((name) => ({ companyId, type: "INCOME" as const, name })),
-        ...DEFAULT_EXPENSE_CATEGORIES.map((name) => ({ companyId, type: "EXPENSE" as const, name })),
-      ],
-      skipDuplicates: true,
-    })
+  const [incomeCount, expenseCount] = await Promise.all([
+    prisma.ledgerCategory.count({ where: { companyId, type: "INCOME" } }),
+    prisma.ledgerCategory.count({ where: { companyId, type: "EXPENSE" } }),
+  ])
+
+  const seedData = [
+    ...(incomeCount === 0 ? DEFAULT_INCOME_CATEGORIES.map((name) => ({ companyId, type: "INCOME" as const, name })) : []),
+    ...(expenseCount === 0 ? DEFAULT_EXPENSE_CATEGORIES.map((name) => ({ companyId, type: "EXPENSE" as const, name })) : []),
+  ]
+  if (seedData.length > 0) {
+    await prisma.ledgerCategory.createMany({ data: seedData, skipDuplicates: true })
   }
 
   return prisma.ledgerCategory.findMany({
@@ -56,7 +58,6 @@ export interface LedgerEntryFilters {
   type?: LedgerEntryType
   categoryId?: string
   paymentMethod?: LedgerPaymentMethod
-  archived?: boolean
 }
 
 function dateRangeWhere(from?: string, to?: string) {
@@ -71,13 +72,12 @@ export async function getLedgerEntries(
   companyId: string,
   filters: LedgerEntryFilters = {}
 ): Promise<LedgerEntryWithRelations[]> {
-  const { from, to, type, categoryId, paymentMethod, archived = false } = filters
+  const { from, to, type, categoryId, paymentMethod } = filters
   const dateRange = dateRangeWhere(from, to)
 
   const entries = await prisma.ledgerEntry.findMany({
     where: {
       companyId,
-      isArchived: archived,
       ...(type ? { type } : {}),
       ...(categoryId ? { categoryId } : {}),
       ...(paymentMethod ? { paymentMethod } : {}),

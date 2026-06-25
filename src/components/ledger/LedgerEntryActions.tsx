@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Pencil, Archive, ArchiveRestore } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { setLedgerEntryArchived } from "@/lib/actions/ledger"
+import { deleteLedgerEntry } from "@/lib/actions/ledger"
 import { LedgerEntryModal } from "./LedgerEntryModal"
 import type { LedgerCategory, LedgerEntryWithRelations } from "@/types"
 
@@ -21,15 +22,17 @@ export function LedgerEntryActions({ entry, categories }: LedgerEntryActionsProp
   const { t } = useLanguage()
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
-  function toggleArchived() {
+  function handleDelete() {
     startTransition(async () => {
-      const result = await setLedgerEntryArchived(entry.id, !entry.isArchived)
+      const result = await deleteLedgerEntry(entry.id)
       if (result?.error) {
         toast.error(result.error)
         return
       }
-      toast.success(entry.isArchived ? "Record restored" : "Record archived")
+      toast.success("Record deleted")
+      setConfirmOpen(false)
       router.refresh()
     })
   }
@@ -43,11 +46,10 @@ export function LedgerEntryActions({ entry, categories }: LedgerEntryActionsProp
         <Button
           variant="outline"
           size="sm"
-          icon={entry.isArchived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-          onClick={toggleArchived}
-          loading={isPending}
+          icon={<Trash2 className="h-3.5 w-3.5" />}
+          onClick={() => setConfirmOpen(true)}
         >
-          {entry.isArchived ? t("restoreRecord") : t("archiveRecord")}
+          {t("delete")}
         </Button>
       </div>
       <LedgerEntryModal
@@ -57,6 +59,24 @@ export function LedgerEntryActions({ entry, categories }: LedgerEntryActionsProp
         defaultType={entry.type}
         entry={entry}
       />
+      <Modal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={t("delete")}
+        description={t("deleteEntryConfirm")}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={isPending}>
+              {t("cancel")}
+            </Button>
+            <Button type="button" variant="destructive" loading={isPending} onClick={handleDelete}>
+              {t("delete")}
+            </Button>
+          </div>
+        }
+      >
+        <div />
+      </Modal>
     </>
   )
 }

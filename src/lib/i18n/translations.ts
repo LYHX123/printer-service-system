@@ -261,12 +261,14 @@ export type TranslationKey =
   | "newCategory"
   | "noLedgerEntriesFound"
   | "noLedgerEntriesDesc"
+  | "deleteEntryConfirm"
+  | "receivingMethod"
+  | "paymentOrReceivingMethod"
   | "allPaymentMethods"
+  | "paymentMethodMpesa"
   | "paymentMethodCash"
   | "paymentMethodBankTransfer"
   | "paymentMethodCheque"
-  | "paymentMethodCard"
-  | "paymentMethodOther"
   | "salesCustomerName"
   | "orderNo"
   | "invoiceAmount"
@@ -584,12 +586,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     newCategory: "+ Create new category…",
     noLedgerEntriesFound: "No records found",
     noLedgerEntriesDesc: "Add your first income or expense record to get started.",
+    deleteEntryConfirm: "Are you sure you want to delete this record? This action cannot be undone.",
+    receivingMethod: "Receiving Method",
+    paymentOrReceivingMethod: "Payment / Receiving Method",
     allPaymentMethods: "All Payment Methods",
+    paymentMethodMpesa: "MPESA",
     paymentMethodCash: "Cash",
     paymentMethodBankTransfer: "Bank Transfer",
     paymentMethodCheque: "Cheque",
-    paymentMethodCard: "Card",
-    paymentMethodOther: "Other",
     salesCustomerName: "Customer Name",
     orderNo: "Order No / Reference No",
     invoiceAmount: "Invoice Amount",
@@ -891,7 +895,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     income: "收入",
     expense: "支出",
     amount: "金额",
-    paymentMethod: "付款方式",
+    paymentMethod: "支出方式",
     referenceNo: "参考编号",
     remark: "备注",
     totalIncome: "总收入",
@@ -906,12 +910,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     newCategory: "+ 新建分类…",
     noLedgerEntriesFound: "未找到记录",
     noLedgerEntriesDesc: "添加第一笔收入或支出记录以开始使用。",
+    deleteEntryConfirm: "确定要删除此记录吗？此操作无法撤销。",
+    receivingMethod: "收款方式",
+    paymentOrReceivingMethod: "收付方式",
     allPaymentMethods: "所有付款方式",
+    paymentMethodMpesa: "MPESA",
     paymentMethodCash: "现金",
     paymentMethodBankTransfer: "银行转账",
     paymentMethodCheque: "支票",
-    paymentMethodCard: "银行卡",
-    paymentMethodOther: "其他",
     salesCustomerName: "客户名称",
     orderNo: "订单号 / 参考编号",
     invoiceAmount: "发票金额",

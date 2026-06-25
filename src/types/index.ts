@@ -261,11 +261,10 @@ export const LEDGER_ENTRY_TYPE_LABELS: Record<LedgerEntryType, string> = {
 }
 
 export const LEDGER_PAYMENT_METHOD_LABELS: Record<LedgerPaymentMethod, string> = {
-  CASH: "Cash",
+  MPESA: "MPESA",
   BANK_TRANSFER: "Bank Transfer",
   CHEQUE: "Cheque",
-  CARD: "Card",
-  OTHER: "Other",
+  CASH: "Cash",
 }
 
 export const SALES_PAYMENT_STATUS_LABELS: Record<SalesPaymentStatus, string> = {
@@ -285,9 +284,11 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
 ]
 
 export const DEFAULT_INCOME_CATEGORIES = [
-  "Sales Income",
-  "Service Income",
-  "Other Income",
+  "STATIONERY INCOME",
+  "WAJIKU INCOME",
+  "SOLIS INCOME",
+  "INSURANCE INCOME",
+  "无票据收入",
 ]
 
 export const PART_CATEGORY_LABELS: Record<PartCategory, string> = {

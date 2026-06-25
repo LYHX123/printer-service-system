@@ -14,10 +14,18 @@ export function LedgerAddButtons({ categories }: { categories: LedgerCategory[] 
   return (
     <>
       <div className="flex gap-2">
-        <Button variant="outline" icon={<Plus className="h-4 w-4" />} onClick={() => setOpenType("INCOME")}>
+        <Button
+          icon={<Plus className="h-4 w-4" />}
+          onClick={() => setOpenType("INCOME")}
+          className="bg-green-600 hover:bg-green-700 focus-visible:ring-green-500"
+        >
           {t("addIncome")}
         </Button>
-        <Button icon={<Plus className="h-4 w-4" />} onClick={() => setOpenType("EXPENSE")}>
+        <Button
+          icon={<Plus className="h-4 w-4" />}
+          onClick={() => setOpenType("EXPENSE")}
+          className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-500"
+        >
           {t("addExpense")}
         </Button>
       </div>

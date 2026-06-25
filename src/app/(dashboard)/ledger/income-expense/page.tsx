@@ -23,24 +23,25 @@ const TYPES: LedgerEntryType[] = ["INCOME", "EXPENSE"]
 export default async function IncomeExpenseBookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string; status?: string }>
+  searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string }>
 }) {
   const session = await auth()
   if (!canAccess(session!.user.role as Role, "ledger")) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
-  const { from, to, type, categoryId, status } = await searchParams
+  const { from, to, type, categoryId } = await searchParams
   const validType = TYPES.includes(type as LedgerEntryType) ? (type as LedgerEntryType) : undefined
-  const archived = status === "archived"
 
   const [entries, categories] = await Promise.all([
-    getLedgerEntries(companyId, { from, to, type: validType, categoryId, archived }),
+    getLedgerEntries(companyId, { from, to, type: validType, categoryId }),
     getLedgerCategories(companyId),
   ])
 
   const totalIncome = entries.filter((e) => e.type === "INCOME").reduce((sum, e) => sum + e.amount, 0)
   const totalExpense = entries.filter((e) => e.type === "EXPENSE").reduce((sum, e) => sum + e.amount, 0)
-  const hasFilters = Boolean(from || to || type || categoryId || status)
+  const hasFilters = Boolean(from || to || type || categoryId)
+  const paymentMethodColumnLabel =
+    validType === "INCOME" ? <T k="receivingMethod" /> : validType === "EXPENSE" ? <T k="paymentMethod" /> : <T k="paymentOrReceivingMethod" />
 
   return (
     <div>
@@ -91,10 +92,6 @@ export default async function IncomeExpenseBookPage({
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </Select>
-        <Select name="status" defaultValue={status ?? ""} className="w-40">
-          <option value=""><T k="statusActive" /></option>
-          <option value="archived"><T k="statusArchived" /></option>
-        </Select>
         <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {hasFilters && (
           <Link href="/ledger/income-expense">
@@ -125,7 +122,7 @@ export default async function IncomeExpenseBookPage({
           },
           {
             key: "paymentMethod",
-            label: <T k="paymentMethod" />,
+            label: paymentMethodColumnLabel,
             render: (row) => <span className="text-sm text-slate-600"><PaymentMethodLabel method={row.paymentMethod} /></span>,
           },
           { key: "referenceNo", label: <T k="referenceNo" />, render: (row) => <span className="text-xs text-slate-500">{row.referenceNo ?? "—"}</span> },

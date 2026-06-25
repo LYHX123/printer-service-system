@@ -293,11 +293,10 @@ export function SalesPaymentStatusBadge({ status }: { status: SalesPaymentStatus
 // ─── Payment Method Label ─────────────────────────────────────────────────────
 
 const PAYMENT_METHOD_TRANSLATION_KEYS: Record<LedgerPaymentMethod, TranslationKey> = {
-  CASH: "paymentMethodCash",
+  MPESA: "paymentMethodMpesa",
   BANK_TRANSFER: "paymentMethodBankTransfer",
   CHEQUE: "paymentMethodCheque",
-  CARD: "paymentMethodCard",
-  OTHER: "paymentMethodOther",
+  CASH: "paymentMethodCash",
 }
 
 export function PaymentMethodLabel({ method }: { method: LedgerPaymentMethod }) {

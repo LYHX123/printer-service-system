@@ -134,11 +134,10 @@ enum LedgerEntryType {
 }
 
 enum LedgerPaymentMethod {
-  CASH
+  MPESA
   BANK_TRANSFER
   CHEQUE
-  CARD
-  OTHER
+  CASH
 }
 
 enum SalesPaymentStatus {
@@ -630,7 +629,6 @@ model LedgerEntry {
   paymentMethod LedgerPaymentMethod
   referenceNo   String?
   remark        String?
-  isArchived    Boolean             @default(false)
   createdById   String
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt

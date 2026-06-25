@@ -241,7 +241,7 @@ export const LedgerEntrySchema = z
     newCategoryName: z.string().max(60).optional().or(z.literal("")),
     date: z.string().min(1, "Date is required"),
     amount: z.coerce.number().positive("Amount must be greater than 0"),
-    paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CHEQUE", "CARD", "OTHER"]),
+    paymentMethod: z.enum(["MPESA", "BANK_TRANSFER", "CHEQUE", "CASH"]),
     referenceNo: z.string().max(100).optional().or(z.literal("")),
     remark: z.string().max(500).optional().or(z.literal("")),
   })

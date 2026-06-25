@@ -91,7 +91,7 @@ export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
   }
 }
 
-export async function setLedgerEntryArchived(id: string, isArchived: boolean) {
+export async function deleteLedgerEntry(id: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
@@ -101,11 +101,11 @@ export async function setLedgerEntryArchived(id: string, isArchived: boolean) {
     const existing = await prisma.ledgerEntry.findFirst({ where: { id, companyId } })
     if (!existing) return { error: "Record not found" }
 
-    await prisma.ledgerEntry.update({ where: { id }, data: { isArchived } })
+    await prisma.ledgerEntry.delete({ where: { id } })
     revalidatePath("/ledger/income-expense")
     return { success: true as const }
   } catch {
-    return { error: "Failed to update record" }
+    return { error: "Failed to delete record" }
   }
 }
 

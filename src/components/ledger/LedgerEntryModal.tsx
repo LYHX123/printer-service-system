@@ -18,13 +18,12 @@ import type { TranslationKey } from "@/lib/i18n/translations"
 import type { LedgerCategory, LedgerEntryType, LedgerEntryWithRelations, LedgerPaymentMethod } from "@/types"
 
 const NEW_CATEGORY_VALUE = "__new__"
-const PAYMENT_METHODS: LedgerPaymentMethod[] = ["CASH", "BANK_TRANSFER", "CHEQUE", "CARD", "OTHER"]
+const PAYMENT_METHODS: LedgerPaymentMethod[] = ["MPESA", "BANK_TRANSFER", "CHEQUE", "CASH"]
 const PAYMENT_METHOD_KEYS: Record<LedgerPaymentMethod, TranslationKey> = {
-  CASH: "paymentMethodCash",
+  MPESA: "paymentMethodMpesa",
   BANK_TRANSFER: "paymentMethodBankTransfer",
   CHEQUE: "paymentMethodCheque",
-  CARD: "paymentMethodCard",
-  OTHER: "paymentMethodOther",
+  CASH: "paymentMethodCash",
 }
 
 function todayIso(): string {
@@ -162,7 +161,12 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
           <Input id="entryAmount" type="number" min={0} step="0.01" {...register("amount")} />
         </FormField>
 
-        <FormField label={t("paymentMethod")} htmlFor="entryPaymentMethod" required error={errors.paymentMethod?.message}>
+        <FormField
+          label={selectedType === "INCOME" ? t("receivingMethod") : t("paymentMethod")}
+          htmlFor="entryPaymentMethod"
+          required
+          error={errors.paymentMethod?.message}
+        >
           <Select id="entryPaymentMethod" {...register("paymentMethod")}>
             {PAYMENT_METHODS.map((m) => (
               <option key={m} value={m}>{t(PAYMENT_METHOD_KEYS[m])}</option>
