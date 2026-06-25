@@ -18,13 +18,11 @@ const SECTION_LABEL_KEYS: Record<string, TranslationKey> = {
   customers: "customers",
   jobs: "jobs",
   inventory: "inventory",
-  reports: "reports",
   users: "users",
   settings: "settings",
 }
 
 const SUBSECTION_LABELS: Record<string, string> = {
-  engineers: "Engineer Productivity",
   new: "New",
   edit: "Edit",
 }

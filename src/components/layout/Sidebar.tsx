@@ -8,8 +8,6 @@ import {
   Users,
   ClipboardList,
   Package,
-  BarChart3,
-  TrendingUp,
   UserCog,
   Settings,
   Printer,
@@ -51,13 +49,6 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Operations",
     items: [
       { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
-    ],
-  },
-  {
-    title: "Reports",
-    items: [
-      { href: "/reports", labelKey: "reports", label: "Reports", icon: BarChart3, module: "reports" },
-      { href: "/reports/engineers", labelKey: "productivity", label: "Productivity", icon: TrendingUp, module: "productivity" },
     ],
   },
   {

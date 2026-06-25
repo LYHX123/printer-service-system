@@ -17,8 +17,6 @@ export type Module =
   | "customers"
   | "jobs"
   | "quotations"
-  | "reports"
-  | "productivity"
   | "inventory"
   | "users"
   | "settings"
@@ -28,8 +26,6 @@ const MODULE_ACCESS: Record<Module, Role[]> = {
   customers: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   quotations: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  reports: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  productivity: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   inventory: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   users: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
   settings: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
@@ -83,12 +79,3 @@ export function canManageInventory(_role: Role): boolean {
 /** Alias for clarity at call sites that gate edit/create/delete actions. */
 export const canEditInventory = canManageInventory
 
-/** Opened to all roles. */
-export function canViewReports(_role: Role): boolean {
-  return true
-}
-
-/** Opened to all roles. */
-export function canViewAllProductivity(_role: Role): boolean {
-  return true
-}
