@@ -187,12 +187,19 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
-  role              Role
-  isActive          Boolean  @default(true)
-  signatureUrl      String?  // engineer's drawn/uploaded signature for PDF sign-off
-  modulePermissions String[] @default([])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  role                Role
+  isActive            Boolean  @default(true)
+  signatureUrl        String?  // engineer's drawn/uploaded signature for PDF sign-off
+  modulePermissions   String[] @default([])
+  // Login security
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  // Optional profile
+  phone               String?
+  department          String?
+  position            String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
 

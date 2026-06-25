@@ -42,21 +42,38 @@ function LoginPageInner() {
     setLoading(true)
     setError(null)
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    })
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
 
-    setLoading(false)
+      setLoading(false)
 
-    if (result?.error) {
-      setError("Invalid email or password. Please try again.")
-      return
+      if (result?.error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const code = (result as any)?.code as string | undefined
+        if (code === "ACCOUNT_LOCKED") {
+          setError(t("accountLockedDesc"))
+        } else {
+          setError("Invalid email or password. Please try again.")
+        }
+        return
+      }
+
+      router.push(callbackUrl)
+      router.refresh()
+    } catch (err: unknown) {
+      setLoading(false)
+      // CredentialsSignin thrown errors surface here in some NextAuth v5 builds
+      const code = (err as { code?: string })?.code
+      if (code === "ACCOUNT_LOCKED") {
+        setError(t("accountLockedDesc"))
+      } else {
+        setError("Invalid email or password. Please try again.")
+      }
     }
-
-    router.push(callbackUrl)
-    router.refresh()
   }
 
   return (

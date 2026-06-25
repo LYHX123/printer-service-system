@@ -338,6 +338,20 @@ export type TranslationKey =
   | "adminFullAccess"
   | "selfProtectedModules"
   | "allModules"
+  // User security / lockout
+  | "locked"
+  | "accountLockedDesc"
+  | "unlock"
+  | "unlockUser"
+  | "unlockUserDesc"
+  | "userUnlocked"
+  // User profile
+  | "editProfile"
+  | "profileUpdated"
+  | "department"
+  | "position"
+  | "saveProfile"
+  | "displayName"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -671,6 +685,20 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     adminFullAccess: "Admin always has full access — permissions cannot be restricted.",
     selfProtectedModules: "Dashboard, Users and Settings are always enabled for your own account.",
     allModules: "All Modules",
+    // User security / lockout
+    locked: "Locked",
+    accountLockedDesc: "Your account has been locked due to too many failed login attempts. Please wait 30 minutes or ask an administrator to unlock your account.",
+    unlock: "Unlock",
+    unlockUser: "Unlock User",
+    unlockUserDesc: "This will immediately clear the login lockout and reset the failed attempt counter.",
+    userUnlocked: "User unlocked",
+    // User profile
+    editProfile: "Edit Profile",
+    profileUpdated: "Profile updated",
+    department: "Department",
+    position: "Position",
+    saveProfile: "Save Profile",
+    displayName: "Display Name",
   },
   zh: {
     // Common
@@ -1003,5 +1031,19 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     adminFullAccess: "管理员始终拥有全部权限，无法限制。",
     selfProtectedModules: "仪表盘、用户和设置始终对您自己的账户启用。",
     allModules: "所有模块",
+    // User security / lockout
+    locked: "已锁定",
+    accountLockedDesc: "您的账号因多次登录失败已被锁定，请等待30分钟后重试，或联系管理员解锁。",
+    unlock: "解锁",
+    unlockUser: "解锁用户",
+    unlockUserDesc: "将立即清除登录锁定并重置失败次数。",
+    userUnlocked: "用户已解锁",
+    // User profile
+    editProfile: "编辑资料",
+    profileUpdated: "资料已更新",
+    department: "部门",
+    position: "职位",
+    saveProfile: "保存资料",
+    displayName: "显示名称",
   },
 }

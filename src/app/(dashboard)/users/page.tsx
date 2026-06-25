@@ -13,6 +13,19 @@ import { T } from "@/components/ui/T"
 import { format } from "date-fns"
 import type { Role } from "@/types"
 
+function userStatus(isActive: boolean, lockedUntil: Date | null) {
+  if (!isActive) return "disabled"
+  if (lockedUntil && lockedUntil > new Date()) return "locked"
+  return "active"
+}
+
+function StatusBadge({ isActive, lockedUntil }: { isActive: boolean; lockedUntil: Date | null }) {
+  const status = userStatus(isActive, lockedUntil)
+  if (status === "disabled") return <Badge className="bg-slate-200 text-slate-600"><T k="disabledStatus" /></Badge>
+  if (status === "locked")   return <Badge className="bg-amber-100 text-amber-700"><T k="locked" /></Badge>
+  return <Badge className="bg-green-100 text-green-700"><T k="active" /></Badge>
+}
+
 function ModulesSummary({ role, permissions }: { role: Role; permissions: string[] }) {
   if (role === "ADMIN") {
     return <Badge className="bg-purple-100 text-purple-700 text-xs">Full Access</Badge>
@@ -25,7 +38,7 @@ function ModulesSummary({ role, permissions }: { role: Role; permissions: string
     .map((p) => MODULE_LABELS[p as keyof typeof MODULE_LABELS].en)
     .join(", ")
   return (
-    <span className="text-xs text-slate-600 block max-w-[180px] truncate" title={labels}>
+    <span className="text-xs text-slate-600 block max-w-[160px] truncate" title={labels}>
       {labels}
     </span>
   )
@@ -67,13 +80,23 @@ export default async function UsersPage() {
                     <span className="ml-2 text-xs font-normal text-slate-400">(<T k="you" />)</span>
                   )}
                 </p>
+                {(row.department || row.position) && (
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {[row.department, row.position].filter(Boolean).join(" · ")}
+                  </p>
+                )}
               </div>
             ),
           },
           {
             key: "email",
             label: <T k="email" />,
-            className: "text-slate-600",
+            render: (row) => (
+              <div>
+                <p className="text-slate-600 text-sm">{row.email}</p>
+                {row.phone && <p className="text-xs text-slate-400">{row.phone}</p>}
+              </div>
+            ),
           },
           {
             key: "role",
@@ -88,12 +111,7 @@ export default async function UsersPage() {
           {
             key: "status",
             label: <T k="status" />,
-            render: (row) =>
-              row.isActive ? (
-                <Badge className="bg-green-100 text-green-700"><T k="active" /></Badge>
-              ) : (
-                <Badge className="bg-slate-200 text-slate-600"><T k="disabledStatus" /></Badge>
-              ),
+            render: (row) => <StatusBadge isActive={row.isActive} lockedUntil={row.lockedUntil} />,
           },
           {
             key: "createdAt",
@@ -116,6 +134,11 @@ export default async function UsersPage() {
                 isActive={row.isActive}
                 isSelf={row.id === currentUserId}
                 modulePermissions={row.modulePermissions}
+                isLocked={!!(row.lockedUntil && row.lockedUntil > new Date())}
+                name={row.name}
+                phone={row.phone}
+                department={row.department}
+                position={row.position}
               />
             ),
           },

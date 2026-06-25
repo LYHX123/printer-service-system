@@ -161,12 +161,18 @@ export type RepairReportInput = z.infer<typeof RepairReportSchema>
 
 const RoleEnum = z.enum(["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"])
 
+const optionalText = (max: number) =>
+  z.string().max(max).optional().or(z.literal(""))
+
 export const CreateUserSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address").max(150),
   password: z.string().min(8, "Password must be at least 8 characters").max(100),
   role: RoleEnum,
   modulePermissions: z.array(z.string()).default([]),
+  phone: optionalText(30),
+  department: optionalText(100),
+  position: optionalText(100),
 })
 
 export type CreateUserInput = z.infer<typeof CreateUserSchema>
@@ -182,6 +188,15 @@ export const UpdateUserPermissionsSchema = z.object({
 })
 
 export type UpdateUserPermissionsInput = z.infer<typeof UpdateUserPermissionsSchema>
+
+export const UpdateUserProfileSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  phone: optionalText(30),
+  department: optionalText(100),
+  position: optionalText(100),
+})
+
+export type UpdateUserProfileInput = z.infer<typeof UpdateUserProfileSchema>
 
 // ─── Inventory / Spare Parts ───────────────────────────────────────────────────
 

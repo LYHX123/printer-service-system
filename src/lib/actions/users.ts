@@ -10,13 +10,20 @@ import {
   CreateUserSchema,
   UpdateUserRoleSchema,
   UpdateUserPermissionsSchema,
+  UpdateUserProfileSchema,
 } from "@/lib/schemas"
 import type {
   CreateUserInput,
   UpdateUserRoleInput,
   UpdateUserPermissionsInput,
+  UpdateUserProfileInput,
 } from "@/lib/schemas"
 import type { Role } from "@/types"
+
+function trim(v: string | undefined | null): string | null {
+  const s = v?.trim()
+  return s ? s : null
+}
 
 export async function createUser(data: CreateUserInput) {
   const session = await auth()
@@ -27,7 +34,7 @@ export async function createUser(data: CreateUserInput) {
   const parsed = CreateUserSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { name, email, password, role, modulePermissions } = parsed.data
+  const { name, email, password, role, modulePermissions, phone, department, position } = parsed.data
 
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
   if (existing) return { error: "A user with this email already exists" }
@@ -35,7 +42,17 @@ export async function createUser(data: CreateUserInput) {
   try {
     const passwordHash = await bcrypt.hash(password, 10)
     await prisma.user.create({
-      data: { companyId, name, email, passwordHash, role, modulePermissions },
+      data: {
+        companyId,
+        name,
+        email,
+        passwordHash,
+        role,
+        modulePermissions,
+        phone: trim(phone),
+        department: trim(department),
+        position: trim(position),
+      },
       select: { id: true },
     })
     revalidatePath("/users")
@@ -121,5 +138,57 @@ export async function updateUserPermissions(id: string, data: UpdateUserPermissi
     return { success: true }
   } catch {
     return { error: "Failed to update permissions" }
+  }
+}
+
+export async function unlockUser(id: string) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+
+  try {
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    if (!existing) return { error: "User not found" }
+
+    await prisma.user.update({
+      where: { id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    })
+    revalidatePath("/users")
+    return { success: true }
+  } catch {
+    return { error: "Failed to unlock user" }
+  }
+}
+
+export async function updateUserProfile(id: string, data: UpdateUserProfileInput) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+
+  const parsed = UpdateUserProfileSchema.safeParse(data)
+  if (!parsed.success) return { error: "Invalid profile data" }
+
+  const { name, phone, department, position } = parsed.data
+
+  try {
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    if (!existing) return { error: "User not found" }
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        name,
+        phone: trim(phone),
+        department: trim(department),
+        position: trim(position),
+      },
+    })
+    revalidatePath("/users")
+    return { success: true }
+  } catch {
+    return { error: "Failed to update profile" }
   }
 }

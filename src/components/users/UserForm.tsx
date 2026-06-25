@@ -34,6 +34,9 @@ export function UserForm() {
       password: "",
       role: "RECEPTIONIST",
       modulePermissions: [...ALL_MODULES],
+      phone: "",
+      department: "",
+      position: "",
     },
   })
 
@@ -50,8 +53,10 @@ export function UserForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
+
+        {/* Identity */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={t("fullName")} htmlFor="name" required error={errors.name?.message}>
+          <FormField label={t("displayName")} htmlFor="name" required error={errors.name?.message}>
             <Input id="name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
           </FormField>
           <FormField label={t("emailAddress")} htmlFor="email" required error={errors.email?.message}>
@@ -65,6 +70,7 @@ export function UserForm() {
           </FormField>
         </div>
 
+        {/* Credentials + role */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("password")} htmlFor="password" required error={errors.password?.message} hint={t("minimum8Characters")}>
             <Input id="password" type="password" placeholder="••••••••" {...register("password")} error={errors.password?.message} />
@@ -80,6 +86,20 @@ export function UserForm() {
           </FormField>
         </div>
 
+        {/* Optional profile */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <FormField label={t("phone")} htmlFor="phone" error={errors.phone?.message}>
+            <Input id="phone" placeholder="e.g. +254700000000" {...register("phone")} error={errors.phone?.message} />
+          </FormField>
+          <FormField label={t("department")} htmlFor="department" error={errors.department?.message}>
+            <Input id="department" placeholder="e.g. IT" {...register("department")} error={errors.department?.message} />
+          </FormField>
+          <FormField label={t("position")} htmlFor="position" error={errors.position?.message}>
+            <Input id="position" placeholder="e.g. Engineer" {...register("position")} error={errors.position?.message} />
+          </FormField>
+        </div>
+
+        {/* Module permissions */}
         <div>
           <p className="text-sm font-medium text-slate-700 mb-3">
             {t("moduleAccess")} <span className="text-slate-400 font-normal">/ 模块权限</span>
