@@ -8,6 +8,7 @@ export type UserListItem = {
   role: Role
   isActive: boolean
   createdAt: Date
+  modulePermissions: string[]
 }
 
 export async function getUsers(companyId: string): Promise<UserListItem[]> {
@@ -20,6 +21,7 @@ export async function getUsers(companyId: string): Promise<UserListItem[]> {
       role: true,
       isActive: true,
       createdAt: true,
+      modulePermissions: true,
     },
     orderBy: { createdAt: "asc" },
   })

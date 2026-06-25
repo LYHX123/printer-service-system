@@ -66,11 +66,12 @@ const NAV_SECTIONS: NavSection[] = [
 
 interface SidebarProps {
   role: Role
+  modulePermissions: string[]
   open: boolean
   onClose: () => void
 }
 
-export function Sidebar({ role, open, onClose }: SidebarProps) {
+export function Sidebar({ role, modulePermissions, open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { t } = useLanguage()
 
@@ -119,7 +120,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {NAV_SECTIONS.map((section) => ({
             ...section,
-            items: section.items.filter((item) => canAccess(role, item.module)),
+            items: section.items.filter((item) => canAccess(role, item.module, modulePermissions)),
           }))
             .filter((section) => section.items.length > 0)
             .map((section, si) => (

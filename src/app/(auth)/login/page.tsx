@@ -105,7 +105,7 @@ function LoginPageInner() {
                 autoComplete="email"
                 {...register("email")}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="you@example.com"
+                placeholder="e.g. user@gmail.com"
               />
               {errors.email && (
                 <p className="mt-1.5 text-xs text-red-600">{errors.email.message}</p>

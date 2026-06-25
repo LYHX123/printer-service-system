@@ -20,9 +20,10 @@ export default async function DashboardLayout({
     email: session.user.email,
     role: session.user.role as Role,
     companyId: session.user.companyId as string,
+    modulePermissions: (session.user.modulePermissions as string[]) ?? [],
   }
 
-  const lowStockAlerts = canAccess(user.role, "inventory")
+  const lowStockAlerts = canAccess(user.role, "inventory", user.modulePermissions)
     ? await getLowStockAlerts(user.companyId)
     : []
 

@@ -330,6 +330,14 @@ export type TranslationKey =
   | "password"
   | "minimum8Characters"
   | "createUser"
+  // User permissions
+  | "moduleAccess"
+  | "editPermissions"
+  | "savePermissions"
+  | "permissionsUpdated"
+  | "adminFullAccess"
+  | "selfProtectedModules"
+  | "allModules"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -655,6 +663,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     password: "Password",
     minimum8Characters: "Minimum 8 characters",
     createUser: "Create User",
+    // User permissions
+    moduleAccess: "Module Access",
+    editPermissions: "Permissions",
+    savePermissions: "Save Permissions",
+    permissionsUpdated: "Permissions updated",
+    adminFullAccess: "Admin always has full access — permissions cannot be restricted.",
+    selfProtectedModules: "Dashboard, Users and Settings are always enabled for your own account.",
+    allModules: "All Modules",
   },
   zh: {
     // Common
@@ -979,5 +995,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     password: "密码",
     minimum8Characters: "至少8个字符",
     createUser: "创建用户",
+    // User permissions
+    moduleAccess: "模块权限",
+    editPermissions: "权限",
+    savePermissions: "保存权限",
+    permissionsUpdated: "权限已更新",
+    adminFullAccess: "管理员始终拥有全部权限，无法限制。",
+    selfProtectedModules: "仪表盘、用户和设置始终对您自己的账户启用。",
+    allModules: "所有模块",
   },
 }

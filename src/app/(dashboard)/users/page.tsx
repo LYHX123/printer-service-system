@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Plus } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getUsers } from "@/lib/data/users"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, ALL_MODULES, MODULE_LABELS } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
@@ -13,10 +13,29 @@ import { T } from "@/components/ui/T"
 import { format } from "date-fns"
 import type { Role } from "@/types"
 
+function ModulesSummary({ role, permissions }: { role: Role; permissions: string[] }) {
+  if (role === "ADMIN") {
+    return <Badge className="bg-purple-100 text-purple-700 text-xs">Full Access</Badge>
+  }
+  if (permissions.length === 0 || permissions.length === ALL_MODULES.length) {
+    return <span className="text-xs text-slate-500">All Modules</span>
+  }
+  const labels = permissions
+    .filter((p) => MODULE_LABELS[p as keyof typeof MODULE_LABELS])
+    .map((p) => MODULE_LABELS[p as keyof typeof MODULE_LABELS].en)
+    .join(", ")
+  return (
+    <span className="text-xs text-slate-600 block max-w-[180px] truncate" title={labels}>
+      {labels}
+    </span>
+  )
+}
+
 export default async function UsersPage() {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canAccess(role, "users")) redirect("/dashboard")
+  const modulePermissions = (session!.user.modulePermissions as string[]) ?? []
+  if (!canAccess(role, "users", modulePermissions)) redirect("/dashboard")
 
   const companyId = session!.user.companyId as string
   const currentUserId = session!.user.id as string
@@ -62,6 +81,11 @@ export default async function UsersPage() {
             render: (row) => <RoleBadge role={row.role} />,
           },
           {
+            key: "modules",
+            label: <T k="moduleAccess" />,
+            render: (row) => <ModulesSummary role={row.role} permissions={row.modulePermissions} />,
+          },
+          {
             key: "status",
             label: <T k="status" />,
             render: (row) =>
@@ -91,6 +115,7 @@ export default async function UsersPage() {
                 role={row.role}
                 isActive={row.isActive}
                 isSelf={row.id === currentUserId}
+                modulePermissions={row.modulePermissions}
               />
             ),
           },

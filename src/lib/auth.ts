@@ -9,12 +9,14 @@ declare module "next-auth" {
   interface User {
     role: Role
     companyId: string
+    modulePermissions: string[]
   }
   interface Session {
     user: DefaultSession["user"] & {
       id: string
       role: Role
       companyId: string
+      modulePermissions: string[]
     }
   }
 }
@@ -33,6 +35,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            companyId: true,
+            isActive: true,
+            passwordHash: true,
+            modulePermissions: true,
+          },
         })
 
         if (!user || !user.isActive) return null
@@ -49,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role,
           companyId: user.companyId,
+          modulePermissions: user.modulePermissions,
         }
       },
     }),
@@ -61,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id
         token.role = user.role
         token.companyId = user.companyId
+        token.modulePermissions = user.modulePermissions ?? []
       }
       return token
     },
@@ -70,6 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id
         session.user.role = token.role
         session.user.companyId = token.companyId
+        session.user.modulePermissions = token.modulePermissions ?? []
       }
       return session
     },

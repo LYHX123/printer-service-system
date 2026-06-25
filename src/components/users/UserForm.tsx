@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
 import { CreateUserSchema, type CreateUserInput } from "@/lib/schemas"
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ROLE_LABELS } from "@/types"
+import { ALL_MODULES } from "@/lib/permissions"
+import { PermissionsEditor } from "@/components/users/PermissionsEditor"
 import type { Role } from "@/types"
 
 const ROLES: Role[] = ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"]
@@ -21,11 +23,22 @@ export function UserForm() {
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateUserInput>({
     resolver: zodResolver(CreateUserSchema) as Resolver<CreateUserInput>,
-    defaultValues: { name: "", email: "", password: "", role: "RECEPTIONIST" },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      role: "RECEPTIONIST",
+      modulePermissions: [...ALL_MODULES],
+    },
   })
+
+  const role = useWatch({ control, name: "role", defaultValue: "RECEPTIONIST" }) as Role
+  const modulePermissions = useWatch({ control, name: "modulePermissions", defaultValue: [...ALL_MODULES] })
 
   async function onSubmit(data: CreateUserInput) {
     const result = await createUser(data)
@@ -42,7 +55,13 @@ export function UserForm() {
             <Input id="name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
           </FormField>
           <FormField label={t("emailAddress")} htmlFor="email" required error={errors.email?.message}>
-            <Input id="email" type="email" placeholder="e.g. jane@techfix.com" {...register("email")} error={errors.email?.message} />
+            <Input
+              id="email"
+              type="email"
+              placeholder="e.g. user@gmail.com"
+              {...register("email")}
+              error={errors.email?.message}
+            />
           </FormField>
         </div>
 
@@ -52,13 +71,25 @@ export function UserForm() {
           </FormField>
           <FormField label={t("role")} htmlFor="role" required error={errors.role?.message}>
             <Select id="role" {...register("role")}>
-              {ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
                 </option>
               ))}
             </Select>
           </FormField>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium text-slate-700 mb-3">
+            {t("moduleAccess")} <span className="text-slate-400 font-normal">/ 模块权限</span>
+          </p>
+          <PermissionsEditor
+            permissions={modulePermissions ?? [...ALL_MODULES]}
+            userRole={role}
+            isSelf={false}
+            onChange={(perms) => setValue("modulePermissions", perms)}
+          />
         </div>
       </div>
 

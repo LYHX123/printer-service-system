@@ -5,9 +5,17 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canManageUsers } from "@/lib/permissions"
-import { CreateUserSchema, UpdateUserRoleSchema } from "@/lib/schemas"
-import type { CreateUserInput, UpdateUserRoleInput } from "@/lib/schemas"
+import { canManageUsers, ADMIN_SELF_PROTECTED } from "@/lib/permissions"
+import {
+  CreateUserSchema,
+  UpdateUserRoleSchema,
+  UpdateUserPermissionsSchema,
+} from "@/lib/schemas"
+import type {
+  CreateUserInput,
+  UpdateUserRoleInput,
+  UpdateUserPermissionsInput,
+} from "@/lib/schemas"
 import type { Role } from "@/types"
 
 export async function createUser(data: CreateUserInput) {
@@ -19,7 +27,7 @@ export async function createUser(data: CreateUserInput) {
   const parsed = CreateUserSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { name, email, password, role } = parsed.data
+  const { name, email, password, role, modulePermissions } = parsed.data
 
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
   if (existing) return { error: "A user with this email already exists" }
@@ -27,7 +35,7 @@ export async function createUser(data: CreateUserInput) {
   try {
     const passwordHash = await bcrypt.hash(password, 10)
     await prisma.user.create({
-      data: { companyId, name, email, passwordHash, role },
+      data: { companyId, name, email, passwordHash, role, modulePermissions },
       select: { id: true },
     })
     revalidatePath("/users")
@@ -80,5 +88,38 @@ export async function setUserActive(id: string, isActive: boolean) {
     return { success: true }
   } catch {
     return { error: "Failed to update user status" }
+  }
+}
+
+export async function updateUserPermissions(id: string, data: UpdateUserPermissionsInput) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+  const currentUserId = session.user.id as string
+
+  const parsed = UpdateUserPermissionsSchema.safeParse(data)
+  if (!parsed.success) return { error: "Invalid permissions" }
+
+  let permissions = parsed.data.modulePermissions
+
+  // Self-protection: admin cannot accidentally remove critical modules from own account
+  if (id === currentUserId) {
+    for (const m of ADMIN_SELF_PROTECTED) {
+      if (!permissions.includes(m)) {
+        permissions = [...permissions, m]
+      }
+    }
+  }
+
+  try {
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    if (!existing) return { error: "User not found" }
+
+    await prisma.user.update({ where: { id }, data: { modulePermissions: permissions } })
+    revalidatePath("/users")
+    return { success: true }
+  } catch {
+    return { error: "Failed to update permissions" }
   }
 }

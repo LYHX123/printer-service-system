@@ -86,6 +86,7 @@ export type SessionUser = {
   email: string
   role: Role
   companyId: string
+  modulePermissions: string[]
 }
 
 // ─── Composite types ──────────────────────────────────────────────────────────

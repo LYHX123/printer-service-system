@@ -163,9 +163,10 @@ const RoleEnum = z.enum(["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"])
 
 export const CreateUserSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
-  email: z.string().email("Invalid email").max(150),
+  email: z.string().email("Invalid email address").max(150),
   password: z.string().min(8, "Password must be at least 8 characters").max(100),
   role: RoleEnum,
+  modulePermissions: z.array(z.string()).default([]),
 })
 
 export type CreateUserInput = z.infer<typeof CreateUserSchema>
@@ -175,6 +176,12 @@ export const UpdateUserRoleSchema = z.object({
 })
 
 export type UpdateUserRoleInput = z.infer<typeof UpdateUserRoleSchema>
+
+export const UpdateUserPermissionsSchema = z.object({
+  modulePermissions: z.array(z.string()),
+})
+
+export type UpdateUserPermissionsInput = z.infer<typeof UpdateUserPermissionsSchema>
 
 // ─── Inventory / Spare Parts ───────────────────────────────────────────────────
 

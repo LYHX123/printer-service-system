@@ -12,6 +12,7 @@ interface ShellUser {
   email?: string | null
   role: Role
   companyId: string
+  modulePermissions: string[]
 }
 
 interface DashboardShellProps {
@@ -27,6 +28,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       <div className="flex h-screen overflow-hidden bg-slate-50 print:h-auto print:overflow-visible print:bg-white">
         <Sidebar
           role={user.role}
+          modulePermissions={user.modulePermissions}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

@@ -1,17 +1,5 @@
 import type { Role } from "@/types"
 
-/**
- * Centralized RBAC permission model for Phase 7.
- *
- * Per explicit request, all edit/manage permissions below are open to every
- * role (ADMIN, MANAGER, ENGINEER, RECEPTIONIST) across every module,
- * including Users and Settings. The only remaining role-specific behavior is
- * `isRestrictedToAssignedJobs`, which scopes the Jobs *list* for Engineers to
- * jobs assigned to them — that's a data-visibility scope, not an edit gate,
- * and was left as-is since it wasn't part of the "open all edit permissions"
- * request.
- */
-
 export type Module =
   | "dashboard"
   | "customers"
@@ -22,20 +10,46 @@ export type Module =
   | "users"
   | "settings"
 
-const MODULE_ACCESS: Record<Module, Role[]> = {
-  dashboard: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  customers: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  jobs: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  quotations: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  inventory: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  ledger: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  users: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
-  settings: ["ADMIN", "MANAGER", "ENGINEER", "RECEPTIONIST"],
+export const ALL_MODULES: Module[] = [
+  "dashboard",
+  "quotations",
+  "customers",
+  "jobs",
+  "inventory",
+  "ledger",
+  "users",
+  "settings",
+]
+
+export const MODULE_LABELS: Record<Module, { en: string; zh: string }> = {
+  dashboard:  { en: "Dashboard",   zh: "仪表盘" },
+  quotations: { en: "Quotations",  zh: "报价单" },
+  customers:  { en: "Customers",   zh: "客户"   },
+  jobs:       { en: "Jobs",        zh: "工单"   },
+  inventory:  { en: "Stock",       zh: "库存"   },
+  ledger:     { en: "Ledger",      zh: "台账"   },
+  users:      { en: "Users",       zh: "用户"   },
+  settings:   { en: "Settings",    zh: "设置"   },
 }
 
-/** Whether a role can access a given module/section at all. */
-export function canAccess(role: Role, module: Module): boolean {
-  return MODULE_ACCESS[module].includes(role)
+// Modules an Admin can never remove from their own account
+export const ADMIN_SELF_PROTECTED: Module[] = ["dashboard", "users", "settings"]
+
+/**
+ * Core permission check.
+ * - ADMIN role → always true
+ * - empty permissions array → true (backward compat; existing users get full access)
+ * - otherwise → explicit allowlist check
+ */
+export function hasModuleAccess(role: Role, module: Module, permissions: string[]): boolean {
+  if (role === "ADMIN") return true
+  if (permissions.length === 0) return true
+  return permissions.includes(module)
+}
+
+/** Whether a role+permissions combo can view a module. Existing callers omit permissions and get full access. */
+export function canAccess(role: Role, module: Module, permissions: string[] = []): boolean {
+  return hasModuleAccess(role, module, permissions)
 }
 
 /** Opened to all roles. */
@@ -85,4 +99,3 @@ export const canEditInventory = canManageInventory
 export function canManageLedger(_role: Role): boolean {
   return true
 }
-
