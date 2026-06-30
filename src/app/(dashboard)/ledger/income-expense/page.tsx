@@ -4,7 +4,7 @@ import { ChevronLeft, TrendingUp, TrendingDown, Scale } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
 import { canAccess } from "@/lib/permissions"
-import { getLedgerEntries, getLedgerCategories } from "@/lib/data/ledger"
+import { getLedgerEntries, getLedgerCategories, getLedgerMonthStats } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
 import { Table } from "@/components/ui/table"
@@ -23,23 +23,22 @@ const TYPES: LedgerEntryType[] = ["INCOME", "EXPENSE"]
 export default async function IncomeExpenseBookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string }>
+  searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string; search?: string }>
 }) {
   const session = await auth()
   if (!canAccess(session!.user.role as Role, "ledger")) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
-  const { from, to, type, categoryId } = await searchParams
+  const { from, to, type, categoryId, search } = await searchParams
   const validType = TYPES.includes(type as LedgerEntryType) ? (type as LedgerEntryType) : undefined
 
-  const [entries, categories] = await Promise.all([
-    getLedgerEntries(companyId, { from, to, type: validType, categoryId }),
+  const [entries, categories, monthStats] = await Promise.all([
+    getLedgerEntries(companyId, { from, to, type: validType, categoryId, search }),
     getLedgerCategories(companyId),
+    getLedgerMonthStats(companyId),
   ])
 
-  const totalIncome = entries.filter((e) => e.type === "INCOME").reduce((sum, e) => sum + e.amount, 0)
-  const totalExpense = entries.filter((e) => e.type === "EXPENSE").reduce((sum, e) => sum + e.amount, 0)
-  const hasFilters = Boolean(from || to || type || categoryId)
+  const hasFilters = Boolean(from || to || type || categoryId || search)
   const paymentMethodColumnLabel =
     validType === "INCOME" ? <T k="receivingMethod" /> : validType === "EXPENSE" ? <T k="paymentMethod" /> : <T k="paymentOrReceivingMethod" />
 
@@ -57,23 +56,32 @@ export default async function IncomeExpenseBookPage({
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-        <MetricCard
-          label={<T k="totalIncome" />}
-          value={formatCurrency(totalIncome)}
-          icon={<TrendingUp className="h-5 w-5 text-green-600" />}
-          iconBg="bg-green-50"
-        />
-        <MetricCard
-          label={<T k="totalExpense" />}
-          value={formatCurrency(totalExpense)}
-          icon={<TrendingDown className="h-5 w-5 text-red-600" />}
-          iconBg="bg-red-50"
-        />
-        <MetricCard
-          label={<T k="balance" />}
-          value={formatCurrency(totalIncome - totalExpense)}
-          icon={<Scale className="h-5 w-5 text-blue-600" />}
-        />
+        <div>
+          <MetricCard
+            label={<T k="totalIncome" />}
+            value={formatCurrency(monthStats.income)}
+            icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+            iconBg="bg-green-50"
+          />
+          <p className="mt-1.5 text-center text-xs text-slate-400"><T k="currentMonth" /></p>
+        </div>
+        <div>
+          <MetricCard
+            label={<T k="totalExpense" />}
+            value={formatCurrency(monthStats.expense)}
+            icon={<TrendingDown className="h-5 w-5 text-red-600" />}
+            iconBg="bg-red-50"
+          />
+          <p className="mt-1.5 text-center text-xs text-slate-400"><T k="currentMonth" /></p>
+        </div>
+        <div>
+          <MetricCard
+            label={<T k="balance" />}
+            value={formatCurrency(monthStats.income - monthStats.expense)}
+            icon={<Scale className="h-5 w-5 text-blue-600" />}
+          />
+          <p className="mt-1.5 text-center text-xs text-slate-400"><T k="currentMonth" /></p>
+        </div>
       </div>
 
       <form method="GET" className="flex flex-wrap items-center gap-2 mb-4">
@@ -81,17 +89,24 @@ export default async function IncomeExpenseBookPage({
         <Input name="from" type="date" defaultValue={from ?? ""} className="w-40" />
         <label className="text-xs text-slate-500"><T k="toDate" /></label>
         <Input name="to" type="date" defaultValue={to ?? ""} className="w-40" />
-        <Select name="type" defaultValue={validType ?? ""} className="w-44">
+        <Select name="type" defaultValue={validType ?? ""} className="w-40">
           <option value=""><T k="allTypes" /></option>
           <option value="INCOME"><T k="income" /></option>
           <option value="EXPENSE"><T k="expense" /></option>
         </Select>
-        <Select name="categoryId" defaultValue={categoryId ?? ""} className="w-52">
+        <Select name="categoryId" defaultValue={categoryId ?? ""} className="w-48">
           <option value=""><T k="allCategories" /></option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </Select>
+        <Input
+          name="search"
+          type="text"
+          defaultValue={search ?? ""}
+          placeholder="Search income or expense..."
+          className="w-56"
+        />
         <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {hasFilters && (
           <Link href="/ledger/income-expense">
@@ -125,7 +140,6 @@ export default async function IncomeExpenseBookPage({
             label: paymentMethodColumnLabel,
             render: (row) => <span className="text-sm text-slate-600"><PaymentMethodLabel method={row.paymentMethod} /></span>,
           },
-          { key: "referenceNo", label: <T k="referenceNo" />, render: (row) => <span className="text-xs text-slate-500">{row.referenceNo ?? "—"}</span> },
           { key: "remark", label: <T k="remark" />, render: (row) => <span className="text-xs text-slate-500 whitespace-normal">{row.remark ?? "—"}</span> },
           { key: "createdBy", label: <T k="createdBy" />, render: (row) => <span className="text-xs text-slate-500">{row.createdBy.name}</span> },
           {

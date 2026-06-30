@@ -60,7 +60,7 @@ export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
 
   const parsed = LedgerEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
-  const { type, categoryId, newCategoryName, date, amount, paymentMethod, referenceNo, remark } = parsed.data
+  const { type, categoryId, newCategoryName, date, amount, paymentMethod, remark } = parsed.data
 
   try {
     const existing = await prisma.ledgerEntry.findFirst({ where: { id, companyId } })
@@ -79,7 +79,7 @@ export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
         date: new Date(`${date}T12:00:00`),
         amount,
         paymentMethod,
-        referenceNo: referenceNo || null,
+        // referenceNo intentionally omitted — preserves any legacy value stored in the DB
         remark: remark || null,
       },
     })

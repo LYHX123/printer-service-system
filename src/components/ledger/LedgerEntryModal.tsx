@@ -60,10 +60,9 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
           date: new Date(entry.date).toISOString().slice(0, 10),
           amount: entry.amount,
           paymentMethod: entry.paymentMethod,
-          referenceNo: entry.referenceNo ?? "",
           remark: entry.remark ?? "",
         }
-      : { type: defaultType, categoryId: "", date: todayIso(), amount: 0, paymentMethod: "CASH", referenceNo: "", remark: "" },
+      : { type: defaultType, categoryId: "", date: todayIso(), paymentMethod: "CASH", remark: "" },
   })
 
   useEffect(() => {
@@ -76,10 +75,9 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
             date: new Date(entry.date).toISOString().slice(0, 10),
             amount: entry.amount,
             paymentMethod: entry.paymentMethod,
-            referenceNo: entry.referenceNo ?? "",
             remark: entry.remark ?? "",
           }
-        : { type: defaultType, categoryId: "", date: todayIso(), amount: 0, paymentMethod: "CASH", referenceNo: "", remark: "" }
+        : { type: defaultType, categoryId: "", date: todayIso(), paymentMethod: "CASH", remark: "" }
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, entry, defaultType])
@@ -158,7 +156,14 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
         </FormField>
 
         <FormField label={t("amount")} htmlFor="entryAmount" required error={errors.amount?.message}>
-          <Input id="entryAmount" type="number" min={0} step="0.01" {...register("amount")} />
+          <Input
+            id="entryAmount"
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="0.00"
+            {...register("amount")}
+          />
         </FormField>
 
         <FormField
@@ -172,10 +177,6 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
               <option key={m} value={m}>{t(PAYMENT_METHOD_KEYS[m])}</option>
             ))}
           </Select>
-        </FormField>
-
-        <FormField label={t("referenceNo")} htmlFor="entryReferenceNo" error={errors.referenceNo?.message}>
-          <Input id="entryReferenceNo" {...register("referenceNo")} />
         </FormField>
 
         <FormField label={t("remark")} htmlFor="entryRemark" error={errors.remark?.message}>

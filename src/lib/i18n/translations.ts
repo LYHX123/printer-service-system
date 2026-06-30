@@ -287,6 +287,8 @@ export type TranslationKey =
   | "noSalesLedgerFound"
   | "noSalesLedgerDesc"
   | "searchSalesLedgerPlaceholder"
+  | "searchLedgerPlaceholder"
+  | "currentMonth"
   | "fromDate"
   | "toDate"
   | "statusActive"
@@ -634,6 +636,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noSalesLedgerFound: "No sales ledger records found",
     noSalesLedgerDesc: "Add your first sales record to get started.",
     searchSalesLedgerPlaceholder: "Search by customer name or order no…",
+    searchLedgerPlaceholder: "Search income or expense...",
+    currentMonth: "Current Month",
     fromDate: "From Date",
     toDate: "To Date",
     statusActive: "Active",
@@ -980,6 +984,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noSalesLedgerFound: "未找到销售账记录",
     noSalesLedgerDesc: "添加第一笔销售记录以开始使用。",
     searchSalesLedgerPlaceholder: "按客户名称或订单号搜索…",
+    searchLedgerPlaceholder: "搜索收入或支出…",
+    currentMonth: "本月",
     fromDate: "起始日期",
     toDate: "结束日期",
     statusActive: "进行中",

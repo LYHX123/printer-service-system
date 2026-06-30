@@ -58,6 +58,7 @@ export interface LedgerEntryFilters {
   type?: LedgerEntryType
   categoryId?: string
   paymentMethod?: LedgerPaymentMethod
+  search?: string
 }
 
 function dateRangeWhere(from?: string, to?: string) {
@@ -72,10 +73,10 @@ export async function getLedgerEntries(
   companyId: string,
   filters: LedgerEntryFilters = {}
 ): Promise<LedgerEntryWithRelations[]> {
-  const { from, to, type, categoryId, paymentMethod } = filters
+  const { from, to, type, categoryId, paymentMethod, search } = filters
   const dateRange = dateRangeWhere(from, to)
 
-  const entries = await prisma.ledgerEntry.findMany({
+  const rows = await prisma.ledgerEntry.findMany({
     where: {
       companyId,
       ...(type ? { type } : {}),
@@ -90,7 +91,39 @@ export async function getLedgerEntries(
     orderBy: { date: "desc" },
   })
 
-  return entries.map((e) => ({ ...e, amount: Number(e.amount) }))
+  const entries: LedgerEntryWithRelations[] = rows.map((e) => ({ ...e, amount: Number(e.amount) }))
+
+  if (!search?.trim()) return entries
+
+  const term = search.trim().toLowerCase()
+  return entries.filter(
+    (e) =>
+      e.category.name.toLowerCase().includes(term) ||
+      (e.remark ?? "").toLowerCase().includes(term) ||
+      e.createdBy.name.toLowerCase().includes(term) ||
+      e.paymentMethod.toLowerCase().includes(term) ||
+      e.type.toLowerCase().includes(term)
+  )
+}
+
+export async function getLedgerMonthStats(companyId: string): Promise<{ income: number; expense: number }> {
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+  const rows = await prisma.ledgerEntry.findMany({
+    where: { companyId, date: { gte: monthStart, lte: monthEnd } },
+    select: { type: true, amount: true },
+  })
+
+  let income = 0
+  let expense = 0
+  for (const r of rows) {
+    const a = Number(r.amount)
+    if (r.type === "INCOME") income += a
+    else expense += a
+  }
+  return { income, expense }
 }
 
 // ─── Sales Ledger ────────────────────────────────────────────────────────────────
