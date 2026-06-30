@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ChevronLeft, TrendingUp, TrendingDown, Scale } from "lucide-react"
+import { ChevronLeft, TrendingUp, TrendingDown, Scale, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
 import { canAccess } from "@/lib/permissions"
@@ -39,6 +39,16 @@ export default async function IncomeExpenseBookPage({
   ])
 
   const hasFilters = Boolean(from || to || type || categoryId || search)
+
+  // Build export URL with current active filters
+  const exportParams = new URLSearchParams()
+  if (from) exportParams.set("from", from)
+  if (to) exportParams.set("to", to)
+  if (validType) exportParams.set("type", validType)
+  if (categoryId) exportParams.set("categoryId", categoryId)
+  if (search) exportParams.set("search", search)
+  const exportUrl = `/api/ledger/export?${exportParams.toString()}`
+
   const paymentMethodColumnLabel =
     validType === "INCOME" ? <T k="receivingMethod" /> : validType === "EXPENSE" ? <T k="paymentMethod" /> : <T k="paymentOrReceivingMethod" />
 
@@ -113,6 +123,11 @@ export default async function IncomeExpenseBookPage({
             <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
+        <a href={exportUrl}>
+          <Button type="button" variant="outline" icon={<Download className="h-4 w-4" />}>
+            Export Excel
+          </Button>
+        </a>
       </form>
 
       <Table
