@@ -109,14 +109,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    jwt({ token, user }: any) {
+    async jwt({ token, user }: any) {
       if (user) {
+        // Initial sign-in — populate from authorize() return value
         token.id = user.id
         token.role = user.role
         token.companyId = user.companyId
         token.modulePermissions = user.modulePermissions ?? []
         token.username = user.username ?? ""
         token.position = user.position ?? null
+      } else if (token.id) {
+        // Subsequent requests — refresh mutable profile fields from DB
+        // so edits to name/username/position are reflected without re-login
+        const fresh = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { name: true, username: true, position: true },
+        })
+        if (fresh) {
+          token.name = fresh.name
+          token.username = fresh.username ?? ""
+          token.position = fresh.position ?? null
+        }
       }
       return token
     },
@@ -124,6 +137,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }: any) {
       if (token) {
         session.user.id = token.id
+        session.user.name = token.name  // explicitly pass refreshed name
         session.user.role = token.role
         session.user.companyId = token.companyId
         session.user.modulePermissions = token.modulePermissions ?? []
