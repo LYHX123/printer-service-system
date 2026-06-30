@@ -165,8 +165,13 @@ const optionalText = (max: number) =>
   z.string().max(max).optional().or(z.literal(""))
 
 export const CreateUserSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  email: z.string().email("Invalid email address").max(150),
+  name: z.string().min(1, "Full name is required").max(100),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(50)
+    .regex(/^[a-zA-Z0-9_.-]+$/, "Username may only contain letters, numbers, _ . -"),
+  email: z.string().email("Invalid email address").max(150).optional().or(z.literal("")),
   password: z.string().min(8, "Password must be at least 8 characters").max(100),
   role: RoleEnum,
   modulePermissions: z.array(z.string()).default([]),
@@ -190,10 +195,21 @@ export const UpdateUserPermissionsSchema = z.object({
 export type UpdateUserPermissionsInput = z.infer<typeof UpdateUserPermissionsSchema>
 
 export const UpdateUserProfileSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
+  name: z.string().min(1, "Full name is required").max(100),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(50)
+    .regex(/^[a-zA-Z0-9_.-]+$/, "Username may only contain letters, numbers, _ . -"),
   phone: optionalText(30),
   department: optionalText(100),
   position: optionalText(100),
+  newPassword: z
+    .string()
+    .max(100)
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || v.length >= 8, { message: "Password must be at least 8 characters" }),
 })
 
 export type UpdateUserProfileInput = z.infer<typeof UpdateUserProfileSchema>

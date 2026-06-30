@@ -34,10 +34,17 @@ export async function createUser(data: CreateUserInput) {
   const parsed = CreateUserSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { name, email, password, role, modulePermissions, phone, department, position } = parsed.data
+  const { name, username, email, password, role, modulePermissions, phone, department, position } = parsed.data
 
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
-  if (existing) return { error: "A user with this email already exists" }
+  // Check username uniqueness
+  const existingByUsername = await prisma.user.findUnique({ where: { username }, select: { id: true } })
+  if (existingByUsername) return { error: "A user with this username already exists" }
+
+  // Check email uniqueness (only if email is provided)
+  if (email) {
+    const existingByEmail = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+    if (existingByEmail) return { error: "A user with this email already exists" }
+  }
 
   try {
     const passwordHash = await bcrypt.hash(password, 10)
@@ -45,7 +52,8 @@ export async function createUser(data: CreateUserInput) {
       data: {
         companyId,
         name,
-        email,
+        username,
+        email: email || null,
         passwordHash,
         role,
         modulePermissions,
@@ -171,21 +179,32 @@ export async function updateUserProfile(id: string, data: UpdateUserProfileInput
   const parsed = UpdateUserProfileSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid profile data" }
 
-  const { name, phone, department, position } = parsed.data
+  const { name, username, phone, department, position, newPassword } = parsed.data
+
+  // Check username uniqueness (exclude the user being edited)
+  const existingByUsername = await prisma.user.findFirst({
+    where: { username, NOT: { id } },
+    select: { id: true },
+  })
+  if (existingByUsername) return { error: "This username is already taken" }
 
   try {
     const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
     if (!existing) return { error: "User not found" }
 
-    await prisma.user.update({
-      where: { id },
-      data: {
-        name,
-        phone: trim(phone),
-        department: trim(department),
-        position: trim(position),
-      },
-    })
+    const updateData: Record<string, unknown> = {
+      name,
+      username,
+      phone: trim(phone),
+      department: trim(department),
+      position: trim(position),
+    }
+
+    if (newPassword && newPassword.trim().length >= 8) {
+      updateData.passwordHash = await bcrypt.hash(newPassword.trim(), 10)
+    }
+
+    await prisma.user.update({ where: { id }, data: updateData })
     revalidatePath("/users")
     return { success: true }
   } catch {

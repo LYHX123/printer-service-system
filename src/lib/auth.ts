@@ -13,6 +13,8 @@ declare module "next-auth" {
     role: Role
     companyId: string
     modulePermissions: string[]
+    username: string
+    position: string | null
   }
   interface Session {
     user: DefaultSession["user"] & {
@@ -20,6 +22,8 @@ declare module "next-auth" {
       role: Role
       companyId: string
       modulePermissions: string[]
+      username: string
+      position: string | null
     }
   }
 }
@@ -30,17 +34,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        if (!credentials?.username || !credentials?.password) return null
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+        const user = await prisma.user.findFirst({
+          where: { username: credentials.username as string },
           select: {
             id: true,
             name: true,
+            username: true,
             email: true,
             role: true,
             companyId: true,
@@ -49,6 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             modulePermissions: true,
             failedLoginAttempts: true,
             lockedUntil: true,
+            position: true,
           },
         })
 
@@ -91,9 +97,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
+          username: user.username ?? "",
           role: user.role,
           companyId: user.companyId,
           modulePermissions: user.modulePermissions,
+          position: user.position ?? null,
         }
       },
     }),
@@ -107,6 +115,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role
         token.companyId = user.companyId
         token.modulePermissions = user.modulePermissions ?? []
+        token.username = user.username ?? ""
+        token.position = user.position ?? null
       }
       return token
     },
@@ -117,6 +127,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role
         session.user.companyId = token.companyId
         session.user.modulePermissions = token.modulePermissions ?? []
+        session.user.username = token.username ?? ""
+        session.user.position = token.position ?? null
       }
       return session
     },

@@ -89,12 +89,12 @@ export default async function UsersPage() {
             ),
           },
           {
-            key: "email",
-            label: <T k="email" />,
+            key: "username",
+            label: <T k="username" />,
             render: (row) => (
               <div>
-                <p className="text-slate-600 text-sm">{row.email}</p>
-                {row.phone && <p className="text-xs text-slate-400">{row.phone}</p>}
+                <p className="text-slate-700 text-sm font-mono">{row.username ?? "—"}</p>
+                {row.position && <p className="text-xs text-slate-400 mt-0.5">{row.position}</p>}
               </div>
             ),
           },
@@ -136,6 +136,7 @@ export default async function UsersPage() {
                 modulePermissions={row.modulePermissions}
                 isLocked={!!(row.lockedUntil && row.lockedUntil > new Date())}
                 name={row.name}
+                username={row.username}
                 phone={row.phone}
                 department={row.department}
                 position={row.position}

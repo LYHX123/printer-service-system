@@ -30,6 +30,7 @@ export function UserForm() {
     resolver: zodResolver(CreateUserSchema) as Resolver<CreateUserInput>,
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       password: "",
       role: "RECEPTIONIST",
@@ -56,16 +57,16 @@ export function UserForm() {
 
         {/* Identity */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={t("displayName")} htmlFor="name" required error={errors.name?.message}>
+          <FormField label={t("fullName")} htmlFor="name" required error={errors.name?.message}>
             <Input id="name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
           </FormField>
-          <FormField label={t("emailAddress")} htmlFor="email" required error={errors.email?.message}>
+          <FormField label={t("username")} htmlFor="username" required error={errors.username?.message}>
             <Input
-              id="email"
-              type="email"
-              placeholder="e.g. user@gmail.com"
-              {...register("email")}
-              error={errors.email?.message}
+              id="username"
+              placeholder="e.g. jane_doe"
+              autoComplete="off"
+              {...register("username")}
+              error={errors.username?.message}
             />
           </FormField>
         </div>
@@ -86,11 +87,23 @@ export function UserForm() {
           </FormField>
         </div>
 
-        {/* Optional profile */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        {/* Email (optional) + optional profile */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FormField label={t("emailAddress")} htmlFor="email" error={errors.email?.message}>
+            <Input
+              id="email"
+              type="email"
+              placeholder="e.g. user@gmail.com (optional)"
+              {...register("email")}
+              error={errors.email?.message}
+            />
+          </FormField>
           <FormField label={t("phone")} htmlFor="phone" error={errors.phone?.message}>
             <Input id="phone" placeholder="e.g. +254700000000" {...register("phone")} error={errors.phone?.message} />
           </FormField>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("department")} htmlFor="department" error={errors.department?.message}>
             <Input id="department" placeholder="e.g. IT" {...register("department")} error={errors.department?.message} />
           </FormField>

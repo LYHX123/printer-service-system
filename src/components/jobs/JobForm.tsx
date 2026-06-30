@@ -44,7 +44,7 @@ interface EquipmentOption {
 interface EngineerOption {
   id: string
   name: string
-  email: string
+  email: string | null
   role: Role
 }
 

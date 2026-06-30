@@ -9,7 +9,8 @@ import type { Role } from "@/types"
 interface ShellUser {
   id: string
   name?: string | null
-  email?: string | null
+  username?: string | null
+  position?: string | null
   role: Role
   companyId: string
   modulePermissions: string[]
@@ -34,7 +35,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         />
         <div className="flex flex-1 flex-col overflow-hidden min-w-0 print:overflow-visible">
           <Topbar
-            user={{ name: user.name, email: user.email, role: user.role }}
+            user={{ name: user.name, username: user.username, position: user.position, role: user.role }}
             onMenuClick={() => setSidebarOpen(true)}
           />
           <main className="flex-1 overflow-y-auto p-6 pb-96 print:overflow-visible print:p-0">{children}</main>

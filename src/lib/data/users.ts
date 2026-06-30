@@ -4,7 +4,8 @@ import type { Role } from "@/types"
 export type UserListItem = {
   id: string
   name: string
-  email: string
+  username: string | null
+  email: string | null
   role: Role
   isActive: boolean
   createdAt: Date
@@ -21,6 +22,7 @@ export async function getUsers(companyId: string): Promise<UserListItem[]> {
     select: {
       id: true,
       name: true,
+      username: true,
       email: true,
       role: true,
       isActive: true,

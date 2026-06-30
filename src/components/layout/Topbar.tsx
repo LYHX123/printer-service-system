@@ -87,7 +87,8 @@ function UserAvatar({ name }: { name: string }) {
 
 interface TopbarUser {
   name?: string | null
-  email?: string | null
+  username?: string | null
+  position?: string | null
   role: Role
 }
 
@@ -151,7 +152,10 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
             <p className="text-sm font-medium text-slate-900 leading-tight">
               {user.name}
             </p>
-            <p className="text-xs text-slate-500 leading-tight">{user.email}</p>
+            <p className="text-xs text-slate-500 leading-tight">
+              {user.username ? `@${user.username}` : ""}
+              {user.position ? (user.username ? ` · ${user.position}` : user.position) : ""}
+            </p>
           </div>
           <RoleBadge role={user.role} />
         </div>

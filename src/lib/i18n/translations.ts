@@ -328,6 +328,7 @@ export type TranslationKey =
   | "backToUsers"
   | "newUserDesc"
   | "fullName"
+  | "username"
   | "emailAddress"
   | "password"
   | "minimum8Characters"
@@ -677,6 +678,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     backToUsers: "Back to Users",
     newUserDesc: "Create a new staff account and assign a role.",
     fullName: "Full Name",
+    username: "Username",
     emailAddress: "Email Address",
     password: "Password",
     minimum8Characters: "Minimum 8 characters",
@@ -1025,6 +1027,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     backToUsers: "返回用户列表",
     newUserDesc: "创建新的员工账户并分配角色。",
     fullName: "全名",
+    username: "用户名",
     emailAddress: "电子邮箱",
     password: "密码",
     minimum8Characters: "至少8个字符",

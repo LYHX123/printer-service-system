@@ -34,6 +34,7 @@ interface UserActionsProps {
   modulePermissions: string[]
   isLocked: boolean
   name: string
+  username: string | null
   phone: string | null
   department: string | null
   position: string | null
@@ -47,6 +48,7 @@ export function UserActions({
   modulePermissions,
   isLocked,
   name,
+  username,
   phone,
   department,
   position,
@@ -72,7 +74,14 @@ export function UserActions({
     formState: { errors, isSubmitting: savingProfile },
   } = useForm<UpdateUserProfileInput>({
     resolver: zodResolver(UpdateUserProfileSchema) as Resolver<UpdateUserProfileInput>,
-    defaultValues: { name, phone: phone ?? "", department: department ?? "", position: position ?? "" },
+    defaultValues: {
+      name,
+      username: username ?? "",
+      phone: phone ?? "",
+      department: department ?? "",
+      position: position ?? "",
+      newPassword: "",
+    },
   })
 
   async function handleRoleChange(newRole: Role) {
@@ -153,7 +162,7 @@ export function UserActions({
         size="sm"
         icon={<Pencil className="h-3.5 w-3.5" />}
         onClick={() => {
-          reset({ name, phone: phone ?? "", department: department ?? "", position: position ?? "" })
+          reset({ name, username: username ?? "", phone: phone ?? "", department: department ?? "", position: position ?? "", newPassword: "" })
           setEditOpen(true)
         }}
       >
@@ -246,9 +255,14 @@ export function UserActions({
         }
       >
         <form id="edit-profile-form" onSubmit={handleSubmit(handleSaveProfile)} noValidate className="space-y-4">
-          <FormField label={t("displayName")} htmlFor="edit-name" required error={errors.name?.message}>
-            <Input id="edit-name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
-          </FormField>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField label={t("fullName")} htmlFor="edit-name" required error={errors.name?.message}>
+              <Input id="edit-name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
+            </FormField>
+            <FormField label={t("username")} htmlFor="edit-username" required error={errors.username?.message}>
+              <Input id="edit-username" placeholder="e.g. jane_doe" autoComplete="off" {...register("username")} error={errors.username?.message} />
+            </FormField>
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FormField label={t("phone")} htmlFor="edit-phone" error={errors.phone?.message}>
               <Input id="edit-phone" placeholder="+254700000000" {...register("phone")} error={errors.phone?.message} />
@@ -260,6 +274,9 @@ export function UserActions({
               <Input id="edit-pos" placeholder="Engineer" {...register("position")} error={errors.position?.message} />
             </FormField>
           </div>
+          <FormField label="New Password" htmlFor="edit-pwd" error={errors.newPassword?.message} hint="Leave blank to keep current password">
+            <Input id="edit-pwd" type="password" placeholder="••••••••" autoComplete="new-password" {...register("newPassword")} error={errors.newPassword?.message} />
+          </FormField>
         </form>
       </Modal>
     </div>

@@ -38,19 +38,19 @@ async function main() {
   const password = await bcrypt.hash("Password123!", 12)
 
   const users = [
-    { name: "Admin User",        email: "admin@techfix.com",        role: "ADMIN" as const },
-    { name: "Manager User",      email: "manager@techfix.com",      role: "MANAGER" as const },
-    { name: "Engineer User",     email: "engineer@techfix.com",     role: "ENGINEER" as const },
-    { name: "Receptionist User", email: "receptionist@techfix.com", role: "RECEPTIONIST" as const },
+    { name: "Admin User",        username: "admin",        email: "admin@techfix.com",        role: "ADMIN" as const },
+    { name: "Manager User",      username: "manager",      email: "manager@techfix.com",      role: "MANAGER" as const },
+    { name: "Engineer User",     username: "engineer",     email: "engineer@techfix.com",     role: "ENGINEER" as const },
+    { name: "Receptionist User", username: "receptionist", email: "receptionist@techfix.com", role: "RECEPTIONIST" as const },
   ]
 
   for (const u of users) {
     const created = await prisma.user.upsert({
       where: { email: u.email },
-      update: {},
-      create: { companyId: company.id, name: u.name, email: u.email, passwordHash: password, role: u.role },
+      update: { username: u.username },
+      create: { companyId: company.id, name: u.name, username: u.username, email: u.email, passwordHash: password, role: u.role },
     })
-    console.log(`  ${created.role}: ${created.email}`)
+    console.log(`  ${created.role}: ${created.username} (${created.email})`)
   }
 
   console.log("\nSeed complete. Default password for all users: Password123!")
