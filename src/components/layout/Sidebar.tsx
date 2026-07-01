@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  ClipboardList,
   Package,
   BookOpen,
   UserCog,
@@ -44,7 +43,6 @@ const NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
       { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
       { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
-      { href: "/jobs", labelKey: "jobs", label: "Jobs", icon: ClipboardList, module: "jobs" },
     ],
   },
   {
