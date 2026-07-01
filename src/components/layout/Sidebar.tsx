@@ -12,6 +12,7 @@ import {
   UserCog,
   Settings,
   Printer,
+  CheckSquare,
   X,
   type LucideIcon,
 } from "lucide-react"
@@ -51,6 +52,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
       { href: "/ledger", labelKey: "ledger", label: "Ledger", icon: BookOpen, module: "ledger" },
+      { href: "/tasks", labelKey: "tasks", label: "Tasks", icon: CheckSquare, module: "tasks" },
     ],
   },
   {

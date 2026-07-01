@@ -146,6 +146,11 @@ enum SalesPaymentStatus {
   PAID
 }
 
+enum TaskStatus {
+  ACTIVE
+  COMPLETED
+}
+
 // ─── Core Models ──────────────────────────────────────────────────────────────
 
 model Company {
@@ -179,6 +184,7 @@ model Company {
   ledgerCategories   LedgerCategory[]
   ledgerEntries      LedgerEntry[]
   salesLedgerEntries SalesLedgerEntry[]
+  tasks              Task[]
 }
 
 model User {
@@ -218,6 +224,9 @@ model User {
   communicationLogs     CommunicationLog[]
   createdLedgerEntries      LedgerEntry[]
   createdSalesLedgerEntries SalesLedgerEntry[]
+  createdTasks              Task[]            @relation("TaskCreatedBy")
+  taskParticipations        TaskParticipant[]
+  createdTaskSteps          TaskStep[]        @relation("TaskStepCreatedBy")
 }
 
 model Customer {
@@ -646,6 +655,49 @@ model LedgerEntry {
   company   Company        @relation(fields: [companyId], references: [id])
   category  LedgerCategory @relation(fields: [categoryId], references: [id])
   createdBy User           @relation(fields: [createdById], references: [id])
+}
+
+// ─── Task Module ─────────────────────────────────────────────────────────────
+
+model Task {
+  id          String     @id @default(uuid())
+  companyId   String
+  title       String
+  status      TaskStatus @default(ACTIVE)
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  completedAt DateTime?
+
+  company      Company           @relation(fields: [companyId], references: [id])
+  createdBy    User              @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  participants TaskParticipant[]
+  steps        TaskStep[]
+}
+
+model TaskParticipant {
+  id     String @id @default(uuid())
+  taskId String
+  userId String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+}
+
+model TaskStep {
+  id          String   @id @default(uuid())
+  taskId      String
+  title       String
+  description String?
+  order       Int
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdBy User @relation("TaskStepCreatedBy", fields: [createdById], references: [id])
 }
 
 model SalesLedgerEntry {

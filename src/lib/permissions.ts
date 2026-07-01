@@ -7,6 +7,7 @@ export type Module =
   | "quotations"
   | "inventory"
   | "ledger"
+  | "tasks"
   | "users"
   | "settings"
 
@@ -17,6 +18,7 @@ export const ALL_MODULES: Module[] = [
   "jobs",
   "inventory",
   "ledger",
+  "tasks",
   "users",
   "settings",
 ]
@@ -28,6 +30,7 @@ export const MODULE_LABELS: Record<Module, { en: string; zh: string }> = {
   jobs:       { en: "Jobs",        zh: "工单"   },
   inventory:  { en: "Stock",       zh: "库存"   },
   ledger:     { en: "Ledger",      zh: "台账"   },
+  tasks:      { en: "Tasks",       zh: "任务"   },
   users:      { en: "Users",       zh: "用户"   },
   settings:   { en: "Settings",    zh: "设置"   },
 }
@@ -98,4 +101,52 @@ export const canEditInventory = canManageInventory
 /** Opened to all roles — manage the Ledger module (income/expense book, sales ledger). */
 export function canManageLedger(_role: Role): boolean {
   return true
+}
+
+// ─── Task Module ──────────────────────────────────────────────────────────────
+
+/** Admin and Manager can create tasks. */
+export function canCreateTask(role: Role): boolean {
+  return role === "ADMIN" || role === "MANAGER"
+}
+
+/** Returns true if userId is the creator or an explicit participant of the task. */
+export function isTaskParticipant(
+  userId: string,
+  task: { createdById: string; participants: Array<{ userId: string }> }
+): boolean {
+  return task.createdById === userId || task.participants.some((p) => p.userId === userId)
+}
+
+/** Admin sees all tasks; others must be creator or participant. */
+export function canViewTask(
+  role: Role,
+  userId: string,
+  task: { createdById: string; participants: Array<{ userId: string }> }
+): boolean {
+  if (role === "ADMIN") return true
+  return isTaskParticipant(userId, task)
+}
+
+/** Participant (creator or listed participant) can add steps while task is ACTIVE. */
+export function canAddTaskStep(
+  userId: string,
+  task: { status: string; createdById: string; participants: Array<{ userId: string }> }
+): boolean {
+  if (task.status !== "ACTIVE") return false
+  return isTaskParticipant(userId, task)
+}
+
+/** Participant can complete an ACTIVE task. */
+export function canCompleteTask(
+  userId: string,
+  task: { status: string; createdById: string; participants: Array<{ userId: string }> }
+): boolean {
+  if (task.status !== "ACTIVE") return false
+  return isTaskParticipant(userId, task)
+}
+
+/** Only Admin can reopen a completed task. */
+export function canReopenTask(role: Role): boolean {
+  return role === "ADMIN"
 }

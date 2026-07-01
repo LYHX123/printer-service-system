@@ -310,3 +310,21 @@ export const SalesLedgerEntrySchema = z
   })
 
 export type SalesLedgerEntryInput = z.infer<typeof SalesLedgerEntrySchema>
+
+// ─── Task Module ──────────────────────────────────────────────────────────────
+
+export const CreateTaskSchema = z.object({
+  title: z.string().min(1, "Task title is required").max(200),
+  initialStepTitle: z.string().min(1, "First step title is required").max(200),
+  initialStepDescription: z.string().max(2000).optional().or(z.literal("")),
+  participantIds: z.array(z.string()).min(1, "Select at least one participant"),
+})
+
+export type CreateTaskInput = z.infer<typeof CreateTaskSchema>
+
+export const AddTaskStepSchema = z.object({
+  title: z.string().min(1, "Step title is required").max(200),
+  description: z.string().max(2000).optional().or(z.literal("")),
+})
+
+export type AddTaskStepInput = z.infer<typeof AddTaskStepSchema>

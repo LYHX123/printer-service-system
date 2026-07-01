@@ -236,6 +236,8 @@ export type TranslationKey =
   | "noRepairReportsFound"
   | "noQuotationsFoundReport"
   | "noProductivityData"
+  // Tasks
+  | "tasks"
   // Ledger
   | "ledger"
   | "ledgerDesc"
@@ -586,6 +588,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     stockMovements: "Stock Movements",
     pdf: "PDF",
     noProductivityData: "No productivity data found",
+    // Tasks
+    tasks: "Tasks",
     // Ledger
     ledger: "Ledger",
     ledgerDesc: "Track company income, expenses, and sales invoices.",
@@ -935,6 +939,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     stockMovements: "库存变动",
     pdf: "PDF",
     noProductivityData: "未找到生产力数据",
+    // Tasks
+    tasks: "任务",
     // Ledger
     ledger: "台账",
     ledgerDesc: "追踪公司收支与销售发票。",
