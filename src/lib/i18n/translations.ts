@@ -357,6 +357,40 @@ export type TranslationKey =
   | "position"
   | "saveProfile"
   | "displayName"
+  // Tasks module
+  | "taskNewTask"
+  | "taskCreateTask"
+  | "taskSelectATask"
+  | "taskClickToView"
+  | "taskNoTasksYet"
+  | "taskNoTasksDesc"
+  | "taskNoTasksAssigned"
+  | "taskStatusActive"
+  | "taskStatusCompleted"
+  | "taskCreatedByLabel"
+  | "taskParticipantsLabel"
+  | "taskAddNextStep"
+  | "taskAddNextStepHint"
+  | "taskMarkCompleted"
+  | "taskReopen"
+  | "taskBy"
+  | "taskNoSteps"
+  | "taskModalDesc"
+  | "taskTitleField"
+  | "taskInitialStep"
+  | "taskStepTitleField"
+  | "taskSearchStaff"
+  | "taskNoUsersFound"
+  | "taskAddStepAction"
+  | "taskAddStepModalDesc"
+  | "taskCreatedSuccess"
+  | "taskStepAdded"
+  | "taskCompletedSuccess"
+  | "taskReopenedSuccess"
+  | "taskDeletedSuccess"
+  | "taskTitleRequired"
+  | "taskStepTitleRequired"
+  | "taskParticipantRequired"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -590,6 +624,39 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noProductivityData: "No productivity data found",
     // Tasks
     tasks: "Tasks",
+    taskNewTask: "New Task",
+    taskCreateTask: "Create Task",
+    taskSelectATask: "Select a task",
+    taskClickToView: "Click a task on the left to view its workflow.",
+    taskNoTasksYet: "No tasks yet",
+    taskNoTasksDesc: "Create the first task to get started.",
+    taskNoTasksAssigned: "You have no tasks assigned to you.",
+    taskStatusActive: "Active",
+    taskStatusCompleted: "Completed",
+    taskCreatedByLabel: "Created by",
+    taskParticipantsLabel: "Participants",
+    taskAddNextStep: "Add Next Step",
+    taskAddNextStepHint: "Add next step…",
+    taskMarkCompleted: "Mark as Completed",
+    taskReopen: "Reopen",
+    taskBy: "by",
+    taskNoSteps: "No steps yet.",
+    taskModalDesc: "Create a new task and assign participants.",
+    taskTitleField: "Task Title",
+    taskInitialStep: "Initial Step",
+    taskStepTitleField: "Step Title",
+    taskSearchStaff: "Search staff…",
+    taskNoUsersFound: "No users found",
+    taskAddStepAction: "Add Step",
+    taskAddStepModalDesc: "Describe what was done or what happens next.",
+    taskCreatedSuccess: "Task created successfully",
+    taskStepAdded: "Step added successfully",
+    taskCompletedSuccess: "Task completed successfully",
+    taskReopenedSuccess: "Task reopened",
+    taskDeletedSuccess: "Task deleted",
+    taskTitleRequired: "Task title is required",
+    taskStepTitleRequired: "Step title is required",
+    taskParticipantRequired: "Select at least one participant",
     // Ledger
     ledger: "Ledger",
     ledgerDesc: "Track company income, expenses, and sales invoices.",
@@ -941,6 +1008,39 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noProductivityData: "未找到生产力数据",
     // Tasks
     tasks: "任务",
+    taskNewTask: "新建任务",
+    taskCreateTask: "创建任务",
+    taskSelectATask: "选择任务",
+    taskClickToView: "点击左侧任务查看工作流程",
+    taskNoTasksYet: "暂无任务",
+    taskNoTasksDesc: "创建第一个任务开始使用",
+    taskNoTasksAssigned: "您没有被分配的任务",
+    taskStatusActive: "进行中",
+    taskStatusCompleted: "已完成",
+    taskCreatedByLabel: "创建人",
+    taskParticipantsLabel: "参与人",
+    taskAddNextStep: "添加下一步",
+    taskAddNextStepHint: "添加下一步...",
+    taskMarkCompleted: "标记为完成",
+    taskReopen: "重新打开",
+    taskBy: "操作人",
+    taskNoSteps: "暂无步骤",
+    taskModalDesc: "创建一个新任务并分配参与人",
+    taskTitleField: "任务标题",
+    taskInitialStep: "初始步骤",
+    taskStepTitleField: "步骤标题",
+    taskSearchStaff: "搜索员工...",
+    taskNoUsersFound: "未找到用户",
+    taskAddStepAction: "添加步骤",
+    taskAddStepModalDesc: "描述已完成的内容或下一步操作",
+    taskCreatedSuccess: "任务创建成功",
+    taskStepAdded: "步骤添加成功",
+    taskCompletedSuccess: "任务已完成",
+    taskReopenedSuccess: "任务已重新打开",
+    taskDeletedSuccess: "任务已删除",
+    taskTitleRequired: "请输入任务标题",
+    taskStepTitleRequired: "请输入步骤标题",
+    taskParticipantRequired: "请至少选择一个参与人",
     // Ledger
     ledger: "台账",
     ledgerDesc: "追踪公司收支与销售发票。",

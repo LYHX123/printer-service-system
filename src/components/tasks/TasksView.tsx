@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { completeTask, reopenTask, deleteTask } from "@/lib/actions/tasks"
 import {
   canCreateTask,
@@ -34,10 +35,11 @@ interface TasksViewProps {
 }
 
 function TaskStatusBadge({ status }: { status: "ACTIVE" | "COMPLETED" }) {
+  const { t } = useLanguage()
   return status === "COMPLETED" ? (
-    <Badge className="bg-slate-100 text-slate-500">Completed</Badge>
+    <Badge className="bg-slate-100 text-slate-500">{t("taskStatusCompleted")}</Badge>
   ) : (
-    <Badge className="bg-green-100 text-green-700">Active</Badge>
+    <Badge className="bg-green-100 text-green-700">{t("taskStatusActive")}</Badge>
   )
 }
 
@@ -50,9 +52,9 @@ function WorkflowNode({
   isLast: boolean
   isFirst: boolean
 }) {
+  const { t } = useLanguage()
   return (
     <div className="animate-task-step flex gap-3">
-      {/* Left: connector line + dot */}
       <div className="flex flex-col items-center">
         <div
           className={cn(
@@ -67,7 +69,6 @@ function WorkflowNode({
         {!isLast && <div className="w-0.5 flex-1 bg-slate-200 my-1 min-h-[2rem]" />}
       </div>
 
-      {/* Right: content card */}
       <div
         className={cn(
           "flex-1 rounded-xl border bg-white shadow-sm mb-4",
@@ -82,7 +83,7 @@ function WorkflowNode({
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{step.description}</p>
           )}
           <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span>by {step.createdBy.name}</span>
+            <span>{t("taskBy")} {step.createdBy.name}</span>
             <span>·</span>
             <span>{format(new Date(step.createdAt), "dd MMM yyyy, HH:mm")}</span>
           </div>
@@ -93,32 +94,32 @@ function WorkflowNode({
 }
 
 function EmptyState() {
+  const { t } = useLanguage()
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-12 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 mb-4">
         <ChevronRight className="h-8 w-8 text-slate-400" />
       </div>
-      <h3 className="text-base font-semibold text-slate-700">Select a task</h3>
-      <p className="mt-1 text-sm text-slate-400">Click a task on the left to view its workflow.</p>
+      <h3 className="text-base font-semibold text-slate-700">{t("taskSelectATask")}</h3>
+      <p className="mt-1 text-sm text-slate-400">{t("taskClickToView")}</p>
     </div>
   )
 }
 
 function NoTasksState({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
+  const { t } = useLanguage()
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 mb-4">
         <CheckCircle2 className="h-8 w-8 text-slate-300" />
       </div>
-      <h3 className="text-base font-semibold text-slate-700">No tasks yet</h3>
+      <h3 className="text-base font-semibold text-slate-700">{t("taskNoTasksYet")}</h3>
       <p className="mt-1 text-sm text-slate-400">
-        {canCreate
-          ? "Create the first task to get started."
-          : "You have no tasks assigned to you."}
+        {canCreate ? t("taskNoTasksDesc") : t("taskNoTasksAssigned")}
       </p>
       {canCreate && (
         <Button className="mt-4" onClick={onCreate} icon={<Plus className="h-4 w-4" />}>
-          Create Task
+          {t("taskCreateTask")}
         </Button>
       )}
     </div>
@@ -128,13 +129,14 @@ function NoTasksState({ canCreate, onCreate }: { canCreate: boolean; onCreate: (
 export function TasksView({ tasks, users, currentUserId, currentUserRole }: TasksViewProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t, language } = useLanguage()
 
   const [selectedId, setSelectedId] = useState<string | null>(tasks[0]?.id ?? null)
   const [createOpen, setCreateOpen] = useState(false)
   const [addStepOpen, setAddStepOpen] = useState(false)
   const [isActing, setIsActing] = useState(false)
 
-  const selectedTask = tasks.find((t) => t.id === selectedId) ?? null
+  const selectedTask = tasks.find((task) => task.id === selectedId) ?? null
   const userCanCreate = canCreateTask(currentUserRole)
 
   async function handleComplete() {
@@ -143,7 +145,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
     const result = await completeTask(selectedTask.id)
     setIsActing(false)
     if (result?.error) { toast.error(result.error); return }
-    toast.success("Task marked as completed")
+    toast.success(t("taskCompletedSuccess"))
     router.refresh()
   }
 
@@ -153,19 +155,22 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
     const result = await reopenTask(selectedTask.id)
     setIsActing(false)
     if (result?.error) { toast.error(result.error); return }
-    toast.success("Task reopened")
+    toast.success(t("taskReopenedSuccess"))
     router.refresh()
   }
 
   async function handleDelete() {
     if (!selectedTask) return
-    if (!window.confirm(`Delete task "${selectedTask.title}"? This cannot be undone.`)) return
+    const confirmMsg = language === "zh"
+      ? `确定要删除任务"${selectedTask.title}"？此操作不可撤销。`
+      : `Delete task "${selectedTask.title}"? This cannot be undone.`
+    if (!window.confirm(confirmMsg)) return
     setIsActing(true)
     const result = await deleteTask(selectedTask.id)
     setIsActing(false)
     if (result?.error) { toast.error(result.error); return }
-    toast.success("Task deleted")
-    setSelectedId(tasks.find((t) => t.id !== selectedTask.id)?.id ?? null)
+    toast.success(t("taskDeletedSuccess"))
+    setSelectedId(tasks.find((task) => task.id !== selectedTask.id)?.id ?? null)
     router.refresh()
   }
 
@@ -190,17 +195,17 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* ── Left Panel: Task List ── */}
+      {/* Left Panel: Task List */}
       <aside className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-          <h2 className="font-semibold text-slate-800">Tasks</h2>
+          <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
           {userCanCreate && (
             <Button
               size="sm"
               icon={<Plus className="h-3.5 w-3.5" />}
               onClick={() => setCreateOpen(true)}
             >
-              New Task
+              {t("taskNewTask")}
             </Button>
           )}
         </div>
@@ -258,13 +263,12 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
         </div>
       </aside>
 
-      {/* ── Right Panel: Task Detail ── */}
+      {/* Right Panel: Task Detail */}
       <main className="flex flex-1 flex-col overflow-hidden bg-slate-50">
         {!selectedTask ? (
           <EmptyState />
         ) : (
           <>
-            {/* Detail header */}
             <div className="border-b border-slate-200 bg-white px-6 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -273,9 +277,9 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                     <TaskStatusBadge status={selectedTask.status} />
                   </div>
                   <p className="text-xs text-slate-400">
-                    Created by {selectedTask.createdBy.name} · {format(new Date(selectedTask.createdAt), "dd MMM yyyy")}
+                    {t("taskCreatedByLabel")} {selectedTask.createdBy.name} · {format(new Date(selectedTask.createdAt), "dd MMM yyyy")}
                     {selectedTask.completedAt && (
-                      <> · Completed {format(new Date(selectedTask.completedAt), "dd MMM yyyy")}</>
+                      <> · {t("taskStatusCompleted")} {format(new Date(selectedTask.completedAt), "dd MMM yyyy")}</>
                     )}
                   </p>
                   {selectedTask.participants.length > 0 && (
@@ -296,7 +300,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                           icon={<Plus className="h-3.5 w-3.5" />}
                           onClick={() => setAddStepOpen(true)}
                         >
-                          Add Next Step
+                          {t("taskAddNextStep")}
                         </Button>
                       )}
                       {userCanComplete && (
@@ -307,7 +311,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                           loading={isActing}
                           onClick={handleComplete}
                         >
-                          Mark as Completed
+                          {t("taskMarkCompleted")}
                         </Button>
                       )}
                     </>
@@ -320,7 +324,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                       loading={isActing}
                       onClick={handleReopen}
                     >
-                      Reopen
+                      {t("taskReopen")}
                     </Button>
                   )}
                   {userCanDelete && (
@@ -337,11 +341,10 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
               </div>
             </div>
 
-            {/* Workflow nodes */}
             <div className="flex-1 overflow-y-auto px-6 py-6">
               {selectedTask.steps.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <p className="text-sm text-slate-400">No steps yet.</p>
+                  <p className="text-sm text-slate-400">{t("taskNoSteps")}</p>
                 </div>
               ) : (
                 <div className="max-w-2xl mx-auto">
@@ -366,7 +369,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                         onClick={() => setAddStepOpen(true)}
                         className="flex-1 mb-4 rounded-xl border-2 border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-400 hover:border-blue-300 hover:text-blue-500 transition-colors text-left"
                       >
-                        Add next step…
+                        {t("taskAddNextStepHint")}
                       </button>
                     </div>
                   )}
@@ -383,6 +386,10 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
         onClose={() => setCreateOpen(false)}
         users={users}
         currentUserId={currentUserId}
+        onCreated={(taskId) => {
+          setCreateOpen(false)
+          setSelectedId(taskId)
+        }}
       />
       {selectedTask && (
         <AddStepModal

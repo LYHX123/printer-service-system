@@ -10,6 +10,7 @@ import { FormField, Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface AddStepModalProps {
   isOpen: boolean
@@ -21,6 +22,7 @@ interface AddStepModalProps {
 export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddStepModalProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t, language } = useLanguage()
 
   const {
     register,
@@ -43,37 +45,54 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
       toast.error(result.error)
       return
     }
-    toast.success("Step added")
+    toast.success(t("taskStepAdded"))
     handleClose()
     router.refresh()
   }
+
+  const modalTitle = language === "zh"
+    ? `添加第 ${nextStepNumber} 步`
+    : `${t("taskAddNextStep")} ${nextStepNumber}`
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={`Add Step ${nextStepNumber}`}
-      description="Describe what was done or what happens next."
+      title={modalTitle}
+      description={t("taskAddStepModalDesc")}
       footer={
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={handleClose}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button type="submit" form="add-step-form" loading={isSubmitting}>
-            Add Step
+            {t("taskAddStepAction")}
           </Button>
         </div>
       }
     >
       <form id="add-step-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <FormField label="Step Title" htmlFor="stepTitle" required error={errors.title?.message}>
-          <Input id="stepTitle" placeholder="e.g. Arranged, Completed, Delivered" {...register("title")} />
+        <FormField
+          label={t("taskStepTitleField")}
+          htmlFor="stepTitle"
+          required
+          error={errors.title ? t("taskStepTitleRequired") : undefined}
+        >
+          <Input
+            id="stepTitle"
+            placeholder={language === "zh" ? "例如：已安排、已完成、已送达" : "e.g. Arranged, Completed, Delivered"}
+            {...register("title")}
+          />
         </FormField>
-        <FormField label="Description" htmlFor="stepDesc" error={errors.description?.message}>
+        <FormField
+          label={t("description")}
+          htmlFor="stepDesc"
+          error={errors.description?.message}
+        >
           <Textarea
             id="stepDesc"
             rows={4}
-            placeholder="Add details about this step…"
+            placeholder={language === "zh" ? "添加此步骤的详细信息..." : "Add details about this step…"}
             {...register("description")}
           />
         </FormField>

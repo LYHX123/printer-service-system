@@ -11,6 +11,7 @@ import { FormField, Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { cn } from "@/lib/utils"
 
 interface UserOption {
@@ -24,56 +25,75 @@ interface CreateTaskModalProps {
   onClose: () => void
   users: UserOption[]
   currentUserId: string
+  onCreated?: (taskId: string) => void
 }
 
-export function CreateTaskModal({ isOpen, onClose, users, currentUserId }: CreateTaskModalProps) {
+export function CreateTaskModal({
+  isOpen,
+  onClose,
+  users,
+  currentUserId,
+  onCreated,
+}: CreateTaskModalProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t, language } = useLanguage()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set([currentUserId]))
-  const [participantError, setParticipantError] = useState("")
   const [search, setSearch] = useState("")
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateTaskInput>({
     resolver: zodResolver(CreateTaskSchema),
-    defaultValues: { title: "", initialStepTitle: "", initialStepDescription: "", participantIds: [] },
+    defaultValues: {
+      title: "",
+      initialStepTitle: "",
+      initialStepDescription: "",
+      participantIds: [currentUserId],
+    },
   })
 
   function handleClose() {
-    reset()
+    reset({
+      title: "",
+      initialStepTitle: "",
+      initialStepDescription: "",
+      participantIds: [currentUserId],
+    })
     setSelectedIds(new Set([currentUserId]))
-    setParticipantError("")
     setSearch("")
     onClose()
   }
 
   function toggleUser(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-    setParticipantError("")
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+    setValue("participantIds", Array.from(next), { shouldValidate: true })
   }
 
   async function onSubmit(data: CreateTaskInput) {
-    const ids = Array.from(selectedIds)
-    if (ids.length === 0) {
-      setParticipantError("Select at least one participant")
-      return
-    }
-    const result = await createTask({ ...data, participantIds: ids })
+    const result = await createTask(data)
     if (result?.error) {
       toast.error(result.error)
       return
     }
-    toast.success("Task created")
-    handleClose()
+    toast.success(t("taskCreatedSuccess"))
+    reset({
+      title: "",
+      initialStepTitle: "",
+      initialStepDescription: "",
+      participantIds: [currentUserId],
+    })
+    setSelectedIds(new Set([currentUserId]))
+    setSearch("")
+    if (result.taskId) onCreated?.(result.taskId)
+    else onClose()
     router.refresh()
   }
 
@@ -81,55 +101,68 @@ export function CreateTaskModal({ isOpen, onClose, users, currentUserId }: Creat
     u.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  const participantCountText = language === "zh"
+    ? `已选择 ${selectedIds.size} 位参与人`
+    : `${selectedIds.size} participant${selectedIds.size !== 1 ? "s" : ""} selected`
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Task"
-      description="Create a new task and assign participants."
+      title={t("taskCreateTask")}
+      description={t("taskModalDesc")}
       size="lg"
       footer={
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={handleClose}>
-            Cancel
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            {t("cancel")}
           </Button>
           <Button type="submit" form="create-task-form" loading={isSubmitting}>
-            Create Task
+            {t("taskCreateTask")}
           </Button>
         </div>
       }
     >
       <form id="create-task-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <FormField label="Task Title" htmlFor="taskTitle" required error={errors.title?.message}>
-          <Input id="taskTitle" placeholder="e.g. Install Printer at HQ" {...register("title")} />
+        <FormField
+          label={t("taskTitleField")}
+          htmlFor="taskTitle"
+          required
+          error={errors.title ? t("taskTitleRequired") : undefined}
+        >
+          <Input
+            id="taskTitle"
+            placeholder={language === "zh" ? "例如：在总部安装打印机" : "e.g. Install Printer at HQ"}
+            {...register("title")}
+          />
         </FormField>
 
         <div className="border-t border-slate-100 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
-            Initial Step
+            {t("taskInitialStep")}
           </p>
           <div className="space-y-3">
             <FormField
-              label="Step Title"
+              label={t("taskStepTitleField")}
               htmlFor="stepTitle"
               required
-              error={errors.initialStepTitle?.message}
+              error={errors.initialStepTitle ? t("taskStepTitleRequired") : undefined}
             >
               <Input
                 id="stepTitle"
-                placeholder="e.g. Install Printer"
+                placeholder={language === "zh" ? "例如：安装打印机" : "e.g. Install Printer"}
                 {...register("initialStepTitle")}
               />
             </FormField>
             <FormField
-              label="Description"
+              label={t("description")}
               htmlFor="stepDesc"
-              error={errors.initialStepDescription?.message}
+              error={errors.initialStepDescription ? t("description") : undefined}
             >
               <Textarea
                 id="stepDesc"
                 rows={3}
-                placeholder="Describe what needs to happen…"
+                placeholder={language === "zh" ? "描述需要完成的事项..." : "Describe what needs to happen…"}
                 {...register("initialStepDescription")}
               />
             </FormField>
@@ -138,20 +171,20 @@ export function CreateTaskModal({ isOpen, onClose, users, currentUserId }: Creat
 
         <div className="border-t border-slate-100 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-            Participants <span className="text-red-500">*</span>
+            {t("taskParticipantsLabel")} <span className="text-red-500">*</span>
           </p>
-          {participantError && (
-            <p className="text-xs text-red-600 mb-2">{participantError}</p>
+          {errors.participantIds && (
+            <p className="text-xs text-red-600 mb-2">{t("taskParticipantRequired")}</p>
           )}
           <Input
-            placeholder="Search staff…"
+            placeholder={t("taskSearchStaff")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="mb-2"
           />
           <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
             {filteredUsers.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-slate-400">No users found</p>
+              <p className="px-3 py-2 text-sm text-slate-400">{t("taskNoUsersFound")}</p>
             ) : (
               filteredUsers.map((u) => {
                 const checked = selectedIds.has(u.id)
@@ -168,28 +201,32 @@ export function CreateTaskModal({ isOpen, onClose, users, currentUserId }: Creat
                     <div
                       className={cn(
                         "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-                        checked
-                          ? "border-blue-600 bg-blue-600"
-                          : "border-slate-300 bg-white"
+                        checked ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white"
                       )}
                     >
                       {checked && (
                         <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 12 12">
-                          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                          <path
+                            d="M2 6l3 3 5-5"
+                            stroke="currentColor"
+                            strokeWidth={1.5}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       )}
                     </div>
                     <span className="font-medium text-slate-900">{u.name}</span>
-                    <span className="ml-auto text-xs text-slate-400 capitalize">{u.role.toLowerCase()}</span>
+                    <span className="ml-auto text-xs text-slate-400 capitalize">
+                      {u.role.toLowerCase()}
+                    </span>
                   </button>
                 )
               })
             )}
           </div>
           {selectedIds.size > 0 && (
-            <p className="mt-1 text-xs text-slate-500">
-              {selectedIds.size} participant{selectedIds.size !== 1 ? "s" : ""} selected
-            </p>
+            <p className="mt-1 text-xs text-slate-500">{participantCountText}</p>
           )}
         </div>
       </form>

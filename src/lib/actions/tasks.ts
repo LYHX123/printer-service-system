@@ -34,7 +34,7 @@ export async function createTask(data: CreateTaskInput) {
   const { title, initialStepTitle, initialStepDescription, participantIds } = parsed.data
 
   try {
-    await prisma.task.create({
+    const task = await prisma.task.create({
       data: {
         companyId,
         title,
@@ -54,7 +54,7 @@ export async function createTask(data: CreateTaskInput) {
     })
 
     revalidate()
-    return { success: true as const }
+    return { success: true as const, taskId: task.id }
   } catch {
     return { error: "Failed to create task" }
   }
