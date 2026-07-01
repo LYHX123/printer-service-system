@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma"
 import type { Role } from "@/types"
 
+export type OverdueTaskAlert = {
+  id: string
+  title: string
+  createdAt: Date
+  daysOpen: number
+  participants: Array<{ id: string; name: string }>
+}
+
 export type TaskStepItem = {
   id: string
   taskId: string
@@ -62,4 +70,48 @@ export async function getVisibleTasks(
   })
 
   return tasks as unknown as TaskWithDetails[]
+}
+
+const OVERDUE_DAYS = 2
+
+export async function getOverdueTasks(
+  companyId: string,
+  userId: string,
+  role: Role
+): Promise<OverdueTaskAlert[]> {
+  const cutoff = new Date(Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000)
+
+  const where =
+    role === "ADMIN"
+      ? { companyId, status: "ACTIVE" as const, createdAt: { lt: cutoff } }
+      : role === "MANAGER"
+      ? {
+          companyId,
+          status: "ACTIVE" as const,
+          createdAt: { lt: cutoff },
+          OR: [{ createdById: userId }, { participants: { some: { userId } } }],
+        }
+      : {
+          companyId,
+          status: "ACTIVE" as const,
+          createdAt: { lt: cutoff },
+          participants: { some: { userId } },
+        }
+
+  const tasks = await prisma.task.findMany({
+    where,
+    include: {
+      participants: { include: { user: { select: { id: true, name: true } } } },
+    },
+    orderBy: { createdAt: "asc" },
+  })
+
+  const now = Date.now()
+  return tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    createdAt: task.createdAt,
+    daysOpen: Math.floor((now - task.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
+    participants: task.participants.map((p) => ({ id: p.user.id, name: p.user.name })),
+  }))
 }

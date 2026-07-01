@@ -3,7 +3,8 @@ import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { canAccess } from "@/lib/permissions"
 import { getLowStockAlerts } from "@/lib/data/inventory"
-import { LowStockNotification } from "@/components/inventory/LowStockNotification"
+import { getOverdueTasks } from "@/lib/data/tasks"
+import { AlertsNotification } from "@/components/inventory/LowStockNotification"
 import type { Role } from "@/types"
 
 export default async function DashboardLayout({
@@ -24,14 +25,22 @@ export default async function DashboardLayout({
     modulePermissions: (session.user.modulePermissions as string[]) ?? [],
   }
 
-  const lowStockAlerts = canAccess(user.role, "inventory", user.modulePermissions)
-    ? await getLowStockAlerts(user.companyId)
-    : []
+  const [lowStockAlerts, overdueTaskAlerts] = await Promise.all([
+    canAccess(user.role, "inventory", user.modulePermissions)
+      ? getLowStockAlerts(user.companyId)
+      : Promise.resolve([]),
+    canAccess(user.role, "tasks", user.modulePermissions)
+      ? getOverdueTasks(user.companyId, user.id, user.role)
+      : Promise.resolve([]),
+  ])
 
   return (
     <>
       <DashboardShell user={user}>{children}</DashboardShell>
-      <LowStockNotification alerts={lowStockAlerts} />
+      <AlertsNotification
+        lowStockAlerts={lowStockAlerts}
+        overdueTaskAlerts={overdueTaskAlerts}
+      />
     </>
   )
 }

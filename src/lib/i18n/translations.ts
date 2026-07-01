@@ -391,6 +391,15 @@ export type TranslationKey =
   | "taskTitleRequired"
   | "taskStepTitleRequired"
   | "taskParticipantRequired"
+  // Notification popup
+  | "overdueTasksLabel"
+  | "taskOverdueNotice"
+  | "createdDateLabel"
+  | "daysOpenLabel"
+  | "viewTask"
+  | "lowStockAlertsLabel"
+  | "overdueTaskAlertsLabel"
+  | "noAlertsLabel"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -657,6 +666,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskTitleRequired: "Task title is required",
     taskStepTitleRequired: "Step title is required",
     taskParticipantRequired: "Select at least one participant",
+    // Notification popup
+    overdueTasksLabel: "Overdue Tasks",
+    taskOverdueNotice: "Task overdue",
+    createdDateLabel: "Created",
+    daysOpenLabel: "Days open",
+    viewTask: "View Task",
+    lowStockAlertsLabel: "Low Stock Alerts",
+    overdueTaskAlertsLabel: "Overdue Task Alerts",
+    noAlertsLabel: "No alerts",
     // Ledger
     ledger: "Ledger",
     ledgerDesc: "Track company income, expenses, and sales invoices.",
@@ -1041,6 +1059,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskTitleRequired: "请输入任务标题",
     taskStepTitleRequired: "请输入步骤标题",
     taskParticipantRequired: "请至少选择一个参与人",
+    // Notification popup
+    overdueTasksLabel: "超期任务",
+    taskOverdueNotice: "任务已超期",
+    createdDateLabel: "创建时间",
+    daysOpenLabel: "已进行天数",
+    viewTask: "查看任务",
+    lowStockAlertsLabel: "低库存提醒",
+    overdueTaskAlertsLabel: "任务超期提醒",
+    noAlertsLabel: "暂无提醒",
     // Ledger
     ledger: "台账",
     ledgerDesc: "追踪公司收支与销售发票。",
