@@ -296,10 +296,11 @@ export type LedgerEntryInput = z.infer<typeof LedgerEntrySchema>
 export const SalesLedgerEntrySchema = z
   .object({
     date: z.string().min(1, "Date is required"),
+    customerId: z.string().optional().or(z.literal("")),
     customerName: z.string().min(1, "Customer name is required").max(150),
     orderNo: z.string().max(100).optional().or(z.literal("")),
-    invoiceAmount: z.coerce.number().min(0, "Must be ≥ 0"),
-    amountReceived: z.coerce.number().min(0, "Must be ≥ 0").default(0),
+    invoiceAmount: z.coerce.number().positive("Invoice Amount must be greater than 0"),
+    amountReceived: z.coerce.number().min(0, "Amount Received must be 0 or greater"),
     remark: z.string().max(500).optional().or(z.literal("")),
   })
   .superRefine((data, ctx) => {

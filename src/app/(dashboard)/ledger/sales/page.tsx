@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ChevronLeft, FileText, Wallet, Scale } from "lucide-react"
+import { ChevronLeft, FileText, Wallet, Scale, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
 import { canAccess } from "@/lib/permissions"
@@ -48,6 +48,14 @@ export default async function SalesLedgerPage({
   const totalBalance = entries.reduce((sum, e) => sum + e.balance, 0)
   const hasFilters = Boolean(from || to || customer || paymentStatus || status)
 
+  // Build export URL with current active filters
+  const exportParams = new URLSearchParams()
+  if (from) exportParams.set("from", from)
+  if (to) exportParams.set("to", to)
+  if (customer) exportParams.set("customer", customer)
+  if (validPaymentStatus) exportParams.set("paymentStatus", validPaymentStatus)
+  const exportUrl = `/api/ledger/sales/export?${exportParams.toString()}`
+
   return (
     <div>
       <Link href="/ledger" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
@@ -58,7 +66,16 @@ export default async function SalesLedgerPage({
       <PageHeader
         title={<T k="salesLedger" />}
         subtitle={<T k="salesLedgerDesc" />}
-        actions={<SalesLedgerAddButton />}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <a href={exportUrl}>
+              <Button type="button" variant="outline" icon={<Download className="h-4 w-4" />}>
+                Export Excel
+              </Button>
+            </a>
+            <SalesLedgerAddButton />
+          </div>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">

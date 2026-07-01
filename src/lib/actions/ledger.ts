@@ -120,7 +120,7 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
 
   const parsed = SalesLedgerEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
-  const { date, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
+  const { date, customerId, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
   const { balance, status } = computeSalesLedgerStatus(invoiceAmount, amountReceived)
 
   try {
@@ -136,6 +136,8 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
         paymentStatus: status,
         remark: remark || null,
         createdById: userId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...({ customerId: customerId || null } as any),
       },
     })
 
@@ -154,7 +156,7 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
 
   const parsed = SalesLedgerEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
-  const { date, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
+  const { date, customerId, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
   const { balance, status } = computeSalesLedgerStatus(invoiceAmount, amountReceived)
 
   try {
@@ -172,6 +174,8 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
         balance,
         paymentStatus: status,
         remark: remark || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...({ customerId: customerId || null } as any),
       },
     })
 

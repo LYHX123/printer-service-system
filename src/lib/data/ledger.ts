@@ -140,6 +140,8 @@ export type SalesLedgerListItem = Omit<SalesLedgerEntry, "invoiceAmount" | "amou
   invoiceAmount: number
   amountReceived: number
   balance: number
+  customerId: string | null
+  createdBy: { id: string; name: string }
 }
 
 export async function getSalesLedgerEntries(
@@ -154,16 +156,27 @@ export async function getSalesLedgerEntries(
       companyId,
       isArchived: archived,
       ...(paymentStatus ? { paymentStatus } : {}),
-      ...(customerName ? { customerName: { contains: customerName, mode: "insensitive" } } : {}),
+      ...(customerName
+        ? {
+            OR: [
+              { customerName: { contains: customerName, mode: "insensitive" } },
+              { orderNo: { contains: customerName, mode: "insensitive" } },
+            ],
+          }
+        : {}),
       ...(dateRange ? { date: dateRange } : {}),
+    },
+    include: {
+      createdBy: { select: { id: true, name: true } },
     },
     orderBy: { date: "desc" },
   })
 
-  return entries.map((e) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (entries as any[]).map((e) => ({
     ...e,
     invoiceAmount: Number(e.invoiceAmount),
     amountReceived: Number(e.amountReceived),
     balance: Number(e.balance),
-  }))
+  })) as SalesLedgerListItem[]
 }
