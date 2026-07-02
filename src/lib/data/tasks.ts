@@ -35,23 +35,24 @@ export type TaskWithDetails = {
   steps: TaskStepItem[]
 }
 
+/** Role-based visibility scope shared by task queries: Admin sees all, Manager sees created/participating, others see participating only. */
+function taskScopeWhere(companyId: string, userId: string, role: Role) {
+  if (role === "ADMIN") return { companyId }
+  if (role === "MANAGER") {
+    return {
+      companyId,
+      OR: [{ createdById: userId }, { participants: { some: { userId } } }],
+    }
+  }
+  return { companyId, participants: { some: { userId } } }
+}
+
 export async function getVisibleTasks(
   companyId: string,
   userId: string,
   role: Role
 ): Promise<TaskWithDetails[]> {
-  const where =
-    role === "ADMIN"
-      ? { companyId }
-      : role === "MANAGER"
-      ? {
-          companyId,
-          OR: [
-            { createdById: userId },
-            { participants: { some: { userId } } },
-          ],
-        }
-      : { companyId, participants: { some: { userId } } }
+  const where = taskScopeWhere(companyId, userId, role)
 
   const tasks = await prisma.task.findMany({
     where,
@@ -74,29 +75,21 @@ export async function getVisibleTasks(
 
 const OVERDUE_DAYS = 2
 
+function overdueTaskWhere(companyId: string, userId: string, role: Role) {
+  const cutoff = new Date(Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000)
+  return {
+    ...taskScopeWhere(companyId, userId, role),
+    status: "ACTIVE" as const,
+    createdAt: { lt: cutoff },
+  }
+}
+
 export async function getOverdueTasks(
   companyId: string,
   userId: string,
   role: Role
 ): Promise<OverdueTaskAlert[]> {
-  const cutoff = new Date(Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000)
-
-  const where =
-    role === "ADMIN"
-      ? { companyId, status: "ACTIVE" as const, createdAt: { lt: cutoff } }
-      : role === "MANAGER"
-      ? {
-          companyId,
-          status: "ACTIVE" as const,
-          createdAt: { lt: cutoff },
-          OR: [{ createdById: userId }, { participants: { some: { userId } } }],
-        }
-      : {
-          companyId,
-          status: "ACTIVE" as const,
-          createdAt: { lt: cutoff },
-          participants: { some: { userId } },
-        }
+  const where = overdueTaskWhere(companyId, userId, role)
 
   const tasks = await prisma.task.findMany({
     where,
@@ -114,4 +107,14 @@ export async function getOverdueTasks(
     daysOpen: Math.floor((now - task.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
     participants: task.participants.map((p) => ({ id: p.user.id, name: p.user.name })),
   }))
+}
+
+export async function getOverdueTaskCount(companyId: string, userId: string, role: Role): Promise<number> {
+  return prisma.task.count({ where: overdueTaskWhere(companyId, userId, role) })
+}
+
+export async function getActiveTaskCount(companyId: string, userId: string, role: Role): Promise<number> {
+  return prisma.task.count({
+    where: { ...taskScopeWhere(companyId, userId, role), status: "ACTIVE" as const },
+  })
 }

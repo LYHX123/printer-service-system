@@ -180,3 +180,12 @@ export async function getSalesLedgerEntries(
     balance: Number(e.balance),
   })) as SalesLedgerListItem[]
 }
+
+/** Total outstanding balance across all non-archived, not-fully-paid sales invoices. */
+export async function getUnpaidSalesBalance(companyId: string): Promise<number> {
+  const result = await prisma.salesLedgerEntry.aggregate({
+    where: { companyId, isArchived: false, paymentStatus: { not: "PAID" } },
+    _sum: { balance: true },
+  })
+  return Number(result._sum.balance ?? 0)
+}

@@ -400,6 +400,17 @@ export type TranslationKey =
   | "lowStockAlertsLabel"
   | "overdueTaskAlertsLabel"
   | "noAlertsLabel"
+  // Dashboard homepage
+  | "welcomeBack"
+  | "dashboardIntro"
+  | "alertsLabel"
+  | "customersDesc"
+  | "stockDesc"
+  | "tasksDesc"
+  | "usersDesc"
+  | "activeTasksLabel"
+  | "lowStockItemsLabel"
+  | "unpaidSalesBalanceLabel"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -794,6 +805,17 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     position: "Position",
     saveProfile: "Save Profile",
     displayName: "Display Name",
+    // Dashboard homepage
+    welcomeBack: "Welcome back, {name}",
+    dashboardIntro: "Select a module below to get started.",
+    alertsLabel: "Alerts",
+    customersDesc: "Manage customer records and branches.",
+    stockDesc: "Track spare parts and stock levels.",
+    tasksDesc: "Assign and track team tasks.",
+    usersDesc: "Manage staff accounts and roles.",
+    activeTasksLabel: "Active Tasks",
+    lowStockItemsLabel: "Low Stock Items",
+    unpaidSalesBalanceLabel: "Unpaid Sales Balance",
   },
   zh: {
     // Common
@@ -1187,5 +1209,16 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     position: "职位",
     saveProfile: "保存资料",
     displayName: "显示名称",
+    // Dashboard homepage
+    welcomeBack: "欢迎回来，{name}",
+    dashboardIntro: "选择以下模块开始使用。",
+    alertsLabel: "提醒",
+    customersDesc: "管理客户档案与分支。",
+    stockDesc: "追踪备件与库存水平。",
+    tasksDesc: "分配并跟踪团队任务。",
+    usersDesc: "管理员工账户与角色。",
+    activeTasksLabel: "进行中任务",
+    lowStockItemsLabel: "低库存物品",
+    unpaidSalesBalanceLabel: "未收销售余额",
   },
 }
