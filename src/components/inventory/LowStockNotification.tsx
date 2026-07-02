@@ -149,6 +149,3 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
     </div>
   )
 }
-
-// Keep backward-compatible named export alias used nowhere but just in case
-export { AlertsNotification as LowStockNotification }
