@@ -51,10 +51,11 @@ export async function createTask(data: CreateTaskInput) {
           },
         },
       },
+      include: { steps: true },
     })
 
     revalidate()
-    return { success: true as const, taskId: task.id }
+    return { success: true as const, taskId: task.id, initialStepId: task.steps[0].id }
   } catch {
     return { error: "Failed to create task" }
   }
@@ -90,12 +91,12 @@ export async function addTaskStep(taskId: string, data: AddTaskStepInput) {
     })
     const nextOrder = (maxStep._max.order ?? 0) + 1
 
-    await prisma.taskStep.create({
+    const step = await prisma.taskStep.create({
       data: { taskId, title, description: description || null, order: nextOrder, createdById: userId },
     })
 
     revalidate()
-    return { success: true as const }
+    return { success: true as const, stepId: step.id }
   } catch {
     return { error: "Failed to add step" }
   }

@@ -9,9 +9,10 @@ interface FileUploaderProps {
   onUpload: (file: File) => Promise<void> | void
   label?: string
   disabled?: boolean
+  multiple?: boolean
 }
 
-export function FileUploader({ onUpload, label = "Drag & drop an image, or click to browse", disabled }: FileUploaderProps) {
+export function FileUploader({ onUpload, label = "Drag & drop an image, or click to browse", disabled, multiple = false }: FileUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -34,9 +35,15 @@ export function FileUploader({ onUpload, label = "Drag & drop an image, or click
       return
     }
     setError(null)
+    await onUpload(file)
+  }
+
+  async function handleFiles(fileList: FileList | File[]) {
     setUploading(true)
     try {
-      await onUpload(file)
+      for (const file of Array.from(fileList)) {
+        await handleFile(file)
+      }
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ""
@@ -56,8 +63,9 @@ export function FileUploader({ onUpload, label = "Drag & drop an image, or click
           e.preventDefault()
           setDragOver(false)
           if (disabled || uploading) return
-          const file = e.dataTransfer.files?.[0]
-          if (file) handleFile(file)
+          const files = e.dataTransfer.files
+          if (!files?.length) return
+          handleFiles(multiple ? files : [files[0]])
         }}
         className={cn(
           "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors cursor-pointer",
@@ -76,11 +84,13 @@ export function FileUploader({ onUpload, label = "Drag & drop an image, or click
           ref={inputRef}
           type="file"
           accept={ALLOWED_IMAGE_TYPES.join(",")}
+          multiple={multiple}
           className="hidden"
           disabled={disabled || uploading}
           onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleFile(file)
+            const files = e.target.files
+            if (!files?.length) return
+            handleFiles(multiple ? files : [files[0]])
           }}
         />
       </div>

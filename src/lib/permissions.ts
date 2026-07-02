@@ -150,3 +150,16 @@ export function canCompleteTask(
 export function canReopenTask(role: Role): boolean {
   return role === "ADMIN"
 }
+
+/** Only task participants may upload images to a step, and only while the task is ACTIVE. */
+export const canUploadTaskStepImage = canAddTaskStep
+
+/** Admin can remove any task step image; otherwise the same rule as uploading (participant, ACTIVE task). */
+export function canDeleteTaskStepImage(
+  role: Role,
+  userId: string,
+  task: { status: string; createdById: string; participants: Array<{ userId: string }> }
+): boolean {
+  if (role === "ADMIN") return true
+  return canAddTaskStep(userId, task)
+}

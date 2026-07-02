@@ -9,6 +9,16 @@ export type OverdueTaskAlert = {
   participants: Array<{ id: string; name: string }>
 }
 
+export type TaskStepImageItem = {
+  id: string
+  stepId: string
+  url: string
+  filename: string
+  uploadedById: string
+  createdAt: Date
+  uploadedBy: { id: string; name: string }
+}
+
 export type TaskStepItem = {
   id: string
   taskId: string
@@ -19,6 +29,7 @@ export type TaskStepItem = {
   createdAt: Date
   updatedAt: Date
   createdBy: { id: string; name: string }
+  images: TaskStepImageItem[]
 }
 
 export type TaskWithDetails = {
@@ -63,7 +74,13 @@ export async function getVisibleTasks(
         orderBy: { id: "asc" },
       },
       steps: {
-        include: { createdBy: { select: { id: true, name: true } } },
+        include: {
+          createdBy: { select: { id: true, name: true } },
+          images: {
+            include: { uploadedBy: { select: { id: true, name: true } } },
+            orderBy: { createdAt: "asc" },
+          },
+        },
         orderBy: { order: "asc" },
       },
     },
@@ -116,5 +133,22 @@ export async function getOverdueTaskCount(companyId: string, userId: string, rol
 export async function getActiveTaskCount(companyId: string, userId: string, role: Role): Promise<number> {
   return prisma.task.count({
     where: { ...taskScopeWhere(companyId, userId, role), status: "ACTIVE" as const },
+  })
+}
+
+/** Fetches a task step (scoped to the company) along with the parent task fields needed for permission checks. */
+export async function getTaskStepForAuth(stepId: string, companyId: string) {
+  return prisma.taskStep.findFirst({
+    where: { id: stepId, task: { companyId } },
+    include: {
+      task: {
+        select: {
+          id: true,
+          status: true,
+          createdById: true,
+          participants: { select: { userId: true } },
+        },
+      },
+    },
   })
 }

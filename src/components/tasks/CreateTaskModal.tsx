@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { cn } from "@/lib/utils"
+import { TaskStepImageStaging, type StagedImage } from "@/components/tasks/TaskStepImageStaging"
+import { uploadStagedTaskStepImages } from "@/lib/upload-task-step-images"
 
 interface UserOption {
   id: string
@@ -40,6 +42,7 @@ export function CreateTaskModal({
   const { t, language } = useLanguage()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set([currentUserId]))
   const [search, setSearch] = useState("")
+  const [images, setImages] = useState<StagedImage[]>([])
 
   const {
     register,
@@ -66,6 +69,8 @@ export function CreateTaskModal({
     })
     setSelectedIds(new Set([currentUserId]))
     setSearch("")
+    images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+    setImages([])
     onClose()
   }
 
@@ -83,6 +88,10 @@ export function CreateTaskModal({
       toast.error(result.error)
       return
     }
+    if (images.length > 0 && result.initialStepId) {
+      const failures = await uploadStagedTaskStepImages(result.initialStepId, images)
+      if (failures > 0) toast.error(t("taskImageUploadFailed"))
+    }
     toast.success(t("taskCreatedSuccess"))
     reset({
       title: "",
@@ -92,6 +101,8 @@ export function CreateTaskModal({
     })
     setSelectedIds(new Set([currentUserId]))
     setSearch("")
+    images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+    setImages([])
     if (result.taskId) onCreated?.(result.taskId)
     else onClose()
     router.refresh()
@@ -165,6 +176,9 @@ export function CreateTaskModal({
                 placeholder={language === "zh" ? "描述需要完成的事项..." : "Describe what needs to happen…"}
                 {...register("initialStepDescription")}
               />
+            </FormField>
+            <FormField label={t("taskImagesLabel")} htmlFor="stepImages">
+              <TaskStepImageStaging images={images} onChange={setImages} disabled={isSubmitting} />
             </FormField>
           </div>
         </div>

@@ -227,6 +227,7 @@ model User {
   createdTasks              Task[]            @relation("TaskCreatedBy")
   taskParticipations        TaskParticipant[]
   createdTaskSteps          TaskStep[]        @relation("TaskStepCreatedBy")
+  uploadedTaskStepImages    TaskStepImage[]
 }
 
 model Customer {
@@ -696,8 +697,21 @@ model TaskStep {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  createdBy User @relation("TaskStepCreatedBy", fields: [createdById], references: [id])
+  task      Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("TaskStepCreatedBy", fields: [createdById], references: [id])
+  images    TaskStepImage[]
+}
+
+model TaskStepImage {
+  id           String   @id @default(uuid())
+  stepId       String
+  url          String
+  filename     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  step       TaskStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation(fields: [uploadedById], references: [id])
 }
 
 model SalesLedgerEntry {

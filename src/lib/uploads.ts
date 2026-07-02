@@ -72,6 +72,33 @@ export async function deleteJobPhoto(fileUrl: string): Promise<void> {
   await unlink(filePath).catch(() => {})
 }
 
+export async function saveTaskStepImage(
+  stepId: string,
+  buffer: Buffer
+): Promise<{ fileUrl: string; fileName: string }> {
+  const dir = path.join(UPLOADS_ROOT, "tasks", "steps", stepId)
+  await mkdir(dir, { recursive: true })
+
+  const fileName = `${randomUUID()}.jpg`
+  const resized = await sharp(buffer)
+    .rotate()
+    .resize({ width: 1200, withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer()
+
+  await writeFile(path.join(dir, fileName), resized)
+
+  return {
+    fileUrl: `/uploads/tasks/steps/${stepId}/${fileName}`,
+    fileName,
+  }
+}
+
+export async function deleteTaskStepImage(fileUrl: string): Promise<void> {
+  const filePath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""))
+  await unlink(filePath).catch(() => {})
+}
+
 export async function saveJobSignature(jobId: string, dataUrl: string): Promise<string> {
   const dir = path.join(UPLOADS_ROOT, "jobs", jobId, "signature")
   await mkdir(dir, { recursive: true })

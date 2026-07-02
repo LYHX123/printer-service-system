@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { TaskStepImageStaging, type StagedImage } from "@/components/tasks/TaskStepImageStaging"
+import { uploadStagedTaskStepImages } from "@/lib/upload-task-step-images"
 
 interface AddStepModalProps {
   isOpen: boolean
@@ -23,6 +26,7 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
   const router = useRouter()
   const toast = useToast()
   const { t, language } = useLanguage()
+  const [images, setImages] = useState<StagedImage[]>([])
 
   const {
     register,
@@ -36,6 +40,8 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
 
   function handleClose() {
     reset()
+    images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+    setImages([])
     onClose()
   }
 
@@ -44,6 +50,10 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
     if (result?.error) {
       toast.error(result.error)
       return
+    }
+    if (images.length > 0 && result.stepId) {
+      const failures = await uploadStagedTaskStepImages(result.stepId, images)
+      if (failures > 0) toast.error(t("taskImageUploadFailed"))
     }
     toast.success(t("taskStepAdded"))
     handleClose()
@@ -95,6 +105,9 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
             placeholder={language === "zh" ? "添加此步骤的详细信息..." : "Add details about this step…"}
             {...register("description")}
           />
+        </FormField>
+        <FormField label={t("taskImagesLabel")} htmlFor="stepImages">
+          <TaskStepImageStaging images={images} onChange={setImages} disabled={isSubmitting} />
         </FormField>
       </form>
     </Modal>

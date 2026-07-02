@@ -391,6 +391,12 @@ export type TranslationKey =
   | "taskTitleRequired"
   | "taskStepTitleRequired"
   | "taskParticipantRequired"
+  // Task step images
+  | "taskUploadImages"
+  | "taskImagesLabel"
+  | "taskImagePreview"
+  | "taskRemoveImage"
+  | "taskImageUploadFailed"
   // Notification popup
   | "overdueTasksLabel"
   | "taskOverdueNotice"
@@ -677,6 +683,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskTitleRequired: "Task title is required",
     taskStepTitleRequired: "Step title is required",
     taskParticipantRequired: "Select at least one participant",
+    // Task step images
+    taskUploadImages: "Upload Images",
+    taskImagesLabel: "Images",
+    taskImagePreview: "Preview",
+    taskRemoveImage: "Remove Image",
+    taskImageUploadFailed: "Some images failed to upload",
     // Notification popup
     overdueTasksLabel: "Overdue Tasks",
     taskOverdueNotice: "Task overdue",
@@ -1081,6 +1093,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskTitleRequired: "请输入任务标题",
     taskStepTitleRequired: "请输入步骤标题",
     taskParticipantRequired: "请至少选择一个参与人",
+    // Task step images
+    taskUploadImages: "上传图片",
+    taskImagesLabel: "图片",
+    taskImagePreview: "预览",
+    taskRemoveImage: "删除图片",
+    taskImageUploadFailed: "部分图片上传失败",
     // Notification popup
     overdueTasksLabel: "超期任务",
     taskOverdueNotice: "任务已超期",

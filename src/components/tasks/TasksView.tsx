@@ -18,6 +18,7 @@ import {
 } from "@/lib/permissions"
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal"
 import { AddStepModal } from "@/components/tasks/AddStepModal"
+import { TaskStepImages } from "@/components/tasks/TaskStepImages"
 import type { TaskWithDetails } from "@/lib/data/tasks"
 import type { Role } from "@/types"
 
@@ -47,10 +48,12 @@ function WorkflowNode({
   step,
   isLast,
   isFirst,
+  canManageImages,
 }: {
   step: TaskWithDetails["steps"][number]
   isLast: boolean
   isFirst: boolean
+  canManageImages: boolean
 }) {
   const { t } = useLanguage()
   return (
@@ -87,6 +90,7 @@ function WorkflowNode({
             <span>·</span>
             <span>{format(new Date(step.createdAt), "dd MMM yyyy, HH:mm")}</span>
           </div>
+          <TaskStepImages stepId={step.id} images={step.images} canManage={canManageImages} />
         </div>
       </div>
     </div>
@@ -354,6 +358,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                       step={step}
                       isFirst={idx === 0}
                       isLast={idx === selectedTask.steps.length - 1}
+                      canManageImages={userCanAddStep || currentUserRole === "ADMIN"}
                     />
                   ))}
 

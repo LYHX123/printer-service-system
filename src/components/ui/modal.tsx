@@ -1,6 +1,7 @@
 "use client"
 
 import { type ReactNode, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -45,9 +46,9 @@ export function Modal({
     }
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || typeof document === "undefined") return null
 
-  return (
+  const modal = (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
@@ -99,4 +100,8 @@ export function Modal({
       </div>
     </div>
   )
+
+  // Portal to <body> so `fixed` positioning is always relative to the viewport,
+  // even when a modal is opened from inside an animated (transformed) ancestor.
+  return createPortal(modal, document.body)
 }
