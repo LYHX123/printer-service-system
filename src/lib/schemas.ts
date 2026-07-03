@@ -136,6 +136,17 @@ export const QuotationStatusSchema = z.object({
 
 export type QuotationStatusInput = z.infer<typeof QuotationStatusSchema>
 
+// ─── Invoice ──────────────────────────────────────────────────────────────────
+
+export const GenerateInvoiceSchema = z.object({
+  invoiceNumber: z.string().min(1, "Invoice number is required").max(50),
+  date: z.string().min(1, "Date is required"),
+  customerPin: z.string().max(30).optional().or(z.literal("")),
+  vatPercent: z.coerce.number().min(0).max(100),
+})
+
+export type GenerateInvoiceInput = z.infer<typeof GenerateInvoiceSchema>
+
 // ─── Repair Report ────────────────────────────────────────────────────────────
 
 export const JobPartInputSchema = z.object({

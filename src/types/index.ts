@@ -36,6 +36,8 @@ import type {
   LedgerEntryType,
   LedgerPaymentMethod,
   SalesPaymentStatus,
+  Invoice,
+  InvoiceItem,
 } from "@/generated/prisma/client"
 
 export type {
@@ -76,6 +78,8 @@ export type {
   LedgerEntryType,
   LedgerPaymentMethod,
   SalesPaymentStatus,
+  Invoice,
+  InvoiceItem,
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────

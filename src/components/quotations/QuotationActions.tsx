@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Pencil, Send, CheckCircle, XCircle, Download } from "lucide-react"
+import { Pencil, Send, CheckCircle, XCircle, Download, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QuotationStatusModal } from "./QuotationStatusModal"
+import { GenerateInvoiceModal } from "./GenerateInvoiceModal"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { QuotationStatus, Role } from "@/types"
 
@@ -14,11 +15,22 @@ interface QuotationActionsProps {
   quotationId: string
   status: QuotationStatus
   role: Role
+  suggestedInvoiceNumber: string
+  customerPin: string
+  defaultVatPercent: number
 }
 
-export function QuotationActions({ quotationId, status, role }: QuotationActionsProps) {
+export function QuotationActions({
+  quotationId,
+  status,
+  role,
+  suggestedInvoiceNumber,
+  customerPin,
+  defaultVatPercent,
+}: QuotationActionsProps) {
   const { t } = useLanguage()
   const [statusModal, setStatusModal] = useState<ModalTargetStatus | null>(null)
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
 
   const canEdit = status === "DRAFT" || status === "SENT"
   // Opened to all roles.
@@ -70,6 +82,14 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
             </Button>
           </>
         )}
+
+        <Button
+          size="sm"
+          icon={<Receipt className="h-3.5 w-3.5" />}
+          onClick={() => setInvoiceModalOpen(true)}
+        >
+          {t("generateInvoice")}
+        </Button>
       </div>
 
       {statusModal && (
@@ -80,6 +100,15 @@ export function QuotationActions({ quotationId, status, role }: QuotationActions
           onClose={() => setStatusModal(null)}
         />
       )}
+
+      <GenerateInvoiceModal
+        isOpen={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        quotationId={quotationId}
+        suggestedInvoiceNumber={suggestedInvoiceNumber}
+        customerPin={customerPin}
+        defaultVatPercent={defaultVatPercent}
+      />
     </>
   )
 }

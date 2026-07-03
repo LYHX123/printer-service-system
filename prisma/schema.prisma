@@ -185,6 +185,7 @@ model Company {
   ledgerEntries      LedgerEntry[]
   salesLedgerEntries SalesLedgerEntry[]
   tasks              Task[]
+  invoices           Invoice[]
 }
 
 model User {
@@ -228,6 +229,7 @@ model User {
   taskParticipations        TaskParticipant[]
   createdTaskSteps          TaskStep[]        @relation("TaskStepCreatedBy")
   uploadedTaskStepImages    TaskStepImage[]
+  createdInvoices           Invoice[]
 }
 
 model Customer {
@@ -251,6 +253,7 @@ model Customer {
   contracts   CustomerContract[]
   communicationLogs CommunicationLog[]
   salesLedgerEntries SalesLedgerEntry[]
+  invoices    Invoice[]
 }
 
 // Branches or project sites that belong to a customer
@@ -369,6 +372,7 @@ model Quotation {
   items        QuotationItem[]
   convertedJob ServiceJob?     @relation("QuotationConversion")
   communicationLogs CommunicationLog[]
+  invoices     Invoice[]
 }
 
 model QuotationItem {
@@ -383,6 +387,46 @@ model QuotationItem {
 
   quotation Quotation  @relation(fields: [quotationId], references: [id])
   part      SparePart? @relation(fields: [partId], references: [id])
+}
+
+// Generated from an APPROVED quotation. Not unique per quotation — a quotation may be
+// re-invoiced (e.g. correcting the invoice number/date) without losing the earlier record.
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  companyId     String
+  quotationId   String
+  customerId    String
+  customerPin   String?  // snapshot, editable at generation time — may differ from the customer record
+  date          DateTime
+  subtotal      Decimal  @db.Decimal(12, 2)
+  vatPercent    Decimal  @db.Decimal(5, 2)
+  vatAmount     Decimal  @db.Decimal(12, 2)
+  totalAmount   Decimal  @db.Decimal(12, 2)
+  receivedBy    String?
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+  customer  Customer  @relation(fields: [customerId], references: [id])
+  createdBy User      @relation(fields: [createdById], references: [id])
+  items     InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  partId      String?
+  description String
+  unit        String?
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(10, 2)
+
+  invoice Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  part    SparePart? @relation(fields: [partId], references: [id])
 }
 
 model JobPhoto {
@@ -475,6 +519,7 @@ model SparePart {
   jobParts           JobPart[]
   purchaseOrderItems PurchaseOrderItem[]
   quotationItems     QuotationItem[]
+  invoiceItems       InvoiceItem[]
 }
 
 model InventoryStock {

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { FileText, Plus } from "lucide-react"
+import { FileText, Plus, Receipt } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotations } from "@/lib/data/quotations"
 import { canAccess, canCreateQuotation } from "@/lib/permissions"
@@ -41,11 +41,16 @@ export default async function QuotationsPage({
         title={<T k="quotations" />}
         subtitle={<T k="createAndManageQuotations" />}
         actions={
-          canCreateQuotation(role) ? (
-            <Link href="/quotations/new">
-              <Button icon={<Plus className="h-4 w-4" />}><T k="newQuotation" /></Button>
+          <div className="flex items-center gap-2">
+            <Link href="/quotations/invoices">
+              <Button variant="outline" icon={<Receipt className="h-4 w-4" />}><T k="invoices" /></Button>
             </Link>
-          ) : undefined
+            {canCreateQuotation(role) && (
+              <Link href="/quotations/new">
+                <Button icon={<Plus className="h-4 w-4" />}><T k="newQuotation" /></Button>
+              </Link>
+            )}
+          </div>
         }
       />
 

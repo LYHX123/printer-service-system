@@ -32,3 +32,9 @@ export function generateQuotationNumber(date: Date, sequence: number): string {
 export function generatePartNumber(sequence: number): string {
   return `PRT-${String(sequence).padStart(5, "0")}`
 }
+
+export function generateInvoiceNumber(date: Date, sequence: number): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  return `INV${year}${month}-${String(sequence).padStart(3, "0")}`
+}

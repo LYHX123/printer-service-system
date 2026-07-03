@@ -3,10 +3,11 @@ import Image from "next/image"
 import { notFound, redirect } from "next/navigation"
 import {
   ChevronLeft, User, ImageOff,
-  Package, Briefcase, FileText,
+  Package, Briefcase, FileText, Receipt,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation } from "@/lib/data/quotations"
+import { getInvoicesForQuotation, suggestInvoiceNumber } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { QuotationStatusBadge } from "@/components/ui/badge"
@@ -33,6 +34,11 @@ export default async function QuotationDetailPage({
   const vatPercent = Number(quotation.vatPercent)
   const totalCost = Number(quotation.totalCost)
   const vatAmount = (subtotal * vatPercent) / 100
+
+  const [invoices, invoiceNumberSuggestion] = await Promise.all([
+    getInvoicesForQuotation(quotation.id, companyId),
+    suggestInvoiceNumber(companyId),
+  ])
 
   return (
     <div>
@@ -64,6 +70,9 @@ export default async function QuotationDetailPage({
             quotationId={quotation.id}
             status={quotation.status}
             role={role}
+            suggestedInvoiceNumber={invoiceNumberSuggestion}
+            customerPin={quotation.customer.pinNumber ?? ""}
+            defaultVatPercent={vatPercent}
           />
         }
       />
@@ -137,6 +146,29 @@ export default async function QuotationDetailPage({
               )}
             </dl>
           </div>
+
+          {/* Invoices generated from this quotation */}
+          {invoices.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-slate-400" />
+                <T k="invoices" />
+              </h3>
+              <ul className="space-y-2 text-sm">
+                {invoices.map((inv) => (
+                  <li key={inv.id} className="flex items-center justify-between">
+                    <Link
+                      href={`/quotations/invoices/${inv.id}`}
+                      className="font-mono text-xs font-semibold text-blue-600 hover:underline"
+                    >
+                      {inv.invoiceNumber}
+                    </Link>
+                    <span className="text-xs text-slate-500">{format(new Date(inv.date), "dd MMM yyyy")}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Main content */}

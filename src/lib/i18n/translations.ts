@@ -397,6 +397,22 @@ export type TranslationKey =
   | "taskImagePreview"
   | "taskRemoveImage"
   | "taskImageUploadFailed"
+  // Invoices
+  | "unit"
+  | "exportExcel"
+  | "generateInvoice"
+  | "generateInvoiceDesc"
+  | "invoiceNumberLabel"
+  | "invoiceDateLabel"
+  | "invoiceCustomerPinLabel"
+  | "invoiceVatPercentLabel"
+  | "invoices"
+  | "invoicesDesc"
+  | "searchInvoicesPlaceholder"
+  | "noInvoicesFound"
+  | "noInvoicesDesc"
+  | "invoiceItems"
+  | "receivedBy"
   // Notification popup
   | "overdueTasksLabel"
   | "taskOverdueNotice"
@@ -689,6 +705,22 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskImagePreview: "Preview",
     taskRemoveImage: "Remove Image",
     taskImageUploadFailed: "Some images failed to upload",
+    // Invoices
+    unit: "Unit",
+    exportExcel: "Export Excel",
+    generateInvoice: "Generate Invoice",
+    generateInvoiceDesc: "Create an invoice from this quotation's items. You can adjust the invoice number, date, customer PIN, and VAT rate before generating.",
+    invoiceNumberLabel: "Invoice No.",
+    invoiceDateLabel: "Date",
+    invoiceCustomerPinLabel: "Customer PIN",
+    invoiceVatPercentLabel: "VAT %",
+    invoices: "Invoices",
+    invoicesDesc: "Invoices generated from quotations.",
+    searchInvoicesPlaceholder: "Search invoice no., customer, or quotation…",
+    noInvoicesFound: "No invoices found",
+    noInvoicesDesc: "Invoices generated from approved quotations will appear here.",
+    invoiceItems: "Invoice Items",
+    receivedBy: "Received By",
     // Notification popup
     overdueTasksLabel: "Overdue Tasks",
     taskOverdueNotice: "Task overdue",
@@ -1099,6 +1131,22 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskImagePreview: "预览",
     taskRemoveImage: "删除图片",
     taskImageUploadFailed: "部分图片上传失败",
+    // Invoices
+    unit: "单位",
+    exportExcel: "导出 Excel",
+    generateInvoice: "生成发票",
+    generateInvoiceDesc: "根据此报价单的项目生成发票。生成前可修改发票编号、日期、客户PIN和增值税率。",
+    invoiceNumberLabel: "发票编号",
+    invoiceDateLabel: "日期",
+    invoiceCustomerPinLabel: "客户 PIN",
+    invoiceVatPercentLabel: "增值税率 %",
+    invoices: "发票",
+    invoicesDesc: "由报价单生成的发票。",
+    searchInvoicesPlaceholder: "搜索发票编号、客户或报价单…",
+    noInvoicesFound: "暂无发票",
+    noInvoicesDesc: "由已批准报价单生成的发票将显示在此处。",
+    invoiceItems: "发票项目",
+    receivedBy: "签收人",
     // Notification popup
     overdueTasksLabel: "超期任务",
     taskOverdueNotice: "任务已超期",
