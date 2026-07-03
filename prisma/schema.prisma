@@ -389,8 +389,9 @@ model QuotationItem {
   part      SparePart? @relation(fields: [partId], references: [id])
 }
 
-// Generated from an APPROVED quotation. Not unique per quotation — a quotation may be
-// re-invoiced (e.g. correcting the invoice number/date) without losing the earlier record.
+// Generated from a quotation's items at any quotation status. Not unique per quotation —
+// a quotation may be re-invoiced (e.g. correcting the invoice number/date) without losing
+// the earlier record.
 model Invoice {
   id            String   @id @default(uuid())
   invoiceNumber String   @unique
