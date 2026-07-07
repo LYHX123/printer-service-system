@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
+import { renderToBuffer } from "@react-pdf/renderer"
 import { auth } from "@/lib/auth"
-import { getInvoiceForPdf } from "@/lib/data/invoices"
+import { getQuotationForPdf } from "@/lib/data/quotations"
 import { canAccess } from "@/lib/permissions"
-import { renderInvoicePdf } from "@/lib/pdf-templates/renderInvoicePdf"
+import { QuotationDocument } from "@/components/pdf/QuotationDocument"
 import type { Role } from "@/types"
 
 export async function GET(
@@ -19,13 +20,13 @@ export async function GET(
   const companyId = session.user.companyId as string
   const { id } = await params
 
-  const invoice = await getInvoiceForPdf(id, companyId)
-  if (!invoice) {
-    return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
+  const quotation = await getQuotationForPdf(id, companyId)
+  if (!quotation) {
+    return NextResponse.json({ error: "Quotation not found" }, { status: 404 })
   }
 
-  const buffer = await renderInvoicePdf(invoice, session.user.name ?? "")
-  const fileName = `${invoice.invoiceNumber}.pdf`
+  const buffer = await renderToBuffer(<QuotationDocument quotation={quotation} />)
+  const fileName = `${quotation.customer.code}-${quotation.quotationNumber}.pdf`
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

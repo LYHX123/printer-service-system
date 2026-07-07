@@ -38,9 +38,6 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# PDF export templates, read via fs at runtime — not traced by the standalone build
-COPY --from=builder /app/templates ./templates
-
 # Generated Prisma client (custom output path, may not be fully traced)
 COPY --from=builder /app/src/generated/prisma ./src/generated/prisma
 
