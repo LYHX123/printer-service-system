@@ -64,30 +64,41 @@ export async function getVisibleTasks(
   role: Role
 ): Promise<TaskWithDetails[]> {
   const where = taskScopeWhere(companyId, userId, role)
-
-  const tasks = await prisma.task.findMany({
-    where,
-    include: {
-      createdBy: { select: { id: true, name: true } },
-      participants: {
-        include: { user: { select: { id: true, name: true } } },
-        orderBy: { id: "asc" },
-      },
-      steps: {
-        include: {
-          createdBy: { select: { id: true, name: true } },
-          images: {
-            include: { uploadedBy: { select: { id: true, name: true } } },
-            orderBy: { createdAt: "asc" },
-          },
-        },
-        orderBy: { order: "asc" },
-      },
+  const include = {
+    createdBy: { select: { id: true, name: true } },
+    participants: {
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { id: "asc" as const },
     },
-    orderBy: { createdAt: "desc" },
-  })
+    steps: {
+      include: {
+        createdBy: { select: { id: true, name: true } },
+        images: {
+          include: { uploadedBy: { select: { id: true, name: true } } },
+          orderBy: { createdAt: "asc" as const },
+        },
+      },
+      orderBy: { order: "asc" as const },
+    },
+  }
 
-  return tasks as unknown as TaskWithDetails[]
+  // Incomplete tasks always precede completed ones; each bucket has its own
+  // sort key (newest-created first vs. newest-completed first), so this is
+  // done as two ordered queries rather than one findMany with a single orderBy.
+  const [activeTasks, completedTasks] = await Promise.all([
+    prisma.task.findMany({
+      where: { ...where, status: "ACTIVE" },
+      include,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.task.findMany({
+      where: { ...where, status: "COMPLETED" },
+      include,
+      orderBy: { completedAt: "desc" },
+    }),
+  ])
+
+  return [...activeTasks, ...completedTasks] as unknown as TaskWithDetails[]
 }
 
 const OVERDUE_DAYS = 2

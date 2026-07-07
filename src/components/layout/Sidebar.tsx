@@ -67,11 +67,12 @@ const NAV_SECTIONS: NavSection[] = [
 interface SidebarProps {
   role: Role
   modulePermissions: string[]
+  taskCount?: number | null
   open: boolean
   onClose: () => void
 }
 
-export function Sidebar({ role, modulePermissions, open, onClose }: SidebarProps) {
+export function Sidebar({ role, modulePermissions, taskCount = null, open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { t } = useLanguage()
 
@@ -154,7 +155,21 @@ export function Sidebar({ role, modulePermissions, open, onClose }: SidebarProps
                                 isActive ? "text-blue-400" : "text-slate-500"
                               )}
                             />
-                            {item.labelKey ? t(item.labelKey) : item.label}
+                            <span className="flex-1 truncate">
+                              {item.labelKey ? t(item.labelKey) : item.label}
+                            </span>
+                            {item.href === "/tasks" && !!taskCount && taskCount > 0 && (
+                              <span
+                                className={cn(
+                                  "shrink-0 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none",
+                                  isActive
+                                    ? "bg-blue-400/20 text-blue-300"
+                                    : "bg-slate-700 text-slate-300"
+                                )}
+                              >
+                                {taskCount}
+                              </span>
+                            )}
                           </Link>
                         </li>
                       )

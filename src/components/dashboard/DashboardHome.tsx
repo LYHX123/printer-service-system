@@ -66,8 +66,8 @@ export function DashboardHome({
   const totalAlerts = (lowStockCount ?? 0) + (overdueTaskCount ?? 0)
   const hasAlertAccess = lowStockCount !== null || overdueTaskCount !== null
 
-  const summaryItems: Array<{ labelKey: TranslationKey; value: string }> = []
-  if (activeTaskCount !== null) summaryItems.push({ labelKey: "activeTasksLabel", value: String(activeTaskCount) })
+  const summaryItems: Array<{ labelKey: TranslationKey; value: string; href?: string }> = []
+  if (activeTaskCount !== null) summaryItems.push({ labelKey: "activeTasksLabel", value: String(activeTaskCount), href: "/tasks" })
   if (lowStockCount !== null) summaryItems.push({ labelKey: "lowStockItemsLabel", value: String(lowStockCount) })
   if (unpaidSalesBalance !== null) summaryItems.push({ labelKey: "unpaidSalesBalanceLabel", value: formatCurrency(unpaidSalesBalance) })
 
@@ -125,12 +125,27 @@ export function DashboardHome({
       {/* Small summary strip */}
       {summaryItems.length > 0 && (
         <div className="mb-6 grid grid-cols-1 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
-          {summaryItems.map((item) => (
-            <div key={item.labelKey} className="px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t(item.labelKey)}</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{item.value}</p>
-            </div>
-          ))}
+          {summaryItems.map((item) => {
+            const content = (
+              <>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t(item.labelKey)}</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{item.value}</p>
+              </>
+            )
+            return item.href ? (
+              <Link
+                key={item.labelKey}
+                href={item.href}
+                className="px-4 py-3 transition-colors hover:bg-slate-50"
+              >
+                {content}
+              </Link>
+            ) : (
+              <div key={item.labelKey} className="px-4 py-3">
+                {content}
+              </div>
+            )
+          })}
         </div>
       )}
 

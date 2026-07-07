@@ -38,9 +38,9 @@ interface TasksViewProps {
 function TaskStatusBadge({ status }: { status: "ACTIVE" | "COMPLETED" }) {
   const { t } = useLanguage()
   return status === "COMPLETED" ? (
-    <Badge className="bg-slate-100 text-slate-500">{t("taskStatusCompleted")}</Badge>
+    <Badge className="bg-emerald-100 text-emerald-700">{t("taskStatusCompleted")}</Badge>
   ) : (
-    <Badge className="bg-green-100 text-green-700">{t("taskStatusActive")}</Badge>
+    <Badge className="bg-blue-100 text-blue-700">{t("taskStatusActive")}</Badge>
   )
 }
 
@@ -200,7 +200,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left Panel: Task List */}
-      <aside className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
+      <aside className="flex w-80 lg:w-2/5 shrink-0 flex-col border-r border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
           {userCanCreate && (
@@ -268,7 +268,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
       </aside>
 
       {/* Right Panel: Task Detail */}
-      <main className="flex flex-1 flex-col overflow-hidden bg-slate-50">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-slate-50">
         {!selectedTask ? (
           <EmptyState />
         ) : (

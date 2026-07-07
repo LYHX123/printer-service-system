@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { canAccess } from "@/lib/permissions"
 import { getLowStockAlerts } from "@/lib/data/inventory"
-import { getOverdueTasks } from "@/lib/data/tasks"
+import { getOverdueTasks, getActiveTaskCount } from "@/lib/data/tasks"
 import { AlertsNotification } from "@/components/inventory/LowStockNotification"
 import type { Role } from "@/types"
 
@@ -25,18 +25,23 @@ export default async function DashboardLayout({
     modulePermissions: (session.user.modulePermissions as string[]) ?? [],
   }
 
-  const [lowStockAlerts, overdueTaskAlerts] = await Promise.all([
+  const canViewTasks = canAccess(user.role, "tasks", user.modulePermissions)
+
+  const [lowStockAlerts, overdueTaskAlerts, activeTaskCount] = await Promise.all([
     canAccess(user.role, "inventory", user.modulePermissions)
       ? getLowStockAlerts(user.companyId)
       : Promise.resolve([]),
-    canAccess(user.role, "tasks", user.modulePermissions)
+    canViewTasks
       ? getOverdueTasks(user.companyId, user.id, user.role)
       : Promise.resolve([]),
+    canViewTasks
+      ? getActiveTaskCount(user.companyId, user.id, user.role)
+      : Promise.resolve(null),
   ])
 
   return (
     <>
-      <DashboardShell user={user}>{children}</DashboardShell>
+      <DashboardShell user={user} taskCount={activeTaskCount}>{children}</DashboardShell>
       <AlertsNotification
         lowStockAlerts={lowStockAlerts}
         overdueTaskAlerts={overdueTaskAlerts}

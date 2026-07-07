@@ -19,9 +19,10 @@ interface ShellUser {
 interface DashboardShellProps {
   children: ReactNode
   user: ShellUser
+  taskCount?: number | null
 }
 
-export function DashboardShell({ children, user }: DashboardShellProps) {
+export function DashboardShell({ children, user, taskCount = null }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -30,6 +31,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         <Sidebar
           role={user.role}
           modulePermissions={user.modulePermissions}
+          taskCount={taskCount}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
