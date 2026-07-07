@@ -4,8 +4,8 @@ import type { Role } from "@/types"
 export type OverdueTaskAlert = {
   id: string
   title: string
-  createdAt: Date
-  daysOpen: number
+  lastActivityAt: Date
+  daysInactive: number
   participants: Array<{ id: string; name: string }>
 }
 
@@ -103,13 +103,42 @@ export async function getVisibleTasks(
 
 const OVERDUE_DAYS = 2
 
-function overdueTaskWhere(companyId: string, userId: string, role: Role) {
-  const cutoff = new Date(Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000)
-  return {
-    ...taskScopeWhere(companyId, userId, role),
-    status: "ACTIVE" as const,
-    createdAt: { lt: cutoff },
+/**
+ * Last Activity Date = latest of: task creation, latest status change
+ * (Task.updatedAt only moves on complete/reopen — no other field on Task
+ * is ever patched), latest step added, latest attachment uploaded to any
+ * step. There's no separate "comment" entity in the schema; step
+ * descriptions are the closest analog and are already covered by the
+ * step's own createdAt.
+ */
+function getLastActivityAt(task: {
+  createdAt: Date
+  updatedAt: Date
+  steps: Array<{ createdAt: Date; images: Array<{ createdAt: Date }> }>
+}): Date {
+  let latest = task.updatedAt > task.createdAt ? task.updatedAt : task.createdAt
+  for (const step of task.steps) {
+    if (step.createdAt > latest) latest = step.createdAt
+    for (const image of step.images) {
+      if (image.createdAt > latest) latest = image.createdAt
+    }
   }
+  return latest
+}
+
+/** Last-activity can't be expressed as a single SQL WHERE (it's a MAX across related tables), so overdue checks fetch ACTIVE tasks with the timestamps that feed it and filter in application code. */
+function getActiveTasksWithActivity(companyId: string, userId: string, role: Role) {
+  return prisma.task.findMany({
+    where: { ...taskScopeWhere(companyId, userId, role), status: "ACTIVE" },
+    select: {
+      id: true,
+      title: true,
+      createdAt: true,
+      updatedAt: true,
+      steps: { select: { createdAt: true, images: { select: { createdAt: true } } } },
+      participants: { select: { user: { select: { id: true, name: true } } } },
+    },
+  })
 }
 
 export async function getOverdueTasks(
@@ -117,28 +146,27 @@ export async function getOverdueTasks(
   userId: string,
   role: Role
 ): Promise<OverdueTaskAlert[]> {
-  const where = overdueTaskWhere(companyId, userId, role)
-
-  const tasks = await prisma.task.findMany({
-    where,
-    include: {
-      participants: { include: { user: { select: { id: true, name: true } } } },
-    },
-    orderBy: { createdAt: "asc" },
-  })
-
+  const tasks = await getActiveTasksWithActivity(companyId, userId, role)
+  const cutoff = Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000
   const now = Date.now()
-  return tasks.map((task) => ({
-    id: task.id,
-    title: task.title,
-    createdAt: task.createdAt,
-    daysOpen: Math.floor((now - task.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
-    participants: task.participants.map((p) => ({ id: p.user.id, name: p.user.name })),
-  }))
+
+  return tasks
+    .map((task) => ({ task, lastActivityAt: getLastActivityAt(task) }))
+    .filter(({ lastActivityAt }) => lastActivityAt.getTime() < cutoff)
+    .sort((a, b) => a.lastActivityAt.getTime() - b.lastActivityAt.getTime())
+    .map(({ task, lastActivityAt }) => ({
+      id: task.id,
+      title: task.title,
+      lastActivityAt,
+      daysInactive: Math.floor((now - lastActivityAt.getTime()) / (1000 * 60 * 60 * 24)),
+      participants: task.participants.map((p) => ({ id: p.user.id, name: p.user.name })),
+    }))
 }
 
 export async function getOverdueTaskCount(companyId: string, userId: string, role: Role): Promise<number> {
-  return prisma.task.count({ where: overdueTaskWhere(companyId, userId, role) })
+  const tasks = await getActiveTasksWithActivity(companyId, userId, role)
+  const cutoff = Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000
+  return tasks.filter((task) => getLastActivityAt(task).getTime() < cutoff).length
 }
 
 export async function getActiveTaskCount(companyId: string, userId: string, role: Role): Promise<number> {

@@ -416,8 +416,8 @@ export type TranslationKey =
   // Notification popup
   | "overdueTasksLabel"
   | "taskOverdueNotice"
-  | "createdDateLabel"
-  | "daysOpenLabel"
+  | "lastActivityLabel"
+  | "daysInactiveLabel"
   | "viewTask"
   | "lowStockAlertsLabel"
   | "overdueTaskAlertsLabel"
@@ -724,8 +724,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // Notification popup
     overdueTasksLabel: "Overdue Tasks",
     taskOverdueNotice: "Task overdue",
-    createdDateLabel: "Created",
-    daysOpenLabel: "Days open",
+    lastActivityLabel: "Last activity",
+    daysInactiveLabel: "Days inactive",
     viewTask: "View Task",
     lowStockAlertsLabel: "Low Stock Alerts",
     overdueTaskAlertsLabel: "Overdue Task Alerts",
@@ -1150,8 +1150,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // Notification popup
     overdueTasksLabel: "超期任务",
     taskOverdueNotice: "任务已超期",
-    createdDateLabel: "创建时间",
-    daysOpenLabel: "已进行天数",
+    lastActivityLabel: "最后活动时间",
+    daysInactiveLabel: "无活动天数",
     viewTask: "查看任务",
     lowStockAlertsLabel: "低库存提醒",
     overdueTaskAlertsLabel: "任务超期提醒",

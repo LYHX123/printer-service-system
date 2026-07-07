@@ -122,11 +122,11 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
                   <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
                     <Clock className="h-3 w-3 shrink-0" />
                     <span>
-                      {t("createdDateLabel")}: {format(new Date(task.createdAt), "dd MMM yyyy")}
+                      {t("lastActivityLabel")}: {format(new Date(task.lastActivityAt), "dd MMM yyyy")}
                     </span>
                     <span>·</span>
                     <span>
-                      {task.daysOpen} {t("daysOpenLabel")}
+                      {task.daysInactive} {t("daysInactiveLabel")}
                     </span>
                   </div>
                   {task.participants.length > 0 && (
