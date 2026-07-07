@@ -23,9 +23,13 @@ export interface ItemRowSpots {
 /**
  * Coordinate map for one pre-printed PDF template. All coordinates are PDF
  * points with the origin at the page's bottom-left, matching pdf-lib's
- * coordinate system. A new template file (redesigned letterhead, different
- * page size, etc.) gets its own map object with a bumped `version` rather
- * than mutating this one, so old and new can be registered side by side.
+ * coordinate system. The company letterhead (name/address/PIN/logo) and
+ * document title are static artwork baked into the template itself and are
+ * never redrawn — only the fields below are dynamic.
+ *
+ * A new template file (redesigned layout, different page size, etc.) gets
+ * its own map object with a bumped `version` rather than mutating this one,
+ * so old and new can be registered side by side.
  */
 export interface DocumentTemplateMap {
   version: string
@@ -33,19 +37,18 @@ export interface DocumentTemplateMap {
   file: string
   pageSize: { width: number; height: number }
 
-  logo?: { x: number; y: number; width: number; height: number }
-  companyName: TextSpot
-  companyAddress: TextSpot
-  companyPin: TextSpot
-
-  customerLabel?: TextSpot
   /** Fixed Y per line slot the template reserves for the customer name; extra text beyond this many lines is truncated. */
   customerNameLines: Array<{ x: number; y: number; size: number; maxWidth: number }>
+  /** Single line below the name slots — the template has no dedicated label for this. */
+  customerAddress: TextSpot & { maxWidth: number }
   customerPin: TextSpot
 
   date: TextSpot
   documentNumber: TextSpot
+  /** No dedicated template slot for this field; placed in the nearest sensible free space. */
+  preparedBy: TextSpot
 
+  /** One page's worth of row slots; reused identically on every continuation page. */
   itemRows: ItemRowSpots[]
   descriptionLineHeight: number
   descriptionMaxLines: number

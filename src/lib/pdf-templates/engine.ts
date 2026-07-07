@@ -10,16 +10,33 @@ export interface TemplateFonts {
   bold: PDFFont
 }
 
-export async function loadTemplate(relativePath: string): Promise<{ pdf: PDFDocument; page: PDFPage; fonts: TemplateFonts }> {
+/**
+ * Builds a fresh output document with `pageCount` copies of the template's
+ * first page — one per page of line items — so any number of items can be
+ * rendered by paginating rather than being capped at the template's fixed
+ * row count.
+ */
+export async function createDocumentFromTemplate(
+  relativePath: string,
+  pageCount: number
+): Promise<{ pdf: PDFDocument; pages: PDFPage[]; fonts: TemplateFonts }> {
   const filePath = path.join(process.cwd(), relativePath)
   const bytes = readFileSync(filePath)
-  const pdf = await PDFDocument.load(bytes)
-  const page = pdf.getPage(0)
+  const templateDoc = await PDFDocument.load(bytes)
+
+  const pdf = await PDFDocument.create()
+  const pages: PDFPage[] = []
+  for (let i = 0; i < Math.max(1, pageCount); i++) {
+    const [copied] = await pdf.copyPages(templateDoc, [0])
+    pdf.addPage(copied)
+    pages.push(copied)
+  }
+
   const [regular, bold] = await Promise.all([
     pdf.embedFont(StandardFonts.TimesRoman),
     pdf.embedFont(StandardFonts.TimesRomanBold),
   ])
-  return { pdf, page, fonts: { regular, bold } }
+  return { pdf, pages, fonts: { regular, bold } }
 }
 
 /** Draws a single line of text at a spot, resolving right/center alignment against `boundX`. */

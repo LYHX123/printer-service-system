@@ -1,33 +1,28 @@
 import { format } from "date-fns"
 import type { QuotationPdfData } from "@/lib/data/quotations"
 import { QUOTATION_TEMPLATES, ACTIVE_QUOTATION_TEMPLATE_VERSION } from "./quotationTemplateMap"
-import { loadTemplate, drawSpot, drawWrappedSpot, drawFixedSlotLines, drawPublicImage, formatAmount } from "./engine"
+import { createDocumentFromTemplate, drawSpot, drawWrappedSpot, drawFixedSlotLines, drawPublicImage, formatAmount } from "./engine"
 
-export async function renderQuotationPdf(quotation: QuotationPdfData): Promise<Buffer> {
+export async function renderQuotationPdf(quotation: QuotationPdfData, preparedByName: string): Promise<Buffer> {
   const map = QUOTATION_TEMPLATES[ACTIVE_QUOTATION_TEMPLATE_VERSION]
-  const { pdf, page, fonts } = await loadTemplate(map.file)
+  const rowsPerPage = map.itemRows.length
+  const pageCount = Math.max(1, Math.ceil(quotation.items.length / rowsPerPage))
+  const { pdf, pages, fonts } = await createDocumentFromTemplate(map.file, pageCount)
 
-  if (map.logo) await drawPublicImage(pdf, page, quotation.company.logoUrl, map.logo)
-  drawSpot(page, quotation.company.name, map.companyName, fonts)
-  if (quotation.company.address) drawSpot(page, quotation.company.address, map.companyAddress, fonts)
-  if (quotation.company.kraPin) drawSpot(page, `PIN: ${quotation.company.kraPin}`, map.companyPin, fonts)
+  const dateText = format(new Date(quotation.createdAt), "dd MMM yyyy")
 
-  drawFixedSlotLines(page, quotation.customer.companyName, map.customerNameLines, fonts, true)
-  drawSpot(page, `PIN: ${quotation.customer.pinNumber || "—"}`, map.customerPin, fonts)
-
-  drawSpot(page, format(new Date(quotation.createdAt), "dd MMM yyyy"), map.date, fonts)
-  drawSpot(page, quotation.quotationNumber, map.documentNumber, fonts)
-
-  const rowCount = Math.min(quotation.items.length, map.itemRows.length)
-  if (quotation.items.length > map.itemRows.length) {
-    console.warn(
-      `Quotation ${quotation.quotationNumber} has ${quotation.items.length} items but template "${map.version}" only has ${map.itemRows.length} row slots — extra items were not printed.`
-    )
+  for (const page of pages) {
+    drawFixedSlotLines(page, quotation.customer.companyName, map.customerNameLines, fonts, true)
+    if (quotation.customer.location) drawWrappedSpot(page, quotation.customer.location, map.customerAddress, 0, 1, fonts)
+    drawSpot(page, quotation.customer.pinNumber || "—", map.customerPin, fonts)
+    drawSpot(page, dateText, map.date, fonts)
+    drawSpot(page, quotation.quotationNumber, map.documentNumber, fonts)
   }
 
-  for (let i = 0; i < rowCount; i++) {
+  for (let i = 0; i < quotation.items.length; i++) {
     const item = quotation.items[i]
-    const spots = map.itemRows[i]
+    const page = pages[Math.floor(i / rowsPerPage)]
+    const spots = map.itemRows[i % rowsPerPage]
 
     if (item.part?.partNumber) drawSpot(page, item.part.partNumber, spots.itemNo, fonts)
 
@@ -51,9 +46,11 @@ export async function renderQuotationPdf(quotation: QuotationPdfData): Promise<B
   const vatAmount = (subtotal * vatPercent) / 100
   const totalCost = Number(quotation.totalCost)
 
-  drawSpot(page, formatAmount(subtotal), map.subtotal, fonts)
-  drawSpot(page, formatAmount(vatAmount), map.vat, fonts)
-  drawSpot(page, formatAmount(totalCost), map.total, fonts)
+  const lastPage = pages[pages.length - 1]
+  drawSpot(lastPage, formatAmount(subtotal), map.subtotal, fonts)
+  drawSpot(lastPage, formatAmount(vatAmount), map.vat, fonts)
+  drawSpot(lastPage, formatAmount(totalCost), map.total, fonts)
+  drawSpot(lastPage, `Prepared By: ${preparedByName}`, map.preparedBy, fonts)
 
   const bytes = await pdf.save()
   return Buffer.from(bytes)

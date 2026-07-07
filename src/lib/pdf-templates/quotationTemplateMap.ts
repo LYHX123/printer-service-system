@@ -1,49 +1,51 @@
 import type { DocumentTemplateMap, ItemRowSpots } from "./types"
 
 // Row center-Y positions measured from templates/quotation/quotation-template.pdf
-// (see scripts/inspect-pdf-text.mjs). Rows 1-3 are spaced 57.1pt apart; rows 6-8
-// are compressed by the template's original author to keep the whole table on
-// one page, so these are literal per-row values, not a computed step.
-const ROW_CENTER_Y = [598.7, 541.6, 484.5, 427.4, 370.3, 313.1, 260.6, 213.2]
+// (see scripts/inspect-pdf-text.mjs). Evenly spaced ~55pt apart; reused as-is
+// on every continuation page since each page is a fresh copy of the template.
+const ROW_CENTER_Y = [605.7, 550.8, 495.8, 440.8, 385.9, 330.9, 276.0, 221.0]
 
 function buildRows(centerYs: number[]): ItemRowSpots[] {
   return centerYs.map((y) => ({
     itemNo: { x: 78, y, size: 7.5 },
-    description: { x: 120, y, size: 7.5, maxWidth: 90 },
-    unit: { x: 216, y, size: 7.5 },
-    qty: { x: 293, y, size: 7.5 },
-    unitPrice: { x: 403, y, size: 7.5, align: "right", boundX: 403 },
-    amount: { x: 478, y, size: 7.5, align: "right", boundX: 478 },
-    image: { x: 490, y: y - 13, width: 26, height: 26 },
+    description: { x: 118, y, size: 7.5, maxWidth: 90 },
+    unit: { x: 213, y, size: 7.5 },
+    qty: { x: 289, y, size: 7.5 },
+    unitPrice: { x: 398, y, size: 7.5, align: "right", boundX: 398 },
+    amount: { x: 472, y, size: 7.5, align: "right", boundX: 472 },
+    image: { x: 483, y: y - 13, width: 26, height: 26 },
   }))
 }
 
 export const quotationTemplateMapV1: DocumentTemplateMap = {
   version: "v1",
   file: "templates/quotation/quotation-template.pdf",
-  pageSize: { width: 595, height: 842 },
-
-  logo: { x: 500, y: 780, width: 50, height: 50 },
-  companyName: { x: 297.5, y: 771.6, size: 8.2, bold: true, align: "center", boundX: 297.5 },
-  companyAddress: { x: 297.5, y: 761.9, size: 8.2, align: "center", boundX: 297.5 },
-  companyPin: { x: 297.5, y: 752.2, size: 8.2, align: "center", boundX: 297.5 },
+  pageSize: { width: 595.2, height: 842 },
 
   customerNameLines: [
-    { x: 187.7, y: 702.3, size: 7.5, maxWidth: 150 },
-    { x: 187.7, y: 693.6, size: 7.5, maxWidth: 150 },
+    { x: 185.3, y: 712.4, size: 7.3, maxWidth: 150 },
+    { x: 185.3, y: 703.4, size: 7.3, maxWidth: 150 },
   ],
-  customerPin: { x: 187.7, y: 676.3, size: 7.5 },
+  customerAddress: { x: 185.3, y: 694.4, size: 6.8, maxWidth: 150 },
+  // "PIN:" label is static template art at (185.3, 684.9); value is drawn right after it.
+  customerPin: { x: 205, y: 684.9, size: 7.3 },
 
-  date: { x: 362.6, y: 712.5, size: 7.1 },
-  documentNumber: { x: 392.7, y: 670.1, size: 7.1 },
+  // "Date:" / "Quotation No.:" labels are static; values sit inline after them,
+  // offset by the label's approximate printed width.
+  date: { x: 357.2, y: 714.8, size: 7.3 },
+  documentNumber: { x: 387.3, y: 674.2, size: 7.3 },
+  // No template slot for this field — placed inside the NOTE box, below the
+  // static validity line, since that's the nearest free space still within
+  // the document's bordered frame.
+  preparedBy: { x: 51.8, y: 163, size: 7 },
 
   itemRows: buildRows(ROW_CENTER_Y),
   descriptionLineHeight: 8.65,
   descriptionMaxLines: 3,
 
-  subtotal: { x: 478, y: 183.1, size: 7.1, align: "right", boundX: 478 },
-  vat: { x: 478, y: 173.4, size: 7.1, align: "right", boundX: 478 },
-  total: { x: 478, y: 152.5, size: 7.5, bold: true, align: "right", boundX: 478 },
+  subtotal: { x: 462, y: 187.5, size: 7.3, align: "right", boundX: 462 },
+  vat: { x: 462, y: 177.9, size: 7.3, align: "right", boundX: 462 },
+  total: { x: 462, y: 157.3, size: 7.5, bold: true, align: "right", boundX: 462 },
 }
 
 /**

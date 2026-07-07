@@ -1,8 +1,9 @@
 import type { DocumentTemplateMap, ItemRowSpots } from "./types"
 
 // Row center-Y positions measured from templates/invoice/invoice-template.pdf
-// (see scripts/inspect-pdf-text.mjs). Unlike the quotation template, these 8
-// rows are evenly spaced (~45.5pt apart).
+// (see scripts/inspect-pdf-text.mjs). Evenly spaced ~45.5pt apart; reused
+// as-is on every continuation page since each page is a fresh copy of the
+// template.
 const ROW_CENTER_Y = [565.0, 519.6, 474.1, 428.6, 383.1, 337.6, 292.2, 246.7]
 
 function buildRows(centerYs: number[]): ItemRowSpots[] {
@@ -21,23 +22,24 @@ export const invoiceTemplateMapV1: DocumentTemplateMap = {
   file: "templates/invoice/invoice-template.pdf",
   pageSize: { width: 595.2, height: 842 },
 
-  logo: { x: 500, y: 786, width: 55, height: 55 },
-  companyName: { x: 297.6, y: 777.0, size: 11.5, bold: true, align: "center", boundX: 297.6 },
-  companyAddress: { x: 297.6, y: 762.8, size: 11.5, align: "center", boundX: 297.6 },
-  companyPin: { x: 297.6, y: 748.6, size: 11.5, align: "center", boundX: 297.6 },
-
   customerNameLines: [
-    { x: 207.7, y: 683.2, size: 9, maxWidth: 180 },
-    { x: 207.7, y: 672.1, size: 9, maxWidth: 180 },
-    { x: 207.7, y: 660.9, size: 9, maxWidth: 180 },
+    { x: 207.7, y: 692, size: 9, maxWidth: 180 },
+    { x: 207.7, y: 681, size: 9, maxWidth: 180 },
   ],
-  customerPin: { x: 207.7, y: 638.6, size: 9 },
+  customerAddress: { x: 207.7, y: 670, size: 8.5, maxWidth: 180 },
+  // "PIN:" label is static template art at (207.7, 660.9); value is drawn right after it.
+  customerPin: { x: 230, y: 660.9, size: 9 },
 
-  date: { x: 420.6, y: 697.3, size: 9 },
+  // "Date:" label is static; value sits inline after it.
+  date: { x: 420.6, y: 697.2, size: 9 },
+  // "INVOICE No.:" label is static, on its own line; value sits on the line below it.
   documentNumber: { x: 397.4, y: 641.1, size: 9 },
+  // No template slot for this field — placed just above "RECEIVED BY:" so the
+  // two signature-style lines read as separate rows rather than merging.
+  preparedBy: { x: 52.2, y: 207, size: 9 },
 
   itemRows: buildRows(ROW_CENTER_Y),
-  descriptionLineHeight: 11.15,
+  descriptionLineHeight: 11,
   descriptionMaxLines: 2,
 
   subtotal: { x: 541, y: 216.4, size: 9, align: "right", boundX: 541 },

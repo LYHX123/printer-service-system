@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
   }
 
-  const buffer = await renderInvoicePdf(invoice)
+  const buffer = await renderInvoicePdf(invoice, session.user.name ?? "")
   const fileName = `${invoice.invoiceNumber}.pdf`
 
   return new NextResponse(new Uint8Array(buffer), {

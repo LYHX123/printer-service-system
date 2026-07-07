@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json({ error: "Quotation not found" }, { status: 404 })
   }
 
-  const buffer = await renderQuotationPdf(quotation)
+  const buffer = await renderQuotationPdf(quotation, session.user.name ?? "")
   const fileName = `${quotation.customer.code}-${quotation.quotationNumber}.pdf`
 
   return new NextResponse(new Uint8Array(buffer), {
