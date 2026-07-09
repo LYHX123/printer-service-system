@@ -304,10 +304,12 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                 <ChevronLeft className="h-4 w-4" />
                 {t("tasks")}
               </button>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-lg font-bold text-slate-900">{selectedTask.title}</h1>
+              <div className="flex items-start justify-between gap-4 max-lg:flex-col max-lg:items-stretch max-lg:gap-3">
+                <div className="min-w-0 max-lg:w-full">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h1 className="text-lg font-bold text-slate-900 break-words whitespace-normal max-lg:w-full max-lg:text-xl max-lg:font-semibold max-lg:leading-snug">
+                      {selectedTask.title}
+                    </h1>
                     <TaskStatusBadge status={selectedTask.status} />
                   </div>
                   <p className="text-xs text-slate-400">
@@ -324,7 +326,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 max-lg:w-full max-lg:flex-wrap">
                   {selectedTask.status === "ACTIVE" && (
                     <>
                       {userCanAddStep && (
