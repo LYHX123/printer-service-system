@@ -27,7 +27,7 @@ export function DashboardShell({ children, user, taskCount = null }: DashboardSh
 
   return (
     <ToastProvider>
-      <div className="flex h-screen overflow-hidden bg-slate-50 print:h-auto print:overflow-visible print:bg-white">
+      <div className="flex h-screen overflow-hidden bg-slate-50 pb-[env(safe-area-inset-bottom)] print:h-auto print:overflow-visible print:bg-white print:pb-0">
         <Sidebar
           role={user.role}
           modulePermissions={user.modulePermissions}
@@ -40,7 +40,7 @@ export function DashboardShell({ children, user, taskCount = null }: DashboardSh
             user={{ name: user.name, username: user.username, position: user.position, role: user.role }}
             onMenuClick={() => setSidebarOpen(true)}
           />
-          <main className="flex-1 overflow-y-auto p-6 pb-96 print:overflow-visible print:p-0">{children}</main>
+          <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 pb-96 sm:p-6 sm:pb-96 print:overflow-visible print:p-0">{children}</main>
         </div>
       </div>
     </ToastProvider>

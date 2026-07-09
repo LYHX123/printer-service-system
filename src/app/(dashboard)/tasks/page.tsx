@@ -24,7 +24,7 @@ export default async function TasksPage() {
     .map((u) => ({ id: u.id, name: u.name, role: u.role }))
 
   return (
-    <div className="-m-6 h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="-m-4 h-[calc(100vh-4rem)] overflow-hidden sm:-m-6">
       <TasksView
         tasks={tasks}
         users={activeUsers}

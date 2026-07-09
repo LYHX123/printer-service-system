@@ -109,7 +109,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 print:hidden">
+    <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 pt-[env(safe-area-inset-top)] print:hidden">
       {/* Mobile hamburger */}
       <button
         onClick={onMenuClick}
@@ -121,7 +121,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
 
       {/* Breadcrumb */}
       <div className="flex-1 min-w-0">
-        <nav aria-label="Breadcrumb">
+        <nav aria-label="Breadcrumb" className="hidden sm:block">
           <ol className="flex items-center gap-1 text-xs text-slate-400">
             {crumbs.map((crumb, i) => (
               <li key={crumb.href} className="flex items-center gap-1">
@@ -139,7 +139,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
             ))}
           </ol>
         </nav>
-        <p className="text-sm font-semibold text-slate-900 leading-tight">
+        <p className="truncate text-sm font-semibold text-slate-900 leading-tight">
           {currentPage}
         </p>
       </div>

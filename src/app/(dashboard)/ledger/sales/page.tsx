@@ -98,7 +98,7 @@ export default async function SalesLedgerPage({
         />
       </div>
 
-      <form method="GET" className="flex flex-wrap items-center gap-2 mb-4">
+      <form method="GET" className="filter-bar flex flex-wrap items-center gap-2 mb-4">
         <TInput name="customer" type="search" placeholderKey="searchSalesLedgerPlaceholder" defaultValue={customer ?? ""} className="w-56" />
         <label className="text-xs text-slate-500"><T k="fromDate" /></label>
         <Input name="from" type="date" defaultValue={from ?? ""} className="w-40" />

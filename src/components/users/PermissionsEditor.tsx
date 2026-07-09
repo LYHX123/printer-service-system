@@ -37,7 +37,7 @@ export function PermissionsEditor({ permissions, userRole, isSelf, onChange }: P
           {t("selfProtectedModules")}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {ALL_MODULES.map((module) => {
           const checked = isAdmin || permissions.length === 0 || permissions.includes(module)
           const disabled = isAdmin || (isSelf && ADMIN_SELF_PROTECTED.includes(module))

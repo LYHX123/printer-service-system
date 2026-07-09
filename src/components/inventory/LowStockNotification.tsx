@@ -35,7 +35,7 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
   return (
     <div
       role="alert"
-      className="fixed bottom-4 right-4 z-50 w-80 overflow-hidden rounded-xl border border-amber-200 bg-white shadow-lg"
+      className="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 w-[calc(100vw-2rem)] max-w-80 overflow-hidden rounded-xl border border-amber-200 bg-white shadow-lg"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-amber-100 bg-amber-50 px-4 py-3">

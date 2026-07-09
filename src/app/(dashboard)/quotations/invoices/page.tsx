@@ -40,7 +40,7 @@ export default async function InvoicesPage({
         subtitle={<T k="invoicesDesc" />}
       />
 
-      <form method="get" className="mb-4 flex flex-wrap gap-2">
+      <form method="get" className="filter-bar mb-4 flex flex-wrap gap-2">
         <TInput
           name="search"
           type="search"

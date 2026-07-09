@@ -181,7 +181,7 @@ export function Sidebar({ role, modulePermissions, taskCount = null, open, onClo
         </nav>
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-slate-800 px-4 py-3">
+        <div className="shrink-0 border-t border-slate-800 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <p className="text-xs text-slate-600">v0.1.0 · Phase 2</p>
         </div>
       </aside>

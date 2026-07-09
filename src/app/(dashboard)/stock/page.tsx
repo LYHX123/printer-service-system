@@ -115,7 +115,7 @@ export default async function StockPage({
         }
       />
 
-      <form method="GET" className="flex flex-wrap gap-2 mb-4">
+      <form method="GET" className="filter-bar flex flex-wrap gap-2 mb-4">
         <input type="hidden" name="type" value={stockType} />
         <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />

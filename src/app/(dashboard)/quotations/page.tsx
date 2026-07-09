@@ -56,7 +56,7 @@ export default async function QuotationsPage({
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-2">
-        <form method="get" className="flex gap-2 flex-wrap">
+        <form method="get" className="filter-bar flex gap-2 flex-wrap">
           <TInput
             name="search"
             type="search"

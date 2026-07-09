@@ -159,7 +159,7 @@ export function QuotationForm({
                 const price = Number(watchedItems?.[index]?.unitPrice) || 0
                 const amount = qty * price
                 return (
-                  <div key={field.id} className="grid grid-cols-12 gap-2 items-center">
+                  <div key={field.id} className="grid grid-cols-12 gap-2 items-start sm:items-center">
                     <div className="col-span-12 sm:col-span-5 flex items-center gap-2">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                         {part?.imageUrl ? (
@@ -176,36 +176,42 @@ export function QuotationForm({
                       </div>
                       <input type="hidden" {...register(`items.${index}.partId`)} />
                     </div>
-                    <div className="col-span-4 sm:col-span-2">
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="Qty"
-                        {...register(`items.${index}.quantity`)}
-                        error={errors.items?.[index]?.quantity?.message}
-                      />
-                    </div>
-                    <div className="col-span-5 sm:col-span-2">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...register(`items.${index}.unitPrice`)}
-                        error={errors.items?.[index]?.unitPrice?.message}
-                      />
-                    </div>
-                    <div className="col-span-2 sm:col-span-2 text-right text-sm text-slate-600 font-medium">
-                      {formatCurrency(amount)}
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => remove(index)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+
+                    {/* Mobile: qty/price/amount/delete share one full-width flex row so
+                        none of them get squeezed. Desktop: `sm:contents` drops this wrapper
+                        so its children rejoin the 12-col grid exactly as before. */}
+                    <div className="col-span-12 flex items-end gap-2 sm:contents">
+                      <div className="flex-1 sm:col-span-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Qty"
+                          {...register(`items.${index}.quantity`)}
+                          error={errors.items?.[index]?.quantity?.message}
+                        />
+                      </div>
+                      <div className="flex-1 sm:col-span-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...register(`items.${index}.unitPrice`)}
+                          error={errors.items?.[index]?.unitPrice?.message}
+                        />
+                      </div>
+                      <div className="shrink-0 min-w-[4.5rem] py-2.5 text-right text-sm font-medium text-slate-600 sm:col-span-2 sm:py-0">
+                        {formatCurrency(amount)}
+                      </div>
+                      <div className="shrink-0 sm:col-span-1 sm:flex sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => remove(index)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )

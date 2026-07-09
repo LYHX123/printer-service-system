@@ -49,7 +49,13 @@ export function Modal({
   if (!isOpen || typeof document === "undefined") return null
 
   const modal = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center",
+        "p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]",
+        "sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))]"
+      )}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"

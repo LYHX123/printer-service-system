@@ -94,7 +94,7 @@ export default async function IncomeExpenseBookPage({
         </div>
       </div>
 
-      <form method="GET" className="flex flex-wrap items-center gap-2 mb-4">
+      <form method="GET" className="filter-bar flex flex-wrap items-center gap-2 mb-4">
         <label className="text-xs text-slate-500"><T k="fromDate" /></label>
         <Input name="from" type="date" defaultValue={from ?? ""} className="w-40" />
         <label className="text-xs text-slate-500"><T k="toDate" /></label>

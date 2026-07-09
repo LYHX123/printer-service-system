@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Plus, CheckCircle2, RotateCcw, Trash2, Users, Clock, ChevronRight } from "lucide-react"
+import { Plus, CheckCircle2, RotateCcw, Trash2, Users, Clock, ChevronRight, ChevronLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -140,6 +140,17 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
   const [addStepOpen, setAddStepOpen] = useState(false)
   const [isActing, setIsActing] = useState(false)
 
+  // On phones, start on the task list instead of jumping straight into the
+  // first task's detail pane (which would hide the list behind it). Desktop
+  // keeps auto-selecting the first task as before.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      setSelectedId(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? null
   const userCanCreate = canCreateTask(currentUserRole)
 
@@ -199,8 +210,14 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left Panel: Task List */}
-      <aside className="flex w-80 lg:w-2/5 shrink-0 flex-col border-r border-slate-200 bg-white">
+      {/* Left Panel: Task List. On phones this is the only pane shown until a task is picked. */}
+      <aside
+        className={cn(
+          "flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white lg:w-2/5",
+          "max-lg:w-full",
+          selectedTask && "max-lg:hidden"
+        )}
+      >
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
           {userCanCreate && (
@@ -267,13 +284,26 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
         </div>
       </aside>
 
-      {/* Right Panel: Task Detail */}
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-slate-50">
+      {/* Right Panel: Task Detail. On phones this only shows once a task is picked. */}
+      <main
+        className={cn(
+          "flex min-w-0 flex-1 flex-col overflow-hidden bg-slate-50",
+          !selectedTask && "max-lg:hidden"
+        )}
+      >
         {!selectedTask ? (
           <EmptyState />
         ) : (
           <>
             <div className="border-b border-slate-200 bg-white px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                className="mb-3 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 lg:hidden"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {t("tasks")}
+              </button>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">

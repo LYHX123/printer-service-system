@@ -22,7 +22,7 @@ export function Tabs({
   paramName = "tab",
 }: TabsProps) {
   return (
-    <div className="flex gap-0 border-b border-slate-200">
+    <div className="flex gap-0 overflow-x-auto border-b border-slate-200">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         return (
@@ -30,7 +30,7 @@ export function Tabs({
             key={tab.id}
             href={`${pathPrefix}?${paramName}=${tab.id}`}
             className={cn(
-              "flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+              "flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
               isActive
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
