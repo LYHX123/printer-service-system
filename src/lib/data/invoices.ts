@@ -78,6 +78,7 @@ export async function getInvoice(id: string, companyId: string): Promise<Invoice
 export type InvoicePdfData = Invoice & {
   customer: Pick<Customer, "id" | "companyName" | "name" | "pinNumber">
   quotation: Pick<Quotation, "id" | "quotationNumber">
+  createdBy: Pick<User, "id" | "name">
   company: Pick<Company, "id" | "name" | "address" | "kraPin" | "logoUrl" | "currency" | "timezone">
   items: InvoiceItemWithPart[]
 }
@@ -88,6 +89,7 @@ export async function getInvoiceForPdf(id: string, companyId: string): Promise<I
     include: {
       customer: { select: { id: true, companyName: true, name: true, pinNumber: true } },
       quotation: { select: { id: true, quotationNumber: true } },
+      createdBy: { select: { id: true, name: true } },
       company: {
         select: { id: true, name: true, address: true, kraPin: true, logoUrl: true, currency: true, timezone: true },
       },

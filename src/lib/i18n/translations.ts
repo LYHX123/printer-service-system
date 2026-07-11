@@ -30,6 +30,7 @@ export type TranslationKey =
   | "filter"
   | "export"
   | "downloadPdf"
+  | "downloadExcel"
   | "exportPdf"
   | "print"
   // Customers
@@ -458,6 +459,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     filter: "Filter",
     export: "Export",
     downloadPdf: "Download PDF",
+    downloadExcel: "Download Excel",
     exportPdf: "Export PDF",
     print: "Print",
     // Customers
@@ -884,6 +886,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     filter: "筛选",
     export: "导出",
     downloadPdf: "下载PDF",
+    downloadExcel: "下载Excel",
     exportPdf: "导出PDF",
     print: "打印",
     // Customers

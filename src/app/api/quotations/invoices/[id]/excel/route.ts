@@ -1,11 +1,9 @@
 import { readFile } from "fs/promises"
 import { NextResponse } from "next/server"
-import { renderToBuffer } from "@react-pdf/renderer"
 import { auth } from "@/lib/auth"
 import { getInvoiceForPdf } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
-import { InvoiceDocument } from "@/components/pdf/InvoiceDocument"
-import { generatePdf, PdfConversionUnavailableError } from "@/lib/templateEngine"
+import { generateExcel, TemplateEngineError } from "@/lib/templateEngine"
 import { buildInvoiceExcelData } from "@/lib/templateData/invoice"
 import type { Role } from "@/types"
 
@@ -28,31 +26,22 @@ export async function GET(
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
   }
 
-  const fileName = `${invoice.invoiceNumber}.pdf`
-
-  // Primary: Excel Template Engine -> LibreOffice -> PDF.
+  let outputPath: string
   try {
-    const pdfPath = await generatePdf("invoice", buildInvoiceExcelData(invoice))
-    const buffer = await readFile(pdfPath)
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-      },
-    })
+    outputPath = await generateExcel("invoice", buildInvoiceExcelData(invoice))
   } catch (error) {
-    if (error instanceof PdfConversionUnavailableError) {
-      console.warn(`[invoices/${id}/pdf] ${error.message}`)
-    } else {
-      console.warn(`[invoices/${id}/pdf] Template-engine PDF generation failed, using old PDF fallback:`, error)
+    if (error instanceof TemplateEngineError) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
+    throw error
   }
 
-  // Fallback: existing react-pdf generator, unchanged.
-  const buffer = await renderToBuffer(<InvoiceDocument invoice={invoice} />)
+  const buffer = await readFile(outputPath)
+  const fileName = `${invoice.invoiceNumber}.xlsx`
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      "Content-Type": "application/pdf",
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   })

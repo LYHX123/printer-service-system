@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Pencil, Send, CheckCircle, XCircle, Download, Receipt } from "lucide-react"
+import { Pencil, Send, CheckCircle, XCircle, Download, FileSpreadsheet, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QuotationStatusModal } from "./QuotationStatusModal"
 import { GenerateInvoiceModal } from "./GenerateInvoiceModal"
@@ -42,6 +42,11 @@ export function QuotationActions({
         <a href={`/api/quotations/${quotationId}/pdf`} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
             {t("downloadPdf")}
+          </Button>
+        </a>
+        <a href={`/api/quotations/${quotationId}/excel`}>
+          <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}>
+            {t("downloadExcel")}
           </Button>
         </a>
         {canEdit && (

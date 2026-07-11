@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { ChevronLeft, User, Download, FileText, Package } from "lucide-react"
+import { ChevronLeft, User, Download, FileSpreadsheet, FileText, Package } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getInvoice } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
@@ -54,9 +54,9 @@ export default async function InvoiceDetailPage({
                 <T k="downloadPdf" />
               </Button>
             </a>
-            <a href={`/api/quotations/invoices/${invoice.id}/export`}>
-              <Button variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
-                <T k="exportExcel" />
+            <a href={`/api/quotations/invoices/${invoice.id}/excel`}>
+              <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}>
+                <T k="downloadExcel" />
               </Button>
             </a>
           </div>

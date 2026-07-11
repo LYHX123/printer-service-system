@@ -1,11 +1,9 @@
 import { readFile } from "fs/promises"
 import { NextResponse } from "next/server"
-import { renderToBuffer } from "@react-pdf/renderer"
 import { auth } from "@/lib/auth"
 import { getQuotationForPdf } from "@/lib/data/quotations"
 import { canAccess } from "@/lib/permissions"
-import { QuotationDocument } from "@/components/pdf/QuotationDocument"
-import { generatePdf, PdfConversionUnavailableError } from "@/lib/templateEngine"
+import { generateExcel, TemplateEngineError } from "@/lib/templateEngine"
 import { buildQuotationExcelData } from "@/lib/templateData/quotation"
 import type { Role } from "@/types"
 
@@ -28,31 +26,22 @@ export async function GET(
     return NextResponse.json({ error: "Quotation not found" }, { status: 404 })
   }
 
-  const fileName = `${quotation.customer.code}-${quotation.quotationNumber}.pdf`
-
-  // Primary: Excel Template Engine -> LibreOffice -> PDF.
+  let outputPath: string
   try {
-    const pdfPath = await generatePdf("quotation", buildQuotationExcelData(quotation))
-    const buffer = await readFile(pdfPath)
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-      },
-    })
+    outputPath = await generateExcel("quotation", buildQuotationExcelData(quotation))
   } catch (error) {
-    if (error instanceof PdfConversionUnavailableError) {
-      console.warn(`[quotations/${id}/pdf] ${error.message}`)
-    } else {
-      console.warn(`[quotations/${id}/pdf] Template-engine PDF generation failed, using old PDF fallback:`, error)
+    if (error instanceof TemplateEngineError) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
+    throw error
   }
 
-  // Fallback: existing react-pdf generator, unchanged.
-  const buffer = await renderToBuffer(<QuotationDocument quotation={quotation} />)
+  const buffer = await readFile(outputPath)
+  const fileName = `${quotation.customer.code}-${quotation.quotationNumber}.xlsx`
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      "Content-Type": "application/pdf",
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   })

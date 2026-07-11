@@ -46,3 +46,6 @@ next-env.d.ts
 
 # user uploads (customer images, PDFs, attachments)
 /public/uploads/
+
+# generated documents (template engine output)
+/storage/generated/
