@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { canCreateQuotation } from "@/lib/permissions"
 import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
 import { generateQuotationNumber } from "@/lib/utils"
+import { logActivity } from "@/lib/audit"
 import { QUOTATION_STATUS_TRANSITIONS } from "@/types"
 import type { QuotationInput, QuotationStatusInput } from "@/lib/schemas"
 import type { Role } from "@/types"
@@ -26,7 +27,19 @@ export async function createQuotation(data: QuotationInput) {
   const parsed = QuotationSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { customerId, validUntil, vatPercent, remarks, internalNotes, items } = parsed.data
+  const {
+    customerId,
+    customerBranchId,
+    contactName,
+    contactPhone,
+    contactEmail,
+    contactAddress,
+    validUntil,
+    vatPercent,
+    remarks,
+    internalNotes,
+    items,
+  } = parsed.data
 
   let quotation: { id: string }
   try {
@@ -61,6 +74,11 @@ export async function createQuotation(data: QuotationInput) {
         quotationNumber,
         companyId,
         customerId,
+        customerBranchId: customerBranchId || null,
+        contactName: contactName || null,
+        contactPhone: contactPhone || null,
+        contactEmail: contactEmail || null,
+        contactAddress: contactAddress || null,
         validUntil: validUntil ? new Date(validUntil) : null,
         subtotal,
         vatPercent,
@@ -102,12 +120,24 @@ export async function updateQuotation(id: string, data: QuotationInput) {
   const parsed = QuotationSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { customerId, validUntil, vatPercent, remarks, internalNotes, items } = parsed.data
+  const {
+    customerId,
+    customerBranchId,
+    contactName,
+    contactPhone,
+    contactEmail,
+    contactAddress,
+    validUntil,
+    vatPercent,
+    remarks,
+    internalNotes,
+    items,
+  } = parsed.data
 
   try {
     const existing = await prisma.quotation.findFirst({
       where: { id, companyId },
-      select: { status: true },
+      select: { status: true, customerId: true, customerBranchId: true },
     })
     if (!existing) return { error: "Quotation not found" }
     if (existing.status !== "DRAFT" && existing.status !== "SENT") {
@@ -128,6 +158,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       0
     )
     const totalCost = computeTotal(subtotal, vatPercent)
+    const newCustomerBranchId = customerBranchId || null
 
     await prisma.$transaction(async (tx) => {
       await tx.quotationItem.deleteMany({ where: { quotationId: id } })
@@ -135,6 +166,11 @@ export async function updateQuotation(id: string, data: QuotationInput) {
         where: { id },
         data: {
           customerId,
+          customerBranchId: newCustomerBranchId,
+          contactName: contactName || null,
+          contactPhone: contactPhone || null,
+          contactEmail: contactEmail || null,
+          contactAddress: contactAddress || null,
           validUntil: validUntil ? new Date(validUntil) : null,
           subtotal,
           vatPercent,
@@ -159,6 +195,26 @@ export async function updateQuotation(id: string, data: QuotationInput) {
         })
       }
     })
+
+    if (existing.customerId !== customerId) {
+      await logActivity({
+        companyId,
+        entityType: "Quotation",
+        entityId: id,
+        action: "CUSTOMER_CHANGED",
+        performedById: session.user.id as string,
+        metadata: { from: existing.customerId, to: customerId },
+      })
+    } else if (existing.customerBranchId !== newCustomerBranchId) {
+      await logActivity({
+        companyId,
+        entityType: "Quotation",
+        entityId: id,
+        action: "PROJECT_CHANGED",
+        performedById: session.user.id as string,
+        metadata: { from: existing.customerBranchId, to: newCustomerBranchId },
+      })
+    }
 
     revalidatePath(`/quotations/${id}`)
     revalidatePath("/quotations")

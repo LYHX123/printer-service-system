@@ -9,6 +9,7 @@ import { LedgerEntrySchema, type LedgerEntryInput } from "@/lib/schemas"
 import { createLedgerEntry, updateLedgerEntry } from "@/lib/actions/ledger"
 import { Modal } from "@/components/ui/modal"
 import { FormField, Input } from "@/components/ui/input"
+import { MoneyInput } from "@/components/ui/money-input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -156,12 +157,8 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
         </FormField>
 
         <FormField label={t("amount")} htmlFor="entryAmount" required error={errors.amount?.message}>
-          <Input
+          <MoneyInput
             id="entryAmount"
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder="0.00"
             {...register("amount")}
           />
         </FormField>

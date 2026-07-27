@@ -163,3 +163,23 @@ export function canDeleteTaskStepImage(
   if (role === "ADMIN") return true
   return canAddTaskStep(userId, task)
 }
+
+/**
+ * Edit/delete a single progress node (TaskStep). Admin and Manager can
+ * always manage a node, even on a completed task — mirrors the existing
+ * ADMIN/MANAGER "task management" role used by canCreateTask/deleteTask.
+ * Everyone else may only act while the task is still ACTIVE, and only on a
+ * node they authored or a task they created (narrower than general task
+ * participation, since editing/deleting is more sensitive than adding a
+ * new step).
+ */
+export function canManageTaskStep(
+  role: Role,
+  userId: string,
+  step: { createdById: string },
+  task: { status: string; createdById: string }
+): boolean {
+  if (role === "ADMIN" || role === "MANAGER") return true
+  if (task.status !== "ACTIVE") return false
+  return step.createdById === userId || task.createdById === userId
+}

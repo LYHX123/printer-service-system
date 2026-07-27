@@ -1,25 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Plus, CheckCircle2, RotateCcw, Trash2, Users, Clock, ChevronRight, ChevronLeft } from "lucide-react"
+import { Plus, CheckCircle2, RotateCcw, Trash2, Pencil, Users, Clock, ChevronRight, ChevronLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { completeTask, reopenTask, deleteTask } from "@/lib/actions/tasks"
+import { completeTask, reopenTask, deleteTask, deleteTaskStep } from "@/lib/actions/tasks"
 import {
   canCreateTask,
   canAddTaskStep,
   canCompleteTask,
   canReopenTask,
+  canManageTaskStep,
 } from "@/lib/permissions"
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal"
 import { AddStepModal } from "@/components/tasks/AddStepModal"
+import { EditStepModal } from "@/components/tasks/EditStepModal"
 import { TaskStepImages } from "@/components/tasks/TaskStepImages"
-import type { TaskWithDetails } from "@/lib/data/tasks"
+import type { TaskWithDetails, TaskStepItem } from "@/lib/data/tasks"
 import type { Role } from "@/types"
 
 interface UserOption {
@@ -49,11 +51,19 @@ function WorkflowNode({
   isLast,
   isFirst,
   canManageImages,
+  canManageNode,
+  onEdit,
+  onDelete,
+  isDeleting,
 }: {
   step: TaskWithDetails["steps"][number]
   isLast: boolean
   isFirst: boolean
   canManageImages: boolean
+  canManageNode: boolean
+  onEdit: () => void
+  onDelete: () => void
+  isDeleting: boolean
 }) {
   const { t } = useLanguage()
   return (
@@ -78,8 +88,32 @@ function WorkflowNode({
           isFirst ? "border-blue-200" : "border-slate-200"
         )}
       >
-        <div className="px-4 pt-3 pb-1 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-900 text-sm">{step.title}</h3>
+        <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-1 border-b border-slate-100">
+          <h3 className="font-semibold text-slate-900 text-sm break-words">{step.title}</h3>
+          {canManageNode && (
+            <div className="flex shrink-0 items-center gap-0.5 -mr-1">
+              <button
+                type="button"
+                onClick={onEdit}
+                disabled={isDeleting}
+                aria-label={t("edit")}
+                title={t("edit")}
+                className="rounded-md p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={isDeleting}
+                aria-label={t("delete")}
+                title={t("delete")}
+                className="rounded-md p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="px-4 py-3 space-y-2">
           {step.description && (
@@ -138,7 +172,33 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
   const [selectedId, setSelectedId] = useState<string | null>(tasks[0]?.id ?? null)
   const [createOpen, setCreateOpen] = useState(false)
   const [addStepOpen, setAddStepOpen] = useState(false)
+  const [editingStep, setEditingStep] = useState<TaskStepItem | null>(null)
   const [isActing, setIsActing] = useState(false)
+  const [deletingStepId, setDeletingStepId] = useState<string | null>(null)
+
+  const listRef = useRef<HTMLElement>(null)
+  const detailRef = useRef<HTMLElement>(null)
+
+  function isMobileViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches
+  }
+
+  // Below `lg`, list and detail are stacked in normal document flow (no
+  // sticky/hide-swap panes), so "selecting" a task scrolls its detail into
+  // view instead of swapping panes.
+  function selectTask(taskId: string) {
+    setSelectedId(taskId)
+    if (isMobileViewport()) {
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
+
+  function backToList() {
+    setSelectedId(null)
+    if (isMobileViewport()) {
+      listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
 
   // On phones, start on the task list instead of jumping straight into the
   // first task's detail pane (which would hide the list behind it). Desktop
@@ -189,6 +249,20 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
     router.refresh()
   }
 
+  async function handleDeleteStep(step: TaskStepItem) {
+    const confirmMsg = `${t("confirmDeleteProgressNodeQuestion")}\n${t("actionCannotBeUndone")}`
+    if (!window.confirm(confirmMsg)) return
+    setDeletingStepId(step.id)
+    const result = await deleteTaskStep(step.id)
+    setDeletingStepId(null)
+    if (result?.error) {
+      toast.error(result.error === "Forbidden" ? t("noPermissionForAction") : result.error)
+      return
+    }
+    toast.success(t("progressNodeDeleted"))
+    router.refresh()
+  }
+
   const userCanAddStep = selectedTask
     ? canAddTaskStep(currentUserId, {
         status: selectedTask.status,
@@ -209,14 +283,11 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
   const userCanDelete = userCanCreate
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left Panel: Task List. On phones this is the only pane shown until a task is picked. */}
+    <div className="flex flex-col lg:flex-row lg:items-start">
+      {/* Left Panel: Task List. Normal document flow — page scrolls it, not an inner scrollbar. */}
       <aside
-        className={cn(
-          "flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white lg:w-2/5",
-          "max-lg:w-full",
-          selectedTask && "max-lg:hidden"
-        )}
+        ref={listRef}
+        className="flex w-full flex-col border-r border-slate-200 bg-white lg:w-2/5"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
@@ -231,7 +302,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div>
           {tasks.length === 0 ? (
             <NoTasksState canCreate={userCanCreate} onCreate={() => setCreateOpen(true)} />
           ) : (
@@ -243,7 +314,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                   <li key={task.id}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(task.id)}
+                      onClick={() => selectTask(task.id)}
                       className={cn(
                         "w-full px-4 py-3 text-left transition-colors",
                         isSelected
@@ -284,21 +355,21 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
         </div>
       </aside>
 
-      {/* Right Panel: Task Detail. On phones this only shows once a task is picked. */}
+      {/* Right Panel: Task Detail. Sticky + internally scrolling on desktop
+          (the one place a nested scrollbar is intentional); stacked, normal
+          flow, no sticky on phones/tablets. */}
       <main
-        className={cn(
-          "flex min-w-0 flex-1 flex-col overflow-hidden bg-slate-50",
-          !selectedTask && "max-lg:hidden"
-        )}
+        ref={detailRef}
+        className="flex min-w-0 flex-1 flex-col bg-slate-50 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
       >
         {!selectedTask ? (
           <EmptyState />
         ) : (
           <>
-            <div className="border-b border-slate-200 bg-white px-6 py-4">
+            <div className="border-b border-slate-200 bg-white px-6 py-4 lg:sticky lg:top-0 lg:z-10">
               <button
                 type="button"
-                onClick={() => setSelectedId(null)}
+                onClick={backToList}
                 className="mb-3 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 lg:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -377,7 +448,7 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="px-6 py-6">
               {selectedTask.steps.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <p className="text-sm text-slate-400">{t("taskNoSteps")}</p>
@@ -391,6 +462,10 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                       isFirst={idx === 0}
                       isLast={idx === selectedTask.steps.length - 1}
                       canManageImages={userCanAddStep || currentUserRole === "ADMIN"}
+                      canManageNode={canManageTaskStep(currentUserRole, currentUserId, step, selectedTask)}
+                      onEdit={() => setEditingStep(step)}
+                      onDelete={() => handleDeleteStep(step)}
+                      isDeleting={deletingStepId === step.id}
                     />
                   ))}
 
@@ -427,6 +502,11 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
           setCreateOpen(false)
           setSelectedId(taskId)
         }}
+      />
+      <EditStepModal
+        isOpen={!!editingStep}
+        onClose={() => setEditingStep(null)}
+        step={editingStep}
       />
       {selectedTask && (
         <AddStepModal

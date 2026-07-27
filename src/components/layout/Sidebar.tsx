@@ -41,8 +41,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     items: [
       { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
-      { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
       { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
+      { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
     ],
   },
   {

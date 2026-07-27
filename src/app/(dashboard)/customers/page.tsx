@@ -1,12 +1,15 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Plus, Search, Download } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomers } from "@/lib/data/customers"
+import { canAccess } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
 import { T, NoResultsFor, TInput } from "@/components/ui/T"
 import { CustomerActions } from "@/components/customers/CustomerActions"
+import type { Role } from "@/types"
 
 export default async function CustomersPage({
   searchParams,
@@ -14,6 +17,9 @@ export default async function CustomersPage({
   searchParams: Promise<{ search?: string }>
 }) {
   const session = await auth()
+  const role = session!.user.role as Role
+  const permissions = (session!.user.modulePermissions as string[]) ?? []
+  if (!canAccess(role, "customers", permissions)) redirect("/dashboard")
   const { search = "" } = await searchParams
   const companyId = session!.user.companyId as string
 
@@ -62,7 +68,7 @@ export default async function CustomersPage({
             key: "companyName",
             label: <T k="companyName" />,
             render: (row) => (
-              <Link href={`/customers/${row.id}/edit`} className="font-medium text-slate-900 hover:text-blue-600 transition-colors">
+              <Link href={`/customers/${row.id}`} className="font-medium text-slate-900 hover:text-blue-600 transition-colors">
                 {row.companyName}
               </Link>
             ),
@@ -74,14 +80,18 @@ export default async function CustomersPage({
           },
           {
             key: "name",
-            label: <T k="customerName" />,
+            label: <T k="mainContactName" />,
             render: (row) => <span className="text-slate-600">{row.name ?? "—"}</span>,
           },
-          { key: "phone", label: <T k="phone" />, className: "text-slate-600 whitespace-nowrap" },
           {
-            key: "location",
-            label: <T k="location" />,
-            render: (row) => <span className="text-slate-500">{row.location ?? "—"}</span>,
+            key: "phone",
+            label: <T k="mainContactPhone" />,
+            render: (row) => <span className="text-slate-600 whitespace-nowrap">{row.phone ?? "—"}</span>,
+          },
+          {
+            key: "projectCount",
+            label: <T k="numberOfProjects" />,
+            render: (row) => <span className="text-slate-600">{row.projectCount}</span>,
           },
           {
             key: "actions",

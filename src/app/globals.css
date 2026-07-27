@@ -57,3 +57,18 @@ body {
 .animate-task-step {
   animation: taskStepIn 0.35s ease-out both;
 }
+
+/* Hides native number-input spinner arrows on money fields only (via
+   MoneyInput's .no-spinner class) — other numeric inputs (VAT %, quantity,
+   meter readings) are unaffected. Scoped to input[type="number"] for extra
+   specificity/robustness. */
+input[type="number"].no-spinner::-webkit-inner-spin-button,
+input[type="number"].no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

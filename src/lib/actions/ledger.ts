@@ -7,6 +7,7 @@ import { LedgerEntrySchema, SalesLedgerEntrySchema } from "@/lib/schemas"
 import { canManageLedger } from "@/lib/permissions"
 import { findOrCreateLedgerCategory } from "@/lib/data/ledger"
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
+import { parseSalesReference } from "@/lib/ledger-reference"
 import type { LedgerEntryInput, SalesLedgerEntryInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -122,14 +123,18 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
   if (!parsed.success) return { error: "Invalid form data" }
   const { date, customerId, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
   const { balance, status } = computeSalesLedgerStatus(invoiceAmount, amountReceived)
+  const entryDate = new Date(`${date}T12:00:00`)
+  const { referenceYear, referenceSequence } = parseSalesReference(orderNo, entryDate)
 
   try {
     await prisma.salesLedgerEntry.create({
       data: {
         companyId,
-        date: new Date(`${date}T12:00:00`),
+        date: entryDate,
         customerName,
         orderNo: orderNo || null,
+        referenceYear,
+        referenceSequence,
         invoiceAmount,
         amountReceived,
         balance,
@@ -158,6 +163,8 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
   if (!parsed.success) return { error: "Invalid form data" }
   const { date, customerId, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
   const { balance, status } = computeSalesLedgerStatus(invoiceAmount, amountReceived)
+  const entryDate = new Date(`${date}T12:00:00`)
+  const { referenceYear, referenceSequence } = parseSalesReference(orderNo, entryDate)
 
   try {
     const existing = await prisma.salesLedgerEntry.findFirst({ where: { id, companyId } })
@@ -166,9 +173,11 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
     await prisma.salesLedgerEntry.update({
       where: { id },
       data: {
-        date: new Date(`${date}T12:00:00`),
+        date: entryDate,
         customerName,
         orderNo: orderNo || null,
+        referenceYear,
+        referenceSequence,
         invoiceAmount,
         amountReceived,
         balance,

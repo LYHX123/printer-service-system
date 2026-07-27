@@ -1,10 +1,12 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomerForEdit } from "@/lib/data/customers"
+import { canAccess } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { CustomerForm } from "@/components/customers/CustomerForm"
+import type { Role } from "@/types"
 
 export default async function EditCustomerPage({
   params,
@@ -12,6 +14,9 @@ export default async function EditCustomerPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
+  const role = session!.user.role as Role
+  const permissions = (session!.user.modulePermissions as string[]) ?? []
+  if (!canAccess(role, "customers", permissions)) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 
@@ -31,8 +36,10 @@ export default async function EditCustomerPage({
           companyName: customer.companyName,
           pinNumber: customer.pinNumber ?? "",
           name: customer.name ?? "",
-          phone: customer.phone,
+          phone: customer.phone ?? "",
           location: customer.location ?? "",
+          email: customer.email ?? "",
+          notes: customer.notes ?? "",
         }}
       />
     </div>

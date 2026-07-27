@@ -7,11 +7,52 @@ export const CustomerSchema = z.object({
   companyName: z.string().min(1, "Company name is required").max(100),
   pinNumber: z.string().max(30).optional().or(z.literal("")),
   name: z.string().max(100).optional().or(z.literal("")),
-  phone: z.string().min(1, "Phone number is required").max(30),
+  phone: z.string().max(30).optional().or(z.literal("")),
   location: z.string().max(500).optional().or(z.literal("")),
+  email: z.string().email("Invalid email").max(150).optional().or(z.literal("")),
+  notes: z.string().max(2000).optional().or(z.literal("")),
 })
 
 export type CustomerInput = z.infer<typeof CustomerSchema>
+
+// ─── Customer Project ("CustomerBranch") ───────────────────────────────────────
+
+export const CustomerProjectSchema = z.object({
+  id: z.string().optional(), // present when editing an unsaved row client-side; ignored on submit
+  name: z.string().min(1, "Project name is required").max(150),
+  contactPerson: z.string().max(100).optional().or(z.literal("")),
+  phone: z.string().max(30).optional().or(z.literal("")),
+  contactEmail: z.string().email("Invalid email").max(150).optional().or(z.literal("")),
+  address: z.string().max(500).optional().or(z.literal("")),
+  notes: z.string().max(2000).optional().or(z.literal("")),
+})
+
+export type CustomerProjectInput = z.infer<typeof CustomerProjectSchema>
+
+function hasDuplicateProjectNames(projects: { name: string }[]): boolean {
+  const seen = new Set<string>()
+  for (const p of projects) {
+    const key = p.name.trim().toLowerCase()
+    if (!key) continue
+    if (seen.has(key)) return true
+    seen.add(key)
+  }
+  return false
+}
+
+export const CustomerWithProjectsSchema = CustomerSchema.extend({
+  projects: z.array(CustomerProjectSchema).default([]),
+}).superRefine((data, ctx) => {
+  if (hasDuplicateProjectNames(data.projects)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["projects"],
+      message: "Project names must be unique",
+    })
+  }
+})
+
+export type CustomerWithProjectsInput = z.infer<typeof CustomerWithProjectsSchema>
 
 // ─── Job ──────────────────────────────────────────────────────────────────────
 
@@ -104,6 +145,11 @@ export type QuotationItemInput = z.infer<typeof QuotationItemInputSchema>
 
 export const QuotationSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
+  customerBranchId: z.string().optional().or(z.literal("")),
+  contactName: z.string().max(150).optional().or(z.literal("")),
+  contactPhone: z.string().max(30).optional().or(z.literal("")),
+  contactEmail: z.string().email("Invalid email").max(150).optional().or(z.literal("")),
+  contactAddress: z.string().max(500).optional().or(z.literal("")),
   validUntil: z.string().optional().or(z.literal("")),
   vatPercent: z.coerce.number().min(0).max(100).default(DEFAULT_VAT_PERCENT),
   remarks: z.string().max(2000).optional().or(z.literal("")),

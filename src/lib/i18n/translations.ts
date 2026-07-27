@@ -29,6 +29,7 @@ export type TranslationKey =
   | "search"
   | "filter"
   | "export"
+  | "download"
   | "downloadPdf"
   | "downloadExcel"
   | "exportPdf"
@@ -398,6 +399,14 @@ export type TranslationKey =
   | "taskImagePreview"
   | "taskRemoveImage"
   | "taskImageUploadFailed"
+  // Task step edit/delete
+  | "editProgressNode"
+  | "deleteProgressNode"
+  | "confirmDeleteProgressNodeQuestion"
+  | "actionCannotBeUndone"
+  | "progressNodeUpdated"
+  | "progressNodeDeleted"
+  | "noPermissionForAction"
   // Invoices
   | "unit"
   | "exportExcel"
@@ -434,6 +443,44 @@ export type TranslationKey =
   | "activeTasksLabel"
   | "lowStockItemsLabel"
   | "unpaidSalesBalanceLabel"
+  // Customer restructure: Company / Project / Document
+  | "mainContactName"
+  | "mainContactPhone"
+  | "mainContactEmail"
+  | "mainAddress"
+  | "notes"
+  | "companyInformation"
+  | "headOfficeContact"
+  | "projectsAndContacts"
+  | "addProject"
+  | "editProject"
+  | "removeProject"
+  | "projectName"
+  | "contactName"
+  | "contactPhone"
+  | "contactEmail"
+  | "projectAddress"
+  | "headOfficeMainContact"
+  | "deactivate"
+  | "reactivate"
+  | "confirmDeactivateProject"
+  | "noProjectsYet"
+  | "numberOfProjects"
+  | "numberOfDocuments"
+  | "inactiveLabel"
+  | "documents"
+  | "uploadFile"
+  | "documentType"
+  | "relatedProject"
+  | "generalDocument"
+  | "uploadDate"
+  | "uploadedBy"
+  | "noDocumentsYet"
+  | "confirmDeleteDocument"
+  | "documentTypeContract"
+  | "documentTypeIdDocument"
+  | "documentTypeCorrespondence"
+  | "documentTypeOther"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -458,6 +505,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     search: "Search",
     filter: "Filter",
     export: "Export",
+    download: "Download",
     downloadPdf: "Download PDF",
     downloadExcel: "Download Excel",
     exportPdf: "Export PDF",
@@ -707,6 +755,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskImagePreview: "Preview",
     taskRemoveImage: "Remove Image",
     taskImageUploadFailed: "Some images failed to upload",
+    editProgressNode: "Edit Progress Node",
+    deleteProgressNode: "Delete Progress Node",
+    confirmDeleteProgressNodeQuestion: "Are you sure you want to delete this progress node?",
+    actionCannotBeUndone: "This action cannot be undone.",
+    progressNodeUpdated: "Progress node updated successfully.",
+    progressNodeDeleted: "Progress node deleted successfully.",
+    noPermissionForAction: "You do not have permission to perform this action.",
     // Invoices
     unit: "Unit",
     exportExcel: "Export Excel",
@@ -862,6 +917,43 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     activeTasksLabel: "Active Tasks",
     lowStockItemsLabel: "Low Stock Items",
     unpaidSalesBalanceLabel: "Unpaid Sales Balance",
+    mainContactName: "Main Contact Name",
+    mainContactPhone: "Main Contact Phone",
+    mainContactEmail: "Main Contact Email",
+    mainAddress: "Main Address",
+    notes: "Notes",
+    companyInformation: "Company Information",
+    headOfficeContact: "Head Office Contact",
+    projectsAndContacts: "Projects & Contacts",
+    addProject: "+ Add Project",
+    editProject: "Edit Project",
+    removeProject: "Remove Project",
+    projectName: "Project Name",
+    contactName: "Contact Name",
+    contactPhone: "Contact Phone",
+    contactEmail: "Contact Email",
+    projectAddress: "Project Address",
+    headOfficeMainContact: "Head Office / Main Contact",
+    deactivate: "Deactivate",
+    reactivate: "Reactivate",
+    confirmDeactivateProject: "Deactivate this project? It will be hidden from new job/quotation pickers, but historical records referencing it are unaffected.",
+    noProjectsYet: "No projects added yet. This customer uses the head office contact only.",
+    numberOfProjects: "Projects",
+    numberOfDocuments: "Documents",
+    inactiveLabel: "Inactive",
+    documents: "Documents",
+    uploadFile: "Upload File",
+    documentType: "Document Type",
+    relatedProject: "Related Project",
+    generalDocument: "General (Company)",
+    uploadDate: "Upload Date",
+    uploadedBy: "Uploaded By",
+    noDocumentsYet: "No documents uploaded yet.",
+    confirmDeleteDocument: "Delete this document? This cannot be undone.",
+    documentTypeContract: "Contract",
+    documentTypeIdDocument: "ID Document",
+    documentTypeCorrespondence: "Correspondence",
+    documentTypeOther: "Other",
   },
   zh: {
     // Common
@@ -885,6 +977,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     search: "搜索",
     filter: "筛选",
     export: "导出",
+    download: "下载",
     downloadPdf: "下载PDF",
     downloadExcel: "下载Excel",
     exportPdf: "导出PDF",
@@ -1134,6 +1227,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskImagePreview: "预览",
     taskRemoveImage: "删除图片",
     taskImageUploadFailed: "部分图片上传失败",
+    editProgressNode: "编辑进度节点",
+    deleteProgressNode: "删除进度节点",
+    confirmDeleteProgressNodeQuestion: "确定要删除这个进度节点吗？",
+    actionCannotBeUndone: "此操作无法撤销。",
+    progressNodeUpdated: "进度节点已更新。",
+    progressNodeDeleted: "进度节点已删除。",
+    noPermissionForAction: "您没有权限执行此操作。",
     // Invoices
     unit: "单位",
     exportExcel: "导出 Excel",
@@ -1289,5 +1389,42 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     activeTasksLabel: "进行中任务",
     lowStockItemsLabel: "低库存物品",
     unpaidSalesBalanceLabel: "未收销售余额",
+    mainContactName: "总部联系人姓名",
+    mainContactPhone: "总部联系人电话",
+    mainContactEmail: "总部联系人邮箱",
+    mainAddress: "总部地址",
+    notes: "备注",
+    companyInformation: "公司信息",
+    headOfficeContact: "总部联系方式",
+    projectsAndContacts: "项目与联系人",
+    addProject: "+ 添加项目",
+    editProject: "编辑项目",
+    removeProject: "移除项目",
+    projectName: "项目名称",
+    contactName: "联系人姓名",
+    contactPhone: "联系人电话",
+    contactEmail: "联系人邮箱",
+    projectAddress: "项目地址",
+    headOfficeMainContact: "总部 / 主要联系人",
+    deactivate: "停用",
+    reactivate: "启用",
+    confirmDeactivateProject: "停用此项目？停用后将不再出现在新建工单/报价单的选择列表中，但历史记录不受影响。",
+    noProjectsYet: "暂无项目，该客户仅使用总部联系方式。",
+    numberOfProjects: "项目数",
+    numberOfDocuments: "文件数",
+    inactiveLabel: "已停用",
+    documents: "文件",
+    uploadFile: "上传文件",
+    documentType: "文件类型",
+    relatedProject: "关联项目",
+    generalDocument: "通用（公司）",
+    uploadDate: "上传日期",
+    uploadedBy: "上传人",
+    noDocumentsYet: "暂无上传文件。",
+    confirmDeleteDocument: "删除此文件？此操作无法撤销。",
+    documentTypeContract: "合同",
+    documentTypeIdDocument: "证件",
+    documentTypeCorrespondence: "往来函件",
+    documentTypeOther: "其他",
   },
 }

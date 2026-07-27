@@ -154,82 +154,86 @@ enum TaskStatus {
 // ─── Core Models ──────────────────────────────────────────────────────────────
 
 model Company {
-  id        String   @id @default(uuid())
-  name      String
-  code      String   @unique
-  address   String?
-  phone     String?
-  email     String?
-  logoUrl   String?
-  stampUrl  String?  // company stamp image embedded in PDF footer
-  website   String?
-  kraPin    String?
-  vatPercent Decimal @default(16) @db.Decimal(5,2)
-  currency  String   @default("KES")
-  timezone  String   @default("Africa/Nairobi")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  code       String   @unique
+  address    String?
+  phone      String?
+  email      String?
+  logoUrl    String?
+  stampUrl   String? // company stamp image embedded in PDF footer
+  website    String?
+  kraPin     String?
+  vatPercent Decimal  @default(16) @db.Decimal(5, 2)
+  currency   String   @default("KES")
+  timezone   String   @default("Africa/Nairobi")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  users          User[]
-  customers      Customer[]
-  branches       CustomerBranch[]
-  equipment      Equipment[]
-  serviceJobs    ServiceJob[]
-  quotations     Quotation[]
-  spareParts     SparePart[]
-  purchaseOrders PurchaseOrder[]
-  contracts      CustomerContract[]
-  communicationLogs CommunicationLog[]
+  users              User[]
+  customers          Customer[]
+  branches           CustomerBranch[]
+  equipment          Equipment[]
+  serviceJobs        ServiceJob[]
+  quotations         Quotation[]
+  spareParts         SparePart[]
+  purchaseOrders     PurchaseOrder[]
+  contracts          CustomerContract[]
+  communicationLogs  CommunicationLog[]
   ledgerCategories   LedgerCategory[]
   ledgerEntries      LedgerEntry[]
   salesLedgerEntries SalesLedgerEntry[]
   tasks              Task[]
   invoices           Invoice[]
+  customerDocuments  CustomerDocument[]
+  auditLogs          AuditLog[]
 }
 
 model User {
-  id           String   @id @default(uuid())
-  companyId    String
-  name         String
-  username     String?  @unique
-  email        String?  @unique
-  passwordHash String
+  id                  String    @id @default(uuid())
+  companyId           String
+  name                String
+  username            String?   @unique
+  email               String?   @unique
+  passwordHash        String
   role                Role
-  isActive            Boolean  @default(true)
-  signatureUrl        String?  // engineer's drawn/uploaded signature for PDF sign-off
-  modulePermissions   String[] @default([])
+  isActive            Boolean   @default(true)
+  signatureUrl        String? // engineer's drawn/uploaded signature for PDF sign-off
+  modulePermissions   String[]  @default([])
   // Login security
-  failedLoginAttempts Int      @default(0)
+  failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   // Optional profile
   phone               String?
   department          String?
   position            String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
 
-  assignedJobs          ServiceJob[]           @relation("AssignedEngineer")
-  createdJobs           ServiceJob[]           @relation("CreatedBy")
-  jobPhotos             JobPhoto[]
-  repairReports         RepairReport[]
-  statusLogs            JobStatusLog[]
-  inventoryTransactions InventoryTransaction[]
-  purchaseOrders        PurchaseOrder[]
-  createdQuotations     Quotation[]
-  createdContracts      CustomerContract[]
-  equipmentPhotos       EquipmentPhoto[]
-  meterReadings         MeterReading[]
-  communicationLogs     CommunicationLog[]
+  assignedJobs              ServiceJob[]           @relation("AssignedEngineer")
+  createdJobs               ServiceJob[]           @relation("CreatedBy")
+  jobPhotos                 JobPhoto[]
+  repairReports             RepairReport[]
+  statusLogs                JobStatusLog[]
+  inventoryTransactions     InventoryTransaction[]
+  purchaseOrders            PurchaseOrder[]
+  createdQuotations         Quotation[]
+  createdContracts          CustomerContract[]
+  equipmentPhotos           EquipmentPhoto[]
+  meterReadings             MeterReading[]
+  communicationLogs         CommunicationLog[]
   createdLedgerEntries      LedgerEntry[]
   createdSalesLedgerEntries SalesLedgerEntry[]
-  createdTasks              Task[]            @relation("TaskCreatedBy")
+  createdTasks              Task[]                 @relation("TaskCreatedBy")
   taskParticipations        TaskParticipant[]
-  createdTaskSteps          TaskStep[]        @relation("TaskStepCreatedBy")
+  createdTaskSteps          TaskStep[]             @relation("TaskStepCreatedBy")
   uploadedTaskStepImages    TaskStepImage[]
   createdInvoices           Invoice[]
+  uploadedCustomerDocuments CustomerDocument[]
+  auditLogs                 AuditLog[]
 }
 
 model Customer {
@@ -239,65 +243,124 @@ model Customer {
   companyName String
   name        String?
   pinNumber   String?
-  phone       String
+  phone       String?
   location    String?
+  email       String?
+  notes       String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company     Company          @relation(fields: [companyId], references: [id])
-  branches    CustomerBranch[]
-  equipment   Equipment[]
-  serviceJobs ServiceJob[]
-  quotations  Quotation[]
-  contracts   CustomerContract[]
-  communicationLogs CommunicationLog[]
+  company            Company            @relation(fields: [companyId], references: [id])
+  branches           CustomerBranch[]
+  documents          CustomerDocument[]
+  equipment          Equipment[]
+  serviceJobs        ServiceJob[]
+  quotations         Quotation[]
+  contracts          CustomerContract[]
+  communicationLogs  CommunicationLog[]
   salesLedgerEntries SalesLedgerEntry[]
-  invoices    Invoice[]
+  invoices           Invoice[]
 }
 
-// Branches or project sites that belong to a customer
+// Branches or project sites that belong to a customer — surfaced in the UI as "Project"
 model CustomerBranch {
   id            String   @id @default(uuid())
   companyId     String
   customerId    String
-  name          String   // e.g. "KL HQ", "PJ Branch", "Setia Alam Site"
+  name          String // e.g. "KL HQ", "PJ Branch", "Setia Alam Site" — UI label: Project Name
   address       String?
   phone         String?
   contactPerson String?
+  contactEmail  String?
+  notes         String?
   isPrimary     Boolean  @default(false)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company     Company      @relation(fields: [companyId], references: [id])
-  customer    Customer     @relation(fields: [customerId], references: [id])
+  company     Company            @relation(fields: [companyId], references: [id])
+  customer    Customer           @relation(fields: [customerId], references: [id])
   equipment   Equipment[]
   serviceJobs ServiceJob[]
   contracts   CustomerContract[]
+  documents   CustomerDocument[]
+  quotations  Quotation[]
+
+  @@index([customerId])
+}
+
+enum DocumentStorageProvider {
+  LOCAL
+  DROPBOX
+}
+
+// A file attached to a Customer (optionally scoped to one of its Projects).
+// Kept behind a storage-provider abstraction (src/lib/storage/) so a future
+// Dropbox provider can be added without changing this model or its consumers.
+model CustomerDocument {
+  id               String                  @id @default(uuid())
+  companyId        String
+  customerId       String
+  projectId        String?
+  documentType     String?
+  originalFileName String
+  storageKey       String
+  storageProvider  DocumentStorageProvider @default(LOCAL)
+  mimeType         String
+  fileSize         Int
+  uploadedById     String
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  company    Company         @relation(fields: [companyId], references: [id])
+  customer   Customer        @relation(fields: [customerId], references: [id])
+  project    CustomerBranch? @relation(fields: [projectId], references: [id])
+  uploadedBy User            @relation(fields: [uploadedById], references: [id])
+
+  @@index([customerId])
+  @@index([projectId])
+}
+
+// Minimal, append-only activity log. entityType/action are plain strings
+// (not enums) since this taxonomy grows as more modules adopt it.
+model AuditLog {
+  id            String   @id @default(uuid())
+  companyId     String
+  entityType    String
+  entityId      String
+  action        String
+  performedById String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  company     Company @relation(fields: [companyId], references: [id])
+  performedBy User    @relation(fields: [performedById], references: [id])
+
+  @@index([companyId, entityType, entityId])
 }
 
 model Equipment {
   id             String        @id @default(uuid())
   companyId      String
   customerId     String
-  branchId       String?       // optional: which branch/site this device is located at
+  branchId       String? // optional: which branch/site this device is located at
   serialNumber   String        @unique
-  assetNumber    String?       // optional: internal asset tag (e.g. ASSET-0042)
+  assetNumber    String? // optional: internal asset tag (e.g. ASSET-0042)
   brand          String
   model          String
   type           EquipmentType
   purchaseDate   DateTime?
-  warrantyExpiry DateTime?     // manufacturer warranty expiry date
-  notes          String?       // free-text specs (type-specific template in UI)
+  warrantyExpiry DateTime? // manufacturer warranty expiry date
+  notes          String? // free-text specs (type-specific template in UI)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  company      Company         @relation(fields: [companyId], references: [id])
-  customer     Customer        @relation(fields: [customerId], references: [id])
-  branch       CustomerBranch? @relation(fields: [branchId], references: [id])
-  serviceJobs  ServiceJob[]
-  photos       EquipmentPhoto[]
+  company       Company          @relation(fields: [companyId], references: [id])
+  customer      Customer         @relation(fields: [customerId], references: [id])
+  branch        CustomerBranch?  @relation(fields: [branchId], references: [id])
+  serviceJobs   ServiceJob[]
+  photos        EquipmentPhoto[]
   meterReadings MeterReading[]
 }
 
@@ -306,23 +369,23 @@ model ServiceJob {
   jobNumber       String      @unique
   companyId       String
   customerId      String
-  branchId        String?     // optional: which branch/site the job is for
+  branchId        String? // optional: which branch/site the job is for
   equipmentId     String
-  quotationId     String?     @unique  // set when this job was created from a quotation
+  quotationId     String?     @unique // set when this job was created from a quotation
   serviceType     ServiceType
   assignedToId    String
   createdById     String
   status          JobStatus   @default(RECEIVED)
   priority        Priority    @default(NORMAL)
   problemDesc     String
-  technicianNotes String?     // raw field notes from engineer; used as AI report input
+  technicianNotes String? // raw field notes from engineer; used as AI report input
   receivedDate    DateTime    @default(now())
   dueDate         DateTime?
   completedAt     DateTime?
-  meterBlack      Int?        // page counter – shown only for PRINTER / COPIER
+  meterBlack      Int? // page counter – shown only for PRINTER / COPIER
   meterColor      Int?
-  warrantyPeriod  Int?        // days; set at DELIVERED
-  warrantyExpires DateTime?   // computed: completedAt + warrantyPeriod
+  warrantyPeriod  Int? // days; set at DELIVERED
+  warrantyExpires DateTime? // computed: completedAt + warrantyPeriod
   labourCost      Decimal     @default(0) @db.Decimal(10, 2)
   partsCost       Decimal     @default(0) @db.Decimal(10, 2)
   totalCost       Decimal     @default(0) @db.Decimal(10, 2)
@@ -332,13 +395,13 @@ model ServiceJob {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  company    Company          @relation(fields: [companyId], references: [id])
-  customer   Customer         @relation(fields: [customerId], references: [id])
-  branch     CustomerBranch?  @relation(fields: [branchId], references: [id])
-  equipment  Equipment        @relation(fields: [equipmentId], references: [id])
-  assignedTo User             @relation("AssignedEngineer", fields: [assignedToId], references: [id])
-  createdBy  User             @relation("CreatedBy", fields: [createdById], references: [id])
-  quotation  Quotation?       @relation("QuotationConversion", fields: [quotationId], references: [id])
+  company    Company         @relation(fields: [companyId], references: [id])
+  customer   Customer        @relation(fields: [customerId], references: [id])
+  branch     CustomerBranch? @relation(fields: [branchId], references: [id])
+  equipment  Equipment       @relation(fields: [equipmentId], references: [id])
+  assignedTo User            @relation("AssignedEngineer", fields: [assignedToId], references: [id])
+  createdBy  User            @relation("CreatedBy", fields: [createdById], references: [id])
+  quotation  Quotation?      @relation("QuotationConversion", fields: [quotationId], references: [id])
 
   photos                JobPhoto[]
   report                RepairReport?
@@ -349,41 +412,47 @@ model ServiceJob {
 }
 
 model Quotation {
-  id              String          @id @default(uuid())
-  quotationNumber String          @unique  // QTYYYYMM-NNN
-  companyId       String
-  customerId      String
-  status          QuotationStatus @default(DRAFT)
-  validUntil      DateTime?
-  subtotal        Decimal         @default(0) @db.Decimal(10, 2)
-  vatPercent      Decimal         @default(0) @db.Decimal(5, 2)
-  totalCost       Decimal         @default(0) @db.Decimal(10, 2)
-  remarks         String?         // customer-facing remarks on quotation
-  internalNotes   String?
-  createdById     String
-  approvedAt      DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id               String          @id @default(uuid())
+  quotationNumber  String          @unique // QTYYYYMM-NNN
+  companyId        String
+  customerId       String
+  customerBranchId String? // selected Project ("Head Office" when null)
+  contactName      String? // contact snapshot, frozen at creation/selection time
+  contactPhone     String?
+  contactEmail     String?
+  contactAddress   String?
+  status           QuotationStatus @default(DRAFT)
+  validUntil       DateTime?
+  subtotal         Decimal         @default(0) @db.Decimal(10, 2)
+  vatPercent       Decimal         @default(0) @db.Decimal(5, 2)
+  totalCost        Decimal         @default(0) @db.Decimal(10, 2)
+  remarks          String? // customer-facing remarks on quotation
+  internalNotes    String?
+  createdById      String
+  approvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  company      Company          @relation(fields: [companyId], references: [id])
-  customer     Customer         @relation(fields: [customerId], references: [id])
-  createdBy    User             @relation(fields: [createdById], references: [id])
+  company        Company         @relation(fields: [companyId], references: [id])
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  customerBranch CustomerBranch? @relation(fields: [customerBranchId], references: [id])
+  createdBy      User            @relation(fields: [createdById], references: [id])
 
-  items        QuotationItem[]
-  convertedJob ServiceJob?     @relation("QuotationConversion")
+  items             QuotationItem[]
+  convertedJob      ServiceJob?        @relation("QuotationConversion")
   communicationLogs CommunicationLog[]
-  invoices     Invoice[]
+  invoices          Invoice[]
 }
 
 model QuotationItem {
-  id          String     @id @default(uuid())
+  id          String   @id @default(uuid())
   quotationId String
   partId      String?
-  description String?    // legacy free-text item; new items are always stock-linked via partId
-  quantity    Int        @default(1)
-  unitPrice   Decimal    @db.Decimal(10, 2)
-  subtotal    Decimal    @db.Decimal(10, 2)
-  createdAt   DateTime   @default(now())
+  description String? // legacy free-text item; new items are always stock-linked via partId
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
 
   quotation Quotation  @relation(fields: [quotationId], references: [id])
   part      SparePart? @relation(fields: [partId], references: [id])
@@ -398,7 +467,7 @@ model Invoice {
   companyId     String
   quotationId   String
   customerId    String
-  customerPin   String?  // snapshot, editable at generation time — may differ from the customer record
+  customerPin   String? // snapshot, editable at generation time — may differ from the customer record
   date          DateTime
   subtotal      Decimal  @db.Decimal(12, 2)
   vatPercent    Decimal  @db.Decimal(5, 2)
@@ -409,10 +478,10 @@ model Invoice {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company   Company   @relation(fields: [companyId], references: [id])
-  quotation Quotation @relation(fields: [quotationId], references: [id])
-  customer  Customer  @relation(fields: [customerId], references: [id])
-  createdBy User      @relation(fields: [createdById], references: [id])
+  company   Company       @relation(fields: [companyId], references: [id])
+  quotation Quotation     @relation(fields: [quotationId], references: [id])
+  customer  Customer      @relation(fields: [customerId], references: [id])
+  createdBy User          @relation(fields: [createdById], references: [id])
   items     InvoiceItem[]
 }
 
@@ -456,7 +525,7 @@ model RepairReport {
   recommendations String?
   labourCost      Decimal  @default(0) @db.Decimal(10, 2)
   partsCost       Decimal  @default(0) @db.Decimal(10, 2)
-  rawInput        String?  // technician notes passed to AI for report generation
+  rawInput        String? // technician notes passed to AI for report generation
   isAiGenerated   Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -504,8 +573,8 @@ model SparePart {
   category       PartCategory @default(GENERAL)
   brand          String?
   supplier       String?
-  compatibleWith String?      // e.g. "HP LaserJet Pro, Canon iR"
-  unit           String       // "pcs", "box", "roll", "set"
+  compatibleWith String? // e.g. "HP LaserJet Pro, Canon iR"
+  unit           String // "pcs", "box", "roll", "set"
   unitCost       Decimal      @default(0) @db.Decimal(10, 2)
   sellingPrice   Decimal      @default(0) @db.Decimal(10, 2)
   reorderLevel   Int          @default(0)
@@ -590,13 +659,13 @@ model CustomerContract {
   id            String         @id @default(uuid())
   companyId     String
   customerId    String
-  branchId      String?        // optional: contract scoped to a specific branch
+  branchId      String? // optional: contract scoped to a specific branch
   title         String
   contractType  ContractType
   status        ContractStatus @default(ACTIVE)
   startDate     DateTime?
   endDate       DateTime?
-  fileUrl       String?        // stored PDF/document path
+  fileUrl       String? // stored PDF/document path
   fileName      String?
   fileSizeBytes Int?
   notes         String?
@@ -630,15 +699,15 @@ model EquipmentPhoto {
 // ─── Printer / Copier Meter History ───────────────────────────────────────────
 
 model MeterReading {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   equipmentId  String
-  jobId        String?   // set when reading is captured at job intake
-  readingDate  DateTime  @default(now())
+  jobId        String? // set when reading is captured at job intake
+  readingDate  DateTime @default(now())
   blackPages   Int?
   colorPages   Int?
   recordedById String
   notes        String?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
 
   equipment  Equipment   @relation(fields: [equipmentId], references: [id])
   job        ServiceJob? @relation(fields: [jobId], references: [id])
@@ -761,21 +830,23 @@ model TaskStepImage {
 }
 
 model SalesLedgerEntry {
-  id             String             @id @default(uuid())
-  companyId      String
-  date           DateTime
-  customerName   String
-  customerId     String?
-  orderNo        String?
-  invoiceAmount  Decimal            @db.Decimal(12, 2)
-  amountReceived Decimal            @default(0) @db.Decimal(12, 2)
-  balance        Decimal            @db.Decimal(12, 2)
-  paymentStatus  SalesPaymentStatus @default(UNPAID)
-  remark         String?
-  isArchived     Boolean            @default(false)
-  createdById    String
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                String             @id @default(uuid())
+  companyId         String
+  date              DateTime
+  customerName      String
+  customerId        String?
+  orderNo           String?
+  referenceYear     Int?
+  referenceSequence Int?
+  invoiceAmount     Decimal            @db.Decimal(12, 2)
+  amountReceived    Decimal            @default(0) @db.Decimal(12, 2)
+  balance           Decimal            @db.Decimal(12, 2)
+  paymentStatus     SalesPaymentStatus @default(UNPAID)
+  remark            String?
+  isArchived        Boolean            @default(false)
+  createdById       String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   company   Company   @relation(fields: [companyId], references: [id])
   customer  Customer? @relation(fields: [customerId], references: [id])

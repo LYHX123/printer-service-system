@@ -19,12 +19,25 @@ import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 import type { SparePartOption } from "@/lib/data/inventory"
 import { StockItemSearch } from "./StockItemSearch"
 
+interface CustomerProjectOption {
+  id: string
+  name: string
+  contactPerson: string | null
+  phone: string | null
+  contactEmail: string | null
+  address: string | null
+}
+
 interface CustomerOption {
   id: string
   name: string | null
   code: string
   companyName: string
   pinNumber: string | null
+  phone: string | null
+  location: string | null
+  email: string | null
+  branches: CustomerProjectOption[]
 }
 
 interface QuotationFormProps {
@@ -32,6 +45,10 @@ interface QuotationFormProps {
   spareParts: SparePartOption[]
   defaultValues?: Partial<QuotationInput>
   quotationId?: string
+  /** The quotation's currently-selected Project, even if it has since been
+   * deactivated (and so is absent from `customers[].branches`) — keeps the
+   * historical selection visible/selectable on the edit form. */
+  currentInactiveBranch?: CustomerProjectOption | null
 }
 
 export function QuotationForm({
@@ -39,6 +56,7 @@ export function QuotationForm({
   spareParts,
   defaultValues,
   quotationId,
+  currentInactiveBranch,
 }: QuotationFormProps) {
   const toast = useToast()
   const { t } = useLanguage()
@@ -49,6 +67,7 @@ export function QuotationForm({
     handleSubmit,
     watch,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<QuotationInput>({
     resolver: zodResolver(QuotationSchema) as Resolver<QuotationInput>,
@@ -66,6 +85,32 @@ export function QuotationForm({
   const vatPercent = Number(watch("vatPercent")) || 0
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
+  const projectOptions =
+    currentInactiveBranch && !selectedCustomer?.branches.some((b) => b.id === currentInactiveBranch.id)
+      ? [...(selectedCustomer?.branches ?? []), currentInactiveBranch]
+      : selectedCustomer?.branches ?? []
+
+  function applyContact(source: { name?: string | null; phone?: string | null; email?: string | null; address?: string | null } | null) {
+    setValue("contactName", source?.name ?? "")
+    setValue("contactPhone", source?.phone ?? "")
+    setValue("contactEmail", source?.email ?? "")
+    setValue("contactAddress", source?.address ?? "")
+  }
+
+  function handleCustomerChange(customerId: string) {
+    setValue("customerBranchId", "")
+    const customer = customers.find((c) => c.id === customerId)
+    applyContact(customer ? { name: customer.name, phone: customer.phone, email: customer.email, address: customer.location } : null)
+  }
+
+  function handleProjectChange(branchId: string) {
+    if (!branchId) {
+      applyContact(selectedCustomer ? { name: selectedCustomer.name, phone: selectedCustomer.phone, email: selectedCustomer.email, address: selectedCustomer.location } : null)
+      return
+    }
+    const branch = projectOptions.find((b) => b.id === branchId)
+    applyContact(branch ? { name: branch.contactPerson, phone: branch.phone, email: branch.contactEmail, address: branch.address } : null)
+  }
 
   const partsById = useMemo(() => new Map(spareParts.map((p) => [p.id, p])), [spareParts])
 
@@ -101,12 +146,12 @@ export function QuotationForm({
               <Select
                 id="customerId"
                 placeholder="Select customer…"
-                {...register("customerId")}
+                {...register("customerId", { onChange: (e) => handleCustomerChange(e.target.value) })}
                 error={errors.customerId?.message}
               >
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.companyName}{c.name ? ` — ${c.name}` : ""} ({c.code})
+                    {c.companyName} ({c.code})
                   </option>
                 ))}
               </Select>
@@ -127,6 +172,42 @@ export function QuotationForm({
                 <p className="text-xs font-medium text-slate-500">{t("pinNumber")}</p>
                 <p className="text-sm font-medium text-slate-900">{selectedCustomer.pinNumber || "—"}</p>
               </div>
+            </div>
+          )}
+
+          {selectedCustomer && projectOptions.length > 0 && (
+            <FormField label="Contact / Project" htmlFor="customerBranchId">
+              <Select
+                id="customerBranchId"
+                {...register("customerBranchId", { onChange: (e) => handleProjectChange(e.target.value) })}
+              >
+                <option value="">{t("headOfficeMainContact")}</option>
+                {projectOptions.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} — {b.contactPerson || "—"} — {b.phone || "—"}
+                    {currentInactiveBranch?.id === b.id && !selectedCustomer.branches.some((sb) => sb.id === b.id)
+                      ? ` (${t("inactiveLabel")})`
+                      : ""}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          )}
+
+          {selectedCustomer && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <FormField label={t("contactName")} htmlFor="contactName" error={errors.contactName?.message}>
+                <Input id="contactName" {...register("contactName")} />
+              </FormField>
+              <FormField label={t("contactPhone")} htmlFor="contactPhone" error={errors.contactPhone?.message}>
+                <Input id="contactPhone" type="tel" {...register("contactPhone")} />
+              </FormField>
+              <FormField label={t("contactEmail")} htmlFor="contactEmail" error={errors.contactEmail?.message}>
+                <Input id="contactEmail" type="email" {...register("contactEmail")} />
+              </FormField>
+              <FormField label={t("mainAddress")} htmlFor="contactAddress" error={errors.contactAddress?.message}>
+                <Input id="contactAddress" {...register("contactAddress")} />
+              </FormField>
             </div>
           )}
         </div>

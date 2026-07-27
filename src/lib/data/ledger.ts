@@ -169,7 +169,11 @@ export async function getSalesLedgerEntries(
     include: {
       createdBy: { select: { id: true, name: true } },
     },
-    orderBy: { date: "desc" },
+    orderBy: [
+      { referenceYear: { sort: "desc", nulls: "last" } },
+      { referenceSequence: { sort: "desc", nulls: "last" } },
+      { date: "desc" },
+    ],
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

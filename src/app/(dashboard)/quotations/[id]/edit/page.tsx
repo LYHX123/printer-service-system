@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotationForEdit } from "@/lib/data/quotations"
-import { getCustomersWithBranches } from "@/lib/data/customers"
+import { getCustomersWithBranches, getCustomerBranchById } from "@/lib/data/customers"
 import { getSparePartOptions } from "@/lib/data/inventory"
 import { canCreateQuotation } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
@@ -43,6 +43,11 @@ export default async function EditQuotationPage({
 
   const defaultValues: QuotationInput = {
     customerId: quotation.customerId,
+    customerBranchId: quotation.customerBranchId ?? "",
+    contactName: quotation.contactName ?? "",
+    contactPhone: quotation.contactPhone ?? "",
+    contactEmail: quotation.contactEmail ?? "",
+    contactAddress: quotation.contactAddress ?? "",
     validUntil: quotation.validUntil
       ? format(new Date(quotation.validUntil), "yyyy-MM-dd")
       : "",
@@ -57,6 +62,15 @@ export default async function EditQuotationPage({
         unitPrice: Number(item.unitPrice),
       })),
   }
+
+  // If the quotation's Project has since been deactivated, it won't be in
+  // `customers[].branches` (active-only) — fetch it separately so the form
+  // can still display/preselect the correct historical value.
+  const selectedCustomer = customers.find((c) => c.id === quotation.customerId)
+  const currentInactiveBranch =
+    quotation.customerBranchId && !selectedCustomer?.branches.some((b) => b.id === quotation.customerBranchId)
+      ? await getCustomerBranchById(quotation.customerBranchId, companyId)
+      : null
 
   return (
     <div>
@@ -76,6 +90,7 @@ export default async function EditQuotationPage({
         spareParts={spareParts}
         defaultValues={defaultValues}
         quotationId={id}
+        currentInactiveBranch={currentInactiveBranch}
       />
     </div>
   )

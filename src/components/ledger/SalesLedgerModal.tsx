@@ -10,6 +10,7 @@ import { createSalesLedgerEntry, updateSalesLedgerEntry } from "@/lib/actions/le
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
 import { Modal } from "@/components/ui/modal"
 import { FormField, Input } from "@/components/ui/input"
+import { MoneyInput } from "@/components/ui/money-input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { SalesPaymentStatusBadge } from "@/components/ui/badge"
@@ -260,23 +261,15 @@ export function SalesLedgerModal({ isOpen, onClose, entry }: SalesLedgerModalPro
         </FormField>
 
         <FormField label={t("invoiceAmount")} htmlFor="salesInvoiceAmount" required error={errors.invoiceAmount?.message}>
-          <Input
+          <MoneyInput
             id="salesInvoiceAmount"
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder="0.00"
             {...register("invoiceAmount")}
           />
         </FormField>
 
         <FormField label={t("amountReceived")} htmlFor="salesAmountReceived" error={errors.amountReceived?.message}>
-          <Input
+          <MoneyInput
             id="salesAmountReceived"
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder="0.00"
             {...register("amountReceived")}
           />
         </FormField>

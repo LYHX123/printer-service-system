@@ -109,8 +109,11 @@ export default async function QuotationDetailPage({
                   >
                     {quotation.customer.companyName}
                   </Link>
-                  {quotation.customer.name && (
-                    <p className="text-xs text-slate-500">{quotation.customer.name}</p>
+                  {(quotation.contactName ?? quotation.customer.name) && (
+                    <p className="text-xs text-slate-500">{quotation.contactName ?? quotation.customer.name}</p>
+                  )}
+                  {quotation.contactPhone && (
+                    <p className="text-xs text-slate-400">{quotation.contactPhone}</p>
                   )}
                   {quotation.customer.pinNumber && (
                     <p className="text-xs text-slate-400"><T k="pinNumber" />: {quotation.customer.pinNumber}</p>
