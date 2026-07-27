@@ -173,6 +173,7 @@ export async function getSalesLedgerEntries(
       { referenceYear: { sort: "desc", nulls: "last" } },
       { referenceSequence: { sort: "desc", nulls: "last" } },
       { date: "desc" },
+      { createdAt: "desc" },
     ],
   })
 

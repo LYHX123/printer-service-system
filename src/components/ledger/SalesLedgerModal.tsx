@@ -270,6 +270,7 @@ export function SalesLedgerModal({ isOpen, onClose, entry }: SalesLedgerModalPro
         <FormField label={t("amountReceived")} htmlFor="salesAmountReceived" error={errors.amountReceived?.message}>
           <MoneyInput
             id="salesAmountReceived"
+            selectOnFocus
             {...register("amountReceived")}
           />
         </FormField>
