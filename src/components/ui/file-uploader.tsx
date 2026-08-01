@@ -10,20 +10,33 @@ interface FileUploaderProps {
   label?: string
   disabled?: boolean
   multiple?: boolean
+  allowedTypes?: string[]
+  maxSize?: number
+  acceptLabel?: string
+  typeErrorMessage?: string
 }
 
-export function FileUploader({ onUpload, label = "Drag & drop an image, or click to browse", disabled, multiple = false }: FileUploaderProps) {
+export function FileUploader({
+  onUpload,
+  label = "Drag & drop an image, or click to browse",
+  disabled,
+  multiple = false,
+  allowedTypes = ALLOWED_IMAGE_TYPES,
+  maxSize = MAX_PHOTO_SIZE,
+  acceptLabel = "JPG, PNG, WEBP — max 5MB",
+  typeErrorMessage = "Only JPG, PNG, and WEBP images are allowed",
+}: FileUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function validate(file: File): string | null {
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      return "Only JPG, PNG, and WEBP images are allowed"
+    if (!allowedTypes.includes(file.type)) {
+      return typeErrorMessage
     }
-    if (file.size > MAX_PHOTO_SIZE) {
-      return "File exceeds 5MB limit"
+    if (file.size > maxSize) {
+      return `File exceeds ${Math.round(maxSize / (1024 * 1024))}MB limit`
     }
     return null
   }
@@ -79,11 +92,11 @@ export function FileUploader({ onUpload, label = "Drag & drop an image, or click
           <UploadCloud className="h-6 w-6 text-slate-400" />
         )}
         <p className="text-xs text-slate-500">{uploading ? "Uploading…" : label}</p>
-        <p className="text-xs text-slate-400">JPG, PNG, WEBP — max 5MB</p>
+        <p className="text-xs text-slate-400">{acceptLabel}</p>
         <input
           ref={inputRef}
           type="file"
-          accept={ALLOWED_IMAGE_TYPES.join(",")}
+          accept={allowedTypes.join(",")}
           multiple={multiple}
           className="hidden"
           disabled={disabled || uploading}

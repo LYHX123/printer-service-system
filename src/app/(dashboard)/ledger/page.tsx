@@ -9,7 +9,7 @@ import type { Role } from "@/types"
 
 export default async function LedgerPage() {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "ledger")) redirect("/dashboard")
+  if (!canAccess(session!.user.role as Role, "ledger", session!.user.modulePermissions)) redirect("/dashboard")
 
   return (
     <div>

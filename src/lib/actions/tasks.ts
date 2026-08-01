@@ -27,7 +27,7 @@ export async function createTask(data: CreateTaskInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks") || !canCreateTask(role)) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions) || !canCreateTask(role)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
@@ -69,7 +69,7 @@ export async function addTaskStep(taskId: string, data: AddTaskStepInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks")) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
@@ -110,7 +110,7 @@ export async function updateTaskStep(stepId: string, data: AddTaskStepInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks")) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
@@ -156,7 +156,7 @@ export async function deleteTaskStep(stepId: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks")) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
@@ -200,7 +200,7 @@ export async function completeTask(taskId: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks")) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
@@ -232,7 +232,7 @@ export async function reopenTask(taskId: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks") || !canReopenTask(role)) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions) || !canReopenTask(role)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
 
@@ -256,7 +256,7 @@ export async function deleteTask(taskId: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
-  if (!canAccess(role, "tasks") || !canCreateTask(role)) return { error: "Forbidden" }
+  if (!canAccess(role, "tasks", session.user.modulePermissions) || !canCreateTask(role)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
   const userId = session.user.id as string

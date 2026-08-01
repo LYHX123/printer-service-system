@@ -16,7 +16,6 @@ const COMPACT_BOTTOM_PADDING_ROUTES = ["/tasks"]
 interface ShellUser {
   id: string
   name?: string | null
-  username?: string | null
   position?: string | null
   role: Role
   companyId: string
@@ -46,7 +45,7 @@ export function DashboardShell({ children, user, taskCount = null }: DashboardSh
         />
         <div className="flex flex-1 flex-col overflow-hidden min-w-0 print:overflow-visible">
           <Topbar
-            user={{ name: user.name, username: user.username, position: user.position, role: user.role }}
+            user={{ name: user.name, position: user.position, role: user.role }}
             onMenuClick={() => setSidebarOpen(true)}
           />
           <main

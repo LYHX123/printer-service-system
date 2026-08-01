@@ -10,7 +10,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher"
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  name: z.string().min(1, "Name is required"),
   password: z.string().min(1, "Password is required"),
 })
 
@@ -44,7 +44,7 @@ function LoginPageInner() {
 
     try {
       const result = await signIn("credentials", {
-        username: data.username,
+        name: data.name,
         password: data.password,
         redirect: false,
       })
@@ -57,7 +57,7 @@ function LoginPageInner() {
         if (code === "ACCOUNT_LOCKED") {
           setError(t("accountLockedDesc"))
         } else {
-          setError("Invalid username or password. Please try again.")
+          setError("Invalid name or password. Please try again.")
         }
         return
       }
@@ -70,7 +70,7 @@ function LoginPageInner() {
       if (code === "ACCOUNT_LOCKED") {
         setError(t("accountLockedDesc"))
       } else {
-        setError("Invalid username or password. Please try again.")
+        setError("Invalid name or password. Please try again.")
       }
     }
   }
@@ -107,24 +107,24 @@ function LoginPageInner() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Username */}
+            {/* Name */}
             <div>
               <label
-                htmlFor="username"
+                htmlFor="name"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                {t("username")}
+                {t("name")}
               </label>
               <input
-                id="username"
+                id="name"
                 type="text"
                 autoComplete="username"
-                {...register("username")}
+                {...register("name")}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="e.g. admin"
+                placeholder="e.g. Li Yong"
               />
-              {errors.username && (
-                <p className="mt-1.5 text-xs text-red-600">{errors.username.message}</p>
+              {errors.name && (
+                <p className="mt-1.5 text-xs text-red-600">{errors.name.message}</p>
               )}
             </div>
 

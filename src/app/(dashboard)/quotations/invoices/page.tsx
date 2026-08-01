@@ -6,6 +6,7 @@ import { getInvoices } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Table } from "@/components/ui/table"
+import { InvoiceStatusBadge } from "@/components/ui/badge"
 import { T, TInput } from "@/components/ui/T"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
@@ -19,7 +20,7 @@ export default async function InvoicesPage({
 }) {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canAccess(role, "quotations")) redirect("/dashboard")
+  if (!canAccess(role, "invoice", session!.user.modulePermissions)) redirect("/dashboard")
   const { search } = await searchParams
   const companyId = session!.user.companyId as string
 
@@ -85,6 +86,11 @@ export default async function InvoicesPage({
             key: "totalAmount",
             label: <T k="total" />,
             render: (row) => <span className="text-sm font-semibold text-slate-900">{formatCurrency(row.totalAmount)}</span>,
+          },
+          {
+            key: "status",
+            label: <T k="status" />,
+            render: (row) => <InvoiceStatusBadge status={row.status} />,
           },
           {
             key: "date",

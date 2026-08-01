@@ -37,6 +37,8 @@ export async function getSpareParts(
               { partNumber: { contains: search, mode: "insensitive" } },
               { name: { contains: search, mode: "insensitive" } },
               { brand: { contains: search, mode: "insensitive" } },
+              { model: { contains: search, mode: "insensitive" } },
+              { specification: { contains: search, mode: "insensitive" } },
               { compatibleWith: { contains: search, mode: "insensitive" } },
             ],
           }
@@ -99,7 +101,7 @@ export async function getSparePartForEdit(
 /** Lightweight list for quotation / repair report part pickers */
 export type SparePartOption = Pick<
   SparePart,
-  "id" | "partNumber" | "name" | "brand" | "category" | "unit" | "imageUrl"
+  "id" | "partNumber" | "name" | "model" | "specification" | "brand" | "category" | "unit" | "imageUrl"
 > & {
   sellingPrice: number
   stock: Pick<InventoryStock, "quantity"> | null
@@ -112,6 +114,8 @@ export async function getSparePartOptions(companyId: string): Promise<SparePartO
       id: true,
       partNumber: true,
       name: true,
+      model: true,
+      specification: true,
       brand: true,
       category: true,
       unit: true,

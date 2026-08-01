@@ -16,7 +16,7 @@ export async function createSparePart(
 ): Promise<{ error: string } | { success: true; id: string }> {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -24,19 +24,17 @@ export async function createSparePart(
   if (!parsed.success) return { error: "Invalid form data" }
 
   const {
-    partNumber, name, description, category, brand, supplier, compatibleWith,
+    name, model, specification, description, category, brand, supplier, compatibleWith,
     unit, unitCost, sellingPrice, reorderLevel, location, quantity,
   } = parsed.data
 
   let part: { id: string }
   try {
-    let finalPartNumber = partNumber.trim()
-    if (!finalPartNumber) {
-      const count = await prisma.sparePart.count({ where: { companyId } })
-      finalPartNumber = generatePartNumber(count + 1)
-    } else {
-      const existing = await prisma.sparePart.findFirst({ where: { partNumber: finalPartNumber, companyId } })
-      if (existing) return { error: "A part with this part number already exists" }
+    // partNumber is always server-generated now — never taken from the form.
+    let finalPartNumber = generatePartNumber((await prisma.sparePart.count({ where: { companyId } })) + 1)
+    // Extremely unlikely collision guard (e.g. concurrent creates) — bump until unique.
+    for (let attempt = 0; await prisma.sparePart.findFirst({ where: { partNumber: finalPartNumber, companyId } }); attempt++) {
+      finalPartNumber = generatePartNumber((await prisma.sparePart.count({ where: { companyId } })) + 1 + attempt + 1)
     }
 
     part = await prisma.$transaction(async (tx) => {
@@ -45,6 +43,8 @@ export async function createSparePart(
           companyId,
           partNumber: finalPartNumber,
           name,
+          model: model || null,
+          specification: specification || null,
           description: description || null,
           category,
           brand: brand || null,
@@ -74,6 +74,9 @@ export async function createSparePart(
             partId: created.id,
             type: "IN",
             quantity,
+            quantityBefore: 0,
+            quantityAfter: quantity,
+            referenceType: "MANUAL",
             unitPrice: unitCost,
             reference: "Initial stock",
             performedById: userId,
@@ -95,7 +98,7 @@ export async function createSparePart(
 export async function updateSparePart(id: string, data: SparePartInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -103,18 +106,13 @@ export async function updateSparePart(id: string, data: SparePartInput) {
   if (!parsed.success) return { error: "Invalid form data" }
 
   const {
-    partNumber, name, description, category, brand, supplier, compatibleWith,
+    name, model, specification, description, category, brand, supplier, compatibleWith,
     unit, unitCost, sellingPrice, reorderLevel, location, quantity,
   } = parsed.data
 
   try {
     const existing = await prisma.sparePart.findFirst({ where: { id, companyId }, include: { stock: true } })
     if (!existing) return { error: "Part not found" }
-
-    if (partNumber.trim() && partNumber !== existing.partNumber) {
-      const dup = await prisma.sparePart.findFirst({ where: { partNumber, companyId, NOT: { id } } })
-      if (dup) return { error: "A part with this part number already exists" }
-    }
 
     const currentQuantity = existing.stock?.quantity ?? 0
     const quantityDelta = quantity - currentQuantity
@@ -123,8 +121,11 @@ export async function updateSparePart(id: string, data: SparePartInput) {
       await tx.sparePart.update({
         where: { id },
         data: {
-          partNumber: partNumber.trim() || existing.partNumber,
+          // partNumber is intentionally left untouched — it's server-generated
+          // once at creation and never re-derived from form input.
           name,
+          model: model || null,
+          specification: specification || null,
           description: description || null,
           category,
           brand: brand || null,
@@ -150,6 +151,9 @@ export async function updateSparePart(id: string, data: SparePartInput) {
             partId: id,
             type: "ADJUSTMENT",
             quantity: quantityDelta,
+            quantityBefore: currentQuantity,
+            quantityAfter: quantity,
+            referenceType: "MANUAL",
             reference: "Quantity updated",
             performedById: userId,
           },
@@ -169,7 +173,7 @@ export async function updateSparePart(id: string, data: SparePartInput) {
 export async function setSparePartActive(id: string, isActive: boolean) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   try {
@@ -194,7 +198,7 @@ export async function setSparePartActive(id: string, isActive: boolean) {
 export async function recordStockMovement(partId: string, data: StockMovementInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -249,6 +253,9 @@ export async function recordStockMovement(partId: string, data: StockMovementInp
           partId,
           type,
           quantity: delta,
+          quantityBefore: currentQuantity,
+          quantityAfter: newQuantity,
+          referenceType: "MANUAL",
           reference: reference || null,
           remark: remark || null,
           performedById: userId,

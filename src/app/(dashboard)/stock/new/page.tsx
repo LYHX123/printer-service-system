@@ -4,8 +4,9 @@ import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { canManageInventory } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
+import { T } from "@/components/ui/T"
 import { InventoryForm } from "@/components/inventory/InventoryForm"
-import { isStockType, STOCK_TYPE_LABELS, DEFAULT_CATEGORY_FOR_STOCK_TYPE } from "@/lib/stock-types"
+import { isStockType, STOCK_TYPE_LABELS, DEFAULT_CATEGORY_FOR_STOCK_TYPE, ADD_ITEM_TRANSLATION_KEYS } from "@/lib/stock-types"
 import type { Role } from "@/types"
 
 export default async function NewSparePartPage({
@@ -14,7 +15,7 @@ export default async function NewSparePartPage({
   searchParams: Promise<{ type?: string }>
 }) {
   const session = await auth()
-  if (!canManageInventory(session!.user.role as Role)) redirect("/stock")
+  if (!canManageInventory(session!.user.role as Role, session!.user.modulePermissions)) redirect("/stock")
 
   const { type } = await searchParams
   if (!isStockType(type)) redirect("/stock")
@@ -25,7 +26,7 @@ export default async function NewSparePartPage({
         <ChevronLeft className="h-4 w-4" />
         Back to {STOCK_TYPE_LABELS[type]}
       </Link>
-      <PageHeader title={`Add ${STOCK_TYPE_LABELS[type]} Item`} />
+      <PageHeader title={<T k={ADD_ITEM_TRANSLATION_KEYS[type]} />} />
       <InventoryForm stockType={type} defaultValues={{ category: DEFAULT_CATEGORY_FOR_STOCK_TYPE[type] }} />
     </div>
   )

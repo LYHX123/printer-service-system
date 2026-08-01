@@ -22,11 +22,11 @@ export function PageHeader({
       )}
     >
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-[28px] font-bold tracking-tight text-slate-900">
           {title}
         </h1>
         {subtitle && (
-          <div className="mt-0.5 text-sm text-slate-500">{subtitle}</div>
+          <div className="mt-0.5 text-[15px] text-slate-500">{subtitle}</div>
         )}
       </div>
       {actions && (

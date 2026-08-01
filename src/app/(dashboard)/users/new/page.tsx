@@ -10,7 +10,7 @@ import type { Role } from "@/types"
 
 export default async function NewUserPage() {
   const session = await auth()
-  if (!canManageUsers(session!.user.role as Role)) redirect("/users")
+  if (!canManageUsers(session!.user.role as Role, session!.user.modulePermissions)) redirect("/users")
 
   return (
     <div>

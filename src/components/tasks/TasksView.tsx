@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { format } from "date-fns"
 import { Plus, CheckCircle2, RotateCcw, Trash2, Pencil, Users, Clock, ChevronRight, ChevronLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -166,10 +166,18 @@ function NoTasksState({ canCreate, onCreate }: { canCreate: boolean; onCreate: (
 
 export function TasksView({ tasks, users, currentUserId, currentUserRole }: TasksViewProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
   const { t, language } = useLanguage()
 
-  const [selectedId, setSelectedId] = useState<string | null>(tasks[0]?.id ?? null)
+  // A `?taskId=` deep link (from the Dashboard's overdue-task alerts/recent-tasks
+  // list) is resolved directly into the initial state below rather than via a
+  // post-mount effect, so it applies on the very first render, on any viewport.
+  const linkedTaskId = searchParams.get("taskId")
+  const hasValidDeepLink = Boolean(linkedTaskId && tasks.some((task) => task.id === linkedTaskId))
+  const [selectedId, setSelectedId] = useState<string | null>(
+    hasValidDeepLink ? linkedTaskId : (tasks[0]?.id ?? null)
+  )
   const [createOpen, setCreateOpen] = useState(false)
   const [addStepOpen, setAddStepOpen] = useState(false)
   const [editingStep, setEditingStep] = useState<TaskStepItem | null>(null)
@@ -202,8 +210,16 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
 
   // On phones, start on the task list instead of jumping straight into the
   // first task's detail pane (which would hide the list behind it). Desktop
-  // keeps auto-selecting the first task as before.
+  // keeps auto-selecting the first task as before. Skipped entirely when a
+  // `?taskId=` deep link already picked a task (see initial state above) —
+  // that selection should stick on every viewport.
   useEffect(() => {
+    if (hasValidDeepLink) {
+      if (isMobileViewport()) {
+        requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))
+      }
+      return
+    }
     if (typeof window === "undefined") return
     if (window.matchMedia("(max-width: 1023px)").matches) {
       setSelectedId(null)
@@ -284,12 +300,16 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-start">
-      {/* Left Panel: Task List. Normal document flow — page scrolls it, not an inner scrollbar. */}
+      {/* Left Panel: Task List. Normal document flow on phones/tablets; on
+          desktop it gets its own independent scroll region (sticky + max-h),
+          mirroring the right panel, so scrolling one never moves the other
+          and the currently-selected task stays reachable without dragging
+          the whole page. */}
       <aside
         ref={listRef}
-        className="flex w-full flex-col border-r border-slate-200 bg-white lg:w-2/5"
+        className="flex w-full flex-col border-r border-slate-200 bg-white lg:w-2/5 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:sticky lg:top-0 lg:z-10">
           <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
           {userCanCreate && (
             <Button

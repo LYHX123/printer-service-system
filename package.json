@@ -14,6 +14,7 @@
     "db:studio": "prisma studio",
     "test:template-engine": "npx tsx scripts/test-template-engine.ts",
     "backfill:sales-ledger-reference": "npx tsx scripts/backfill-sales-ledger-reference.ts",
+    "migrate:username-to-name": "npx tsx scripts/migrate-username-to-name.ts",
     "report:duplicate-customers": "npx tsx scripts/report-duplicate-customers.ts"
   },
   "dependencies": {

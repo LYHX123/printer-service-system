@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Plus } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getUsers } from "@/lib/data/users"
-import { canAccess, ALL_MODULES, MODULE_LABELS } from "@/lib/permissions"
+import { canAccess, ALL_PERMISSIONS, PERMISSION_TREE } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
@@ -30,16 +30,21 @@ function ModulesSummary({ role, permissions }: { role: Role; permissions: string
   if (role === "ADMIN") {
     return <Badge className="bg-purple-100 text-purple-700 text-xs">Full Access</Badge>
   }
-  if (permissions.length === 0 || permissions.length === ALL_MODULES.length) {
+  if (permissions.length === 0 || permissions.length >= ALL_PERMISSIONS.length) {
     return <span className="text-xs text-slate-500">All Modules</span>
   }
-  const labels = permissions
-    .filter((p) => MODULE_LABELS[p as keyof typeof MODULE_LABELS])
-    .map((p) => MODULE_LABELS[p as keyof typeof MODULE_LABELS].en)
+  // Summarize by top-level module (leaf permissions are too granular/numerous to list row-by-row).
+  const permSet = new Set(permissions)
+  const labels = PERMISSION_TREE
+    .filter((node) => {
+      const leaves = node.leaves ?? node.children?.flatMap((c) => c.leaves ?? []) ?? []
+      return leaves.some((l) => permSet.has(l.key))
+    })
+    .map((node) => node.en)
     .join(", ")
   return (
     <span className="text-xs text-slate-600 block max-w-[160px] truncate" title={labels}>
-      {labels}
+      {labels || "—"}
     </span>
   )
 }
@@ -89,16 +94,6 @@ export default async function UsersPage() {
             ),
           },
           {
-            key: "username",
-            label: <T k="username" />,
-            render: (row) => (
-              <div>
-                <p className="text-slate-700 text-sm font-mono">{row.username ?? "—"}</p>
-                {row.position && <p className="text-xs text-slate-400 mt-0.5">{row.position}</p>}
-              </div>
-            ),
-          },
-          {
             key: "role",
             label: <T k="role" />,
             render: (row) => <RoleBadge role={row.role} />,
@@ -136,7 +131,6 @@ export default async function UsersPage() {
                 modulePermissions={row.modulePermissions}
                 isLocked={!!(row.lockedUntil && row.lockedUntil > new Date())}
                 name={row.name}
-                username={row.username}
                 phone={row.phone}
                 department={row.department}
                 position={row.position}

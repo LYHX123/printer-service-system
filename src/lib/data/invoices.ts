@@ -13,7 +13,7 @@ type InvoiceItemPart = Pick<SparePart, "id" | "partNumber" | "name" | "brand">
 
 export type InvoiceItemWithPart = InvoiceItem & { part: InvoiceItemPart | null }
 
-export type InvoiceListItem = Pick<Invoice, "id" | "invoiceNumber" | "date" | "createdAt"> & {
+export type InvoiceListItem = Pick<Invoice, "id" | "invoiceNumber" | "date" | "createdAt" | "status"> & {
   totalAmount: number
   customer: Pick<Customer, "id" | "companyName">
   quotation: Pick<Quotation, "id" | "quotationNumber">
@@ -44,6 +44,7 @@ export async function getInvoices(
       date: true,
       totalAmount: true,
       createdAt: true,
+      status: true,
       customer: { select: { id: true, companyName: true } },
       quotation: { select: { id: true, quotationNumber: true } },
       createdBy: { select: { id: true, name: true } },

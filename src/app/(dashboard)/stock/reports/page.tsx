@@ -32,7 +32,7 @@ export default async function InventoryReportsPage({
   searchParams: Promise<{ tab?: string; type?: string; from?: string; to?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "inventory")) redirect("/dashboard")
+  if (!canAccess(session!.user.role as Role, "inventory", session!.user.modulePermissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
   const { tab = "valuation", type, from, to } = await searchParams

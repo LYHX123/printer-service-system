@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { LedgerEntrySchema, SalesLedgerEntrySchema } from "@/lib/schemas"
-import { canManageLedger } from "@/lib/permissions"
+import { canCreateLedgerEntryPerm, canEditLedgerEntryPerm, canDeleteLedgerEntryPerm } from "@/lib/permissions"
 import { findOrCreateLedgerCategory } from "@/lib/data/ledger"
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
 import { parseSalesReference } from "@/lib/ledger-reference"
@@ -18,7 +18,7 @@ const NEW_CATEGORY_VALUE = "__new__"
 export async function createLedgerEntry(data: LedgerEntryInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canCreateLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "general")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -56,7 +56,7 @@ export async function createLedgerEntry(data: LedgerEntryInput) {
 export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canEditLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "general")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = LedgerEntrySchema.safeParse(data)
@@ -95,7 +95,7 @@ export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
 export async function deleteLedgerEntry(id: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canDeleteLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "general")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   try {
@@ -115,7 +115,7 @@ export async function deleteLedgerEntry(id: string) {
 export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canCreateLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "sales")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -156,7 +156,7 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
 export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canEditLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "sales")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = SalesLedgerEntrySchema.safeParse(data)
@@ -198,7 +198,7 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
 export async function setSalesLedgerEntryArchived(id: string, isArchived: boolean) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageLedger(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canEditLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "sales")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   try {

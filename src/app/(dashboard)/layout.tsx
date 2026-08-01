@@ -18,7 +18,6 @@ export default async function DashboardLayout({
   const user = {
     id: session.user.id as string,
     name: session.user.name,
-    username: (session.user as { username?: string }).username ?? null,
     position: (session.user as { position?: string | null }).position ?? null,
     role: session.user.role as Role,
     companyId: session.user.companyId as string,

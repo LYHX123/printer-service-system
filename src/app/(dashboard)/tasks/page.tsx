@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { canAccess } from "@/lib/permissions"
@@ -8,7 +9,7 @@ import type { Role } from "@/types"
 
 export default async function TasksPage() {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "tasks")) redirect("/dashboard")
+  if (!canAccess(session!.user.role as Role, "tasks", session!.user.modulePermissions)) redirect("/dashboard")
 
   const companyId = session!.user.companyId as string
   const userId = session!.user.id as string
@@ -24,11 +25,13 @@ export default async function TasksPage() {
     .map((u) => ({ id: u.id, name: u.name, role: u.role }))
 
   return (
-    <TasksView
-      tasks={tasks}
-      users={activeUsers}
-      currentUserId={userId}
-      currentUserRole={role}
-    />
+    <Suspense>
+      <TasksView
+        tasks={tasks}
+        users={activeUsers}
+        currentUserId={userId}
+        currentUserRole={role}
+      />
+    </Suspense>
   )
 }

@@ -14,6 +14,12 @@ export type TranslationKey =
   | "equipment"
   | "jobs"
   | "quotations"
+  | "invoice"
+  | "invoiceModule"
+  | "invoiceStatusDraft"
+  | "invoiceStatusConfirmed"
+  | "invoiceStatusCancelled"
+  | "shopAccount"
   | "inventory"
   | "reports"
   | "productivity"
@@ -28,6 +34,7 @@ export type TranslationKey =
   | "delete"
   | "search"
   | "filter"
+  | "actions"
   | "export"
   | "download"
   | "downloadPdf"
@@ -72,6 +79,13 @@ export type TranslationKey =
   | "unitPlural"
   | "consumableSingular"
   | "consumablePlural"
+  | "specification"
+  | "picture"
+  | "removePicture"
+  | "pictureUpdated"
+  | "pictureRemoved"
+  | "viewPicture"
+  | "quantityCannotBeNegative"
   // General / page chrome
   | "view"
   | "clear"
@@ -176,6 +190,15 @@ export type TranslationKey =
   | "noPartsFound"
   | "addFirstPart"
   | "inCatalog"
+  | "equipmentEmptyTitle"
+  | "equipmentEmptyDesc"
+  | "consumptionEmptyTitle"
+  | "consumptionEmptyDesc"
+  | "partsEmptyTitle"
+  | "partsEmptyDesc"
+  | "addEquipmentItem"
+  | "addConsumptionItem"
+  | "addPartItem"
   // List pages — empty states & filters
   | "noCustomersFound"
   | "registerFirstCustomer"
@@ -273,6 +296,8 @@ export type TranslationKey =
   | "paymentMethodCash"
   | "paymentMethodBankTransfer"
   | "paymentMethodCheque"
+  | "paymentMethodCard"
+  | "paymentMethodOther"
   | "salesCustomerName"
   | "orderNo"
   | "invoiceAmount"
@@ -286,6 +311,26 @@ export type TranslationKey =
   | "totalInvoiceAmount"
   | "totalReceived"
   | "totalBalance"
+  // Shop Account
+  | "shopAccountDesc"
+  | "supplierPayee"
+  | "attachment"
+  | "attachmentUploadLabel"
+  | "attachmentUploaded"
+  | "attachmentRemoved"
+  | "recordSaved"
+  | "recordUpdated"
+  | "recordDeleted"
+  | "noShopAccountEntriesFound"
+  | "noShopAccountEntriesDesc"
+  | "amountMustBeGreaterThanZero"
+  | "insufficientStock"
+  | "invoiceAlreadyConfirmed"
+  | "invoiceAlreadyCancelled"
+  | "fileUploadFailed"
+  | "permissionDenied"
+  | "nameAlreadyExists"
+  | "nameRequired"
   | "addSalesRecord"
   | "editSalesRecord"
   | "noSalesLedgerFound"
@@ -333,6 +378,7 @@ export type TranslationKey =
   | "newUserDesc"
   | "fullName"
   | "username"
+  | "nameIsLoginId"
   | "emailAddress"
   | "password"
   | "minimum8Characters"
@@ -443,6 +489,23 @@ export type TranslationKey =
   | "activeTasksLabel"
   | "lowStockItemsLabel"
   | "unpaidSalesBalanceLabel"
+  | "activeQuotationsLabel"
+  | "invoicesLabel"
+  | "equipmentQuantityLabel"
+  | "consumptionQuantityLabel"
+  | "partsQuantityLabel"
+  | "currentMonthIncomeLabel"
+  | "currentMonthExpenseLabel"
+  | "currentMonthShopExpenseLabel"
+  | "recentQuotationsLabel"
+  | "recentSalesLabel"
+  | "recentTasksLabel"
+  | "recentShopEntriesLabel"
+  | "businessOverviewSection"
+  | "stockOverviewSection"
+  | "financialOverviewSection"
+  | "noRecentRecords"
+  | "viewAllLink"
   // Customer restructure: Company / Project / Document
   | "mainContactName"
   | "mainContactPhone"
@@ -490,6 +553,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipment: "Equipment",
     jobs: "Jobs",
     quotations: "Quotations",
+    invoice: "Invoice",
+    invoiceModule: "Invoice Module",
+    invoiceStatusDraft: "Draft",
+    invoiceStatusConfirmed: "Confirmed",
+    invoiceStatusCancelled: "Cancelled",
+    shopAccount: "Shop Account",
     inventory: "Stock",
     reports: "Reports",
     productivity: "Productivity",
@@ -504,6 +573,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     delete: "Delete",
     search: "Search",
     filter: "Filter",
+    actions: "Actions",
     export: "Export",
     download: "Download",
     downloadPdf: "Download PDF",
@@ -548,6 +618,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     unitPlural: "Units",
     consumableSingular: "Consumable",
     consumablePlural: "Consumables",
+    specification: "Specification",
+    picture: "Picture",
+    removePicture: "Remove Picture",
+    pictureUpdated: "Picture updated",
+    pictureRemoved: "Picture removed",
+    viewPicture: "View Picture",
+    quantityCannotBeNegative: "Quantity cannot be negative",
     // General / page chrome
     view: "View",
     clear: "Clear",
@@ -575,7 +652,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     searchCustomersPlaceholder: "Search by name, code or company…",
     searchJobsPlaceholder: "Job #, customer, equipment…",
     searchQuotationsPlaceholder: "Search by Q# or customer…",
-    searchPartsPlaceholder: "Part number, name, brand…",
+    searchPartsPlaceholder: "Search by brand, name or model…",
     // Customer detail
     contactInformation: "Contact Information",
     summary: "Summary",
@@ -652,6 +729,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noPartsFound: "No parts found",
     addFirstPart: "Add your first spare part to start tracking inventory.",
     inCatalog: "in catalog",
+    equipmentEmptyTitle: "No equipment found",
+    equipmentEmptyDesc: "Add your first equipment item to start tracking inventory.",
+    consumptionEmptyTitle: "No consumption item found",
+    consumptionEmptyDesc: "Add your first consumption item to start tracking inventory.",
+    partsEmptyTitle: "No part found",
+    partsEmptyDesc: "Add your first part to start tracking inventory.",
+    addEquipmentItem: "Add Equipment Item",
+    addConsumptionItem: "Add Consumption Item",
+    addPartItem: "Add Part Item",
     // List pages — empty states & filters
     noCustomersFound: "No customers found",
     registerFirstCustomer: "Register your first customer to get started.",
@@ -820,6 +906,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     paymentMethodCash: "Cash",
     paymentMethodBankTransfer: "Bank Transfer",
     paymentMethodCheque: "Cheque",
+    paymentMethodCard: "Card",
+    paymentMethodOther: "Other",
     salesCustomerName: "Customer Name",
     orderNo: "Order No / Reference No",
     invoiceAmount: "Invoice Amount",
@@ -833,6 +921,26 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     totalInvoiceAmount: "Total Invoice Amount",
     totalReceived: "Total Received",
     totalBalance: "Total Balance",
+    // Shop Account
+    shopAccountDesc: "Daily shop purchases, expenses, and income — independent from the company Ledger.",
+    supplierPayee: "Supplier / Payee",
+    attachment: "Receipt / Attachment",
+    attachmentUploadLabel: "Drag & drop a receipt (image or PDF), or click to browse",
+    attachmentUploaded: "Attachment uploaded",
+    attachmentRemoved: "Attachment removed",
+    recordSaved: "Record saved",
+    recordUpdated: "Record updated",
+    recordDeleted: "Record deleted",
+    noShopAccountEntriesFound: "No shop account entries found",
+    noShopAccountEntriesDesc: "Add your first income or expense entry to get started.",
+    amountMustBeGreaterThanZero: "Amount must be greater than zero",
+    insufficientStock: "Insufficient stock",
+    invoiceAlreadyConfirmed: "Invoice is already confirmed",
+    invoiceAlreadyCancelled: "Invoice is already cancelled",
+    fileUploadFailed: "File upload failed",
+    permissionDenied: "Permission denied",
+    nameAlreadyExists: "Name already exists",
+    nameRequired: "Name is required",
     addSalesRecord: "Add Sales Record",
     editSalesRecord: "Edit Sales Record",
     noSalesLedgerFound: "No sales ledger records found",
@@ -880,6 +988,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     newUserDesc: "Create a new staff account and assign a role.",
     fullName: "Full Name",
     username: "Username",
+    nameIsLoginId: "This name is used to sign in — must be unique",
     emailAddress: "Email Address",
     password: "Password",
     minimum8Characters: "Minimum 8 characters",
@@ -917,6 +1026,23 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     activeTasksLabel: "Active Tasks",
     lowStockItemsLabel: "Low Stock Items",
     unpaidSalesBalanceLabel: "Unpaid Sales Balance",
+    activeQuotationsLabel: "Active Quotations",
+    invoicesLabel: "Invoices",
+    equipmentQuantityLabel: "Equipment Quantity",
+    consumptionQuantityLabel: "Consumption Quantity",
+    partsQuantityLabel: "Parts Quantity",
+    currentMonthIncomeLabel: "Current Month Income",
+    currentMonthExpenseLabel: "Current Month Expense",
+    currentMonthShopExpenseLabel: "Current Month Shop Expense",
+    recentQuotationsLabel: "Recent Quotations",
+    recentSalesLabel: "Recent Sales",
+    recentTasksLabel: "Recent Tasks",
+    recentShopEntriesLabel: "Recent Shop Account Entries",
+    businessOverviewSection: "Business Overview",
+    stockOverviewSection: "Stock Overview",
+    financialOverviewSection: "Financial Overview",
+    noRecentRecords: "No recent records",
+    viewAllLink: "View all →",
     mainContactName: "Main Contact Name",
     mainContactPhone: "Main Contact Phone",
     mainContactEmail: "Main Contact Email",
@@ -962,6 +1088,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipment: "设备",
     jobs: "工单",
     quotations: "报价单",
+    invoice: "发票",
+    invoiceModule: "发票模块",
+    invoiceStatusDraft: "草稿",
+    invoiceStatusConfirmed: "已确认",
+    invoiceStatusCancelled: "已取消",
+    shopAccount: "店铺账目",
     inventory: "库存",
     reports: "报表",
     productivity: "生产力",
@@ -976,6 +1108,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     delete: "删除",
     search: "搜索",
     filter: "筛选",
+    actions: "操作",
     export: "导出",
     download: "下载",
     downloadPdf: "下载PDF",
@@ -1020,6 +1153,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     unitPlural: "台",
     consumableSingular: "耗材",
     consumablePlural: "耗材",
+    specification: "规格说明",
+    picture: "图片",
+    removePicture: "移除图片",
+    pictureUpdated: "图片已更新",
+    pictureRemoved: "图片已移除",
+    viewPicture: "查看图片",
+    quantityCannotBeNegative: "数量不能为负数",
     // General / page chrome
     view: "查看",
     clear: "清除",
@@ -1047,7 +1187,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     searchCustomersPlaceholder: "按名称、编号或公司搜索…",
     searchJobsPlaceholder: "工单号、客户、设备…",
     searchQuotationsPlaceholder: "按报价单号或客户搜索…",
-    searchPartsPlaceholder: "零件编号、名称、品牌…",
+    searchPartsPlaceholder: "按品牌、名称或型号搜索…",
     // Customer detail
     contactInformation: "联系信息",
     summary: "摘要",
@@ -1124,6 +1264,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noPartsFound: "未找到零件",
     addFirstPart: "添加第一个备件以开始跟踪库存。",
     inCatalog: "在库",
+    equipmentEmptyTitle: "未找到设备",
+    equipmentEmptyDesc: "添加您的第一个设备以开始跟踪库存。",
+    consumptionEmptyTitle: "未找到耗材",
+    consumptionEmptyDesc: "添加您的第一个耗材以开始跟踪库存。",
+    partsEmptyTitle: "未找到零件",
+    partsEmptyDesc: "添加您的第一个零件以开始跟踪库存。",
+    addEquipmentItem: "新增设备",
+    addConsumptionItem: "新增耗材",
+    addPartItem: "新增零件",
     // List pages — empty states & filters
     noCustomersFound: "未找到客户",
     registerFirstCustomer: "注册第一个客户以开始使用。",
@@ -1292,6 +1441,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     paymentMethodCash: "现金",
     paymentMethodBankTransfer: "银行转账",
     paymentMethodCheque: "支票",
+    paymentMethodCard: "银行卡",
+    paymentMethodOther: "其他",
     salesCustomerName: "客户名称",
     orderNo: "订单号 / 参考编号",
     invoiceAmount: "发票金额",
@@ -1305,6 +1456,26 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     totalInvoiceAmount: "总发票金额",
     totalReceived: "总已收金额",
     totalBalance: "总余额",
+    // Shop Account
+    shopAccountDesc: "店铺日常采购、支出和收入 — 独立于公司总账。",
+    supplierPayee: "供应商 / 收款方",
+    attachment: "收据 / 附件",
+    attachmentUploadLabel: "拖放收据（图片或PDF），或点击浏览",
+    attachmentUploaded: "附件已上传",
+    attachmentRemoved: "附件已移除",
+    recordSaved: "记录已保存",
+    recordUpdated: "记录已更新",
+    recordDeleted: "记录已删除",
+    noShopAccountEntriesFound: "未找到店铺账目记录",
+    noShopAccountEntriesDesc: "添加第一条收入或支出记录以开始使用。",
+    amountMustBeGreaterThanZero: "金额必须大于零",
+    insufficientStock: "库存不足",
+    invoiceAlreadyConfirmed: "发票已确认",
+    invoiceAlreadyCancelled: "发票已取消",
+    fileUploadFailed: "文件上传失败",
+    permissionDenied: "无权限",
+    nameAlreadyExists: "名称已存在",
+    nameRequired: "名称为必填项",
     addSalesRecord: "新增销售记录",
     editSalesRecord: "编辑销售记录",
     noSalesLedgerFound: "未找到销售账记录",
@@ -1352,6 +1523,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     newUserDesc: "创建新的员工账户并分配角色。",
     fullName: "全名",
     username: "用户名",
+    nameIsLoginId: "该名称将用于登录，必须唯一",
     emailAddress: "电子邮箱",
     password: "密码",
     minimum8Characters: "至少8个字符",
@@ -1389,6 +1561,23 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     activeTasksLabel: "进行中任务",
     lowStockItemsLabel: "低库存物品",
     unpaidSalesBalanceLabel: "未收销售余额",
+    activeQuotationsLabel: "有效报价",
+    invoicesLabel: "发票数量",
+    equipmentQuantityLabel: "设备库存数量",
+    consumptionQuantityLabel: "耗材库存数量",
+    partsQuantityLabel: "零件库存数量",
+    currentMonthIncomeLabel: "本月收入",
+    currentMonthExpenseLabel: "本月支出",
+    currentMonthShopExpenseLabel: "本月店铺支出",
+    recentQuotationsLabel: "最近报价",
+    recentSalesLabel: "最近销售",
+    recentTasksLabel: "最近任务",
+    recentShopEntriesLabel: "最近店铺账目",
+    businessOverviewSection: "业务概览",
+    stockOverviewSection: "库存概览",
+    financialOverviewSection: "财务概览",
+    noRecentRecords: "暂无最近记录",
+    viewAllLink: "查看全部 →",
     mainContactName: "总部联系人姓名",
     mainContactPhone: "总部联系人电话",
     mainContactEmail: "总部联系人邮箱",

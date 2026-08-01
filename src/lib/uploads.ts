@@ -72,6 +72,16 @@ export async function deleteJobPhoto(fileUrl: string): Promise<void> {
   await unlink(filePath).catch(() => {})
 }
 
+export async function deleteSparePartImage(fileUrl: string): Promise<void> {
+  const filePath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""))
+  await unlink(filePath).catch(() => {})
+}
+
+export async function deleteShopAccountAttachment(fileUrl: string): Promise<void> {
+  const filePath = path.join(process.cwd(), "public", fileUrl.replace(/^\//, ""))
+  await unlink(filePath).catch(() => {})
+}
+
 export async function saveTaskStepImage(
   stepId: string,
   buffer: Buffer

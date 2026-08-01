@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import * as XLSX from "xlsx"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canExportLedgerBook } from "@/lib/permissions"
 import { getSalesLedgerEntries } from "@/lib/data/ledger"
 import { SALES_PAYMENT_STATUS_LABELS } from "@/types"
 import type { Role, SalesPaymentStatus } from "@/types"
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canAccess(session.user.role as Role, "ledger")) {
+  if (!canExportLedgerBook(session.user.role as Role, session.user.modulePermissions, "sales")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

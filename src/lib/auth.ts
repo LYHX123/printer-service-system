@@ -34,14 +34,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        username: { label: "Username", type: "text" },
+        name: { label: "Name", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null
+        if (!credentials?.name || !credentials?.password) return null
 
         const user = await prisma.user.findFirst({
-          where: { username: credentials.username as string },
+          where: { name: credentials.name as string },
           select: {
             id: true,
             name: true,

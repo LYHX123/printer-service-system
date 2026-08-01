@@ -222,12 +222,11 @@ const optionalText = (max: number) =>
   z.string().max(max).optional().or(z.literal(""))
 
 export const CreateUserSchema = z.object({
-  name: z.string().min(1, "Full name is required").max(100),
-  username: z
+  name: z
     .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(50)
-    .regex(/^[a-zA-Z0-9_.-]+$/, "Username may only contain letters, numbers, _ . -"),
+    .trim()
+    .min(1, "Name is required")
+    .max(100),
   email: z.string().email("Invalid email address").max(150).optional().or(z.literal("")),
   password: z.string().min(8, "Password must be at least 8 characters").max(100),
   role: RoleEnum,
@@ -252,12 +251,7 @@ export const UpdateUserPermissionsSchema = z.object({
 export type UpdateUserPermissionsInput = z.infer<typeof UpdateUserPermissionsSchema>
 
 export const UpdateUserProfileSchema = z.object({
-  name: z.string().min(1, "Full name is required").max(100),
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(50)
-    .regex(/^[a-zA-Z0-9_.-]+$/, "Username may only contain letters, numbers, _ . -"),
+  name: z.string().trim().min(1, "Name is required").max(100),
   phone: optionalText(30),
   department: optionalText(100),
   position: optionalText(100),
@@ -274,8 +268,12 @@ export type UpdateUserProfileInput = z.infer<typeof UpdateUserProfileSchema>
 // ─── Inventory / Spare Parts ───────────────────────────────────────────────────
 
 export const SparePartSchema = z.object({
-  partNumber: z.string().max(50),
+  // partNumber is no longer a user-facing field — it's generated server-side
+  // (see createSparePart/updateSparePart in src/lib/actions/inventory.ts).
+  partNumber: z.string().max(50).optional().or(z.literal("")),
   name: z.string().min(1, "Name is required").max(200),
+  model: z.string().max(150).optional().or(z.literal("")),
+  specification: z.string().max(2000).optional().or(z.literal("")),
   description: z.string().max(1000).optional().or(z.literal("")),
   category: z.enum([
     "TONER",
@@ -367,6 +365,30 @@ export const SalesLedgerEntrySchema = z
   })
 
 export type SalesLedgerEntryInput = z.infer<typeof SalesLedgerEntrySchema>
+
+// ─── Shop Account (independent from Ledger) ────────────────────────────────────
+
+const NEW_SHOP_CATEGORY_VALUE = "__new__"
+
+export const ShopAccountEntrySchema = z
+  .object({
+    date: z.string().min(1, "Date is required"),
+    type: z.enum(["INCOME", "EXPENSE"]),
+    categoryId: z.string().min(1, "Category is required"),
+    newCategoryName: z.string().max(60).optional().or(z.literal("")),
+    description: z.string().min(1, "Description is required").max(500),
+    payee: z.string().max(150).optional().or(z.literal("")),
+    amount: z.coerce.number().positive("Amount must be greater than 0"),
+    paymentMethod: z.enum(["MPESA", "BANK_TRANSFER", "CHEQUE", "CASH", "CARD", "OTHER"]),
+    remarks: z.string().max(1000).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.categoryId === NEW_SHOP_CATEGORY_VALUE && !data.newCategoryName?.trim()) {
+      ctx.addIssue({ code: "custom", path: ["newCategoryName"], message: "Category name is required" })
+    }
+  })
+
+export type ShopAccountEntryInput = z.infer<typeof ShopAccountEntrySchema>
 
 // ─── Task Module ──────────────────────────────────────────────────────────────
 

@@ -65,6 +65,7 @@ enum TransactionType {
   RETURN
   DAMAGE
   ADJUSTMENT
+  REVERSAL
 }
 
 enum PurchaseOrderStatus {
@@ -138,6 +139,14 @@ enum LedgerPaymentMethod {
   BANK_TRANSFER
   CHEQUE
   CASH
+  CARD
+  OTHER
+}
+
+enum InvoiceStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
 }
 
 enum SalesPaymentStatus {
@@ -171,23 +180,25 @@ model Company {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  users              User[]
-  customers          Customer[]
-  branches           CustomerBranch[]
-  equipment          Equipment[]
-  serviceJobs        ServiceJob[]
-  quotations         Quotation[]
-  spareParts         SparePart[]
-  purchaseOrders     PurchaseOrder[]
-  contracts          CustomerContract[]
-  communicationLogs  CommunicationLog[]
-  ledgerCategories   LedgerCategory[]
-  ledgerEntries      LedgerEntry[]
-  salesLedgerEntries SalesLedgerEntry[]
-  tasks              Task[]
-  invoices           Invoice[]
-  customerDocuments  CustomerDocument[]
-  auditLogs          AuditLog[]
+  users                 User[]
+  customers             Customer[]
+  branches              CustomerBranch[]
+  equipment             Equipment[]
+  serviceJobs           ServiceJob[]
+  quotations            Quotation[]
+  spareParts            SparePart[]
+  purchaseOrders        PurchaseOrder[]
+  contracts             CustomerContract[]
+  communicationLogs     CommunicationLog[]
+  ledgerCategories      LedgerCategory[]
+  ledgerEntries         LedgerEntry[]
+  salesLedgerEntries    SalesLedgerEntry[]
+  shopAccountCategories ShopAccountCategory[]
+  shopAccountEntries    ShopAccountEntry[]
+  tasks                 Task[]
+  invoices              Invoice[]
+  customerDocuments     CustomerDocument[]
+  auditLogs             AuditLog[]
 }
 
 model User {
@@ -227,6 +238,7 @@ model User {
   communicationLogs         CommunicationLog[]
   createdLedgerEntries      LedgerEntry[]
   createdSalesLedgerEntries SalesLedgerEntry[]
+  createdShopAccountEntries ShopAccountEntry[]
   createdTasks              Task[]                 @relation("TaskCreatedBy")
   taskParticipations        TaskParticipant[]
   createdTaskSteps          TaskStep[]             @relation("TaskStepCreatedBy")
@@ -445,14 +457,21 @@ model Quotation {
 }
 
 model QuotationItem {
-  id          String   @id @default(uuid())
-  quotationId String
-  partId      String?
-  description String? // legacy free-text item; new items are always stock-linked via partId
-  quantity    Int      @default(1)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  subtotal    Decimal  @db.Decimal(10, 2)
-  createdAt   DateTime @default(now())
+  id                    String   @id @default(uuid())
+  quotationId           String
+  partId                String?
+  description           String? // legacy free-text item; new items are always stock-linked via partId
+  quantity              Int      @default(1)
+  unitPrice             Decimal  @db.Decimal(10, 2)
+  subtotal              Decimal  @db.Decimal(10, 2)
+  // Snapshot of the stock item at the time it was added to the quotation, frozen so
+  // later edits to the SparePart record never change the wording of past quotations.
+  stockCategory         String?
+  brandSnapshot         String?
+  nameSnapshot          String?
+  modelSnapshot         String?
+  specificationSnapshot String?
+  createdAt             DateTime @default(now())
 
   quotation Quotation  @relation(fields: [quotationId], references: [id])
   part      SparePart? @relation(fields: [partId], references: [id])
@@ -462,21 +481,31 @@ model QuotationItem {
 // a quotation may be re-invoiced (e.g. correcting the invoice number/date) without losing
 // the earlier record.
 model Invoice {
-  id            String   @id @default(uuid())
-  invoiceNumber String   @unique
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
   companyId     String
   quotationId   String
   customerId    String
   customerPin   String? // snapshot, editable at generation time — may differ from the customer record
   date          DateTime
-  subtotal      Decimal  @db.Decimal(12, 2)
-  vatPercent    Decimal  @db.Decimal(5, 2)
-  vatAmount     Decimal  @db.Decimal(12, 2)
-  totalAmount   Decimal  @db.Decimal(12, 2)
+  subtotal      Decimal       @db.Decimal(12, 2)
+  vatPercent    Decimal       @db.Decimal(5, 2)
+  vatAmount     Decimal       @db.Decimal(12, 2)
+  totalAmount   Decimal       @db.Decimal(12, 2)
   receivedBy    String?
+  // Stock-deduction workflow. Existing rows are backfilled to CONFIRMED (they already
+  // represent finalized documents) but WITHOUT retroactive InventoryTransaction rows —
+  // only invoices confirmed going forward actually move stock. See confirmInvoice()/
+  // cancelInvoice() in src/lib/actions/invoices.ts. Confirm/cancel are service-layer
+  // only for now; no UI button is wired up yet.
+  status        InvoiceStatus @default(CONFIRMED)
+  confirmedById String? // plain user-id reference, no FK relation (avoids widening User)
+  confirmedAt   DateTime?
+  cancelledById String?
+  cancelledAt   DateTime?
   createdById   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   company   Company       @relation(fields: [companyId], references: [id])
   quotation Quotation     @relation(fields: [quotationId], references: [id])
@@ -486,14 +515,20 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String  @id @default(uuid())
-  invoiceId   String
-  partId      String?
-  description String
-  unit        String?
-  quantity    Int
-  unitPrice   Decimal @db.Decimal(10, 2)
-  amount      Decimal @db.Decimal(10, 2)
+  id                    String  @id @default(uuid())
+  invoiceId             String
+  partId                String?
+  description           String
+  unit                  String?
+  quantity              Int
+  unitPrice             Decimal @db.Decimal(10, 2)
+  amount                Decimal @db.Decimal(10, 2)
+  // Snapshot of the stock item at invoice-generation time — see QuotationItem for rationale.
+  stockCategory         String?
+  brandSnapshot         String?
+  nameSnapshot          String?
+  modelSnapshot         String?
+  specificationSnapshot String?
 
   invoice Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   part    SparePart? @relation(fields: [partId], references: [id])
@@ -567,9 +602,11 @@ model JobStatusLog {
 model SparePart {
   id             String       @id @default(uuid())
   companyId      String
-  partNumber     String       @unique
+  partNumber     String       @unique // server-generated; no longer a user-facing form field
   name           String
-  description    String?
+  model          String? // unified Stock field set: Brand / Name / Model / Specification / Quantity / Picture
+  specification  String? // unified free-text spec/notes field (multi-line); backfilled from description+compatibleWith+supplier
+  description    String? // legacy; retained for existing data, superseded by `specification` in the UI
   category       PartCategory @default(GENERAL)
   brand          String?
   supplier       String?
@@ -604,17 +641,23 @@ model InventoryStock {
 }
 
 model InventoryTransaction {
-  id            String          @id @default(uuid())
-  companyId     String
-  partId        String
-  jobId         String?
-  type          TransactionType
-  quantity      Int
-  unitPrice     Decimal?        @db.Decimal(10, 2)
-  reference     String?
-  remark        String?
-  performedById String
-  createdAt     DateTime        @default(now())
+  id             String          @id @default(uuid())
+  companyId      String
+  partId         String
+  jobId          String?
+  type           TransactionType
+  quantity       Int
+  unitPrice      Decimal?        @db.Decimal(10, 2)
+  reference      String?
+  // Structured stock-movement fields (additive alongside the existing free-text
+  // `reference`/`jobId`). Nullable so pre-existing rows are left untouched rather
+  // than backfilled with invented numbers.
+  quantityBefore Int?
+  quantityAfter  Int?
+  referenceType  String? // MANUAL | PURCHASE | INVOICE | INVOICE_CANCEL | INITIAL_MIGRATION
+  remark         String?
+  performedById  String
+  createdAt      DateTime        @default(now())
 
   part        SparePart   @relation(fields: [partId], references: [id])
   job         ServiceJob? @relation(fields: [jobId], references: [id])
@@ -773,6 +816,47 @@ model LedgerEntry {
   createdBy User           @relation(fields: [createdById], references: [id])
 }
 
+// ─── Shop Account Module ───────────────────────────────────────────────────────
+// Independent from Ledger/SalesLedgerEntry — day-to-day shop purchases, expenses
+// and income recorded by the shop manager. Not auto-merged into the company Ledger.
+
+model ShopAccountCategory {
+  id        String          @id @default(uuid())
+  companyId String
+  type      LedgerEntryType
+  name      String
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+
+  company Company            @relation(fields: [companyId], references: [id])
+  entries ShopAccountEntry[]
+
+  @@unique([companyId, type, name])
+}
+
+model ShopAccountEntry {
+  id                 String              @id @default(uuid())
+  companyId          String
+  date               DateTime
+  type               LedgerEntryType
+  categoryId         String
+  description        String
+  payee              String? // supplier / payee
+  amount             Decimal             @db.Decimal(12, 2)
+  paymentMethod      LedgerPaymentMethod
+  attachmentUrl      String?
+  attachmentFileName String?
+  attachmentMimeType String?
+  remarks            String?
+  createdById        String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  company   Company             @relation(fields: [companyId], references: [id])
+  category  ShopAccountCategory @relation(fields: [categoryId], references: [id])
+  createdBy User                @relation(fields: [createdById], references: [id])
+}
+
 // ─── Task Module ─────────────────────────────────────────────────────────────
 
 model Task {
@@ -851,4 +935,6 @@ model SalesLedgerEntry {
   company   Company   @relation(fields: [companyId], references: [id])
   customer  Customer? @relation(fields: [customerId], references: [id])
   createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@index([companyId, referenceYear(sort: Desc), referenceSequence(sort: Desc)])
 }

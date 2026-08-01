@@ -26,7 +26,7 @@ export default async function IncomeExpenseBookPage({
   searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string; search?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "ledger")) redirect("/dashboard")
+  if (!canAccess(session!.user.role as Role, "ledger", session!.user.modulePermissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
   const { from, to, type, categoryId, search } = await searchParams

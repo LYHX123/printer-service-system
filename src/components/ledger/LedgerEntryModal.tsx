@@ -16,11 +16,15 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { TranslationKey } from "@/lib/i18n/translations"
-import type { LedgerCategory, LedgerEntryType, LedgerEntryWithRelations, LedgerPaymentMethod } from "@/types"
+import type { LedgerCategory, LedgerEntryType, LedgerEntryWithRelations } from "@/types"
+
+// General Ledger only ever offers these 4 methods (CARD/OTHER were added to the
+// shared Prisma enum for the new Shop Account module, not this one).
+type GeneralLedgerPaymentMethod = "MPESA" | "BANK_TRANSFER" | "CHEQUE" | "CASH"
 
 const NEW_CATEGORY_VALUE = "__new__"
-const PAYMENT_METHODS: LedgerPaymentMethod[] = ["MPESA", "BANK_TRANSFER", "CHEQUE", "CASH"]
-const PAYMENT_METHOD_KEYS: Record<LedgerPaymentMethod, TranslationKey> = {
+const PAYMENT_METHODS: GeneralLedgerPaymentMethod[] = ["MPESA", "BANK_TRANSFER", "CHEQUE", "CASH"]
+const PAYMENT_METHOD_KEYS: Record<GeneralLedgerPaymentMethod, TranslationKey> = {
   MPESA: "paymentMethodMpesa",
   BANK_TRANSFER: "paymentMethodBankTransfer",
   CHEQUE: "paymentMethodCheque",
@@ -60,7 +64,7 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
           categoryId: entry.categoryId,
           date: new Date(entry.date).toISOString().slice(0, 10),
           amount: entry.amount,
-          paymentMethod: entry.paymentMethod,
+          paymentMethod: entry.paymentMethod as GeneralLedgerPaymentMethod,
           remark: entry.remark ?? "",
         }
       : { type: defaultType, categoryId: "", date: todayIso(), paymentMethod: "CASH", remark: "" },
@@ -75,7 +79,7 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
             categoryId: entry.categoryId,
             date: new Date(entry.date).toISOString().slice(0, 10),
             amount: entry.amount,
-            paymentMethod: entry.paymentMethod,
+            paymentMethod: entry.paymentMethod as GeneralLedgerPaymentMethod,
             remark: entry.remark ?? "",
           }
         : { type: defaultType, categoryId: "", date: todayIso(), paymentMethod: "CASH", remark: "" }

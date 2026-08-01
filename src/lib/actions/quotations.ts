@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { canCreateQuotation } from "@/lib/permissions"
 import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
 import { generateQuotationNumber } from "@/lib/utils"
+import { getStockType } from "@/lib/stock-types"
 import { logActivity } from "@/lib/audit"
 import { QUOTATION_STATUS_TRANSITIONS } from "@/types"
 import type { QuotationInput, QuotationStatusInput } from "@/lib/schemas"
@@ -20,7 +21,7 @@ function computeTotal(subtotal: number, vatPercent: number): number {
 export async function createQuotation(data: QuotationInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canCreateQuotation(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canCreateQuotation(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -45,7 +46,7 @@ export async function createQuotation(data: QuotationInput) {
   try {
     const parts = await prisma.sparePart.findMany({
       where: { id: { in: items.map((i) => i.partId) }, companyId },
-      select: { id: true, name: true, brand: true },
+      select: { id: true, name: true, brand: true, model: true, specification: true, category: true },
     })
     const partMap = new Map(parts.map((p) => [p.id, p]))
     if (parts.length !== new Set(items.map((i) => i.partId)).size) {
@@ -95,6 +96,13 @@ export async function createQuotation(data: QuotationInput) {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               subtotal: item.quantity * item.unitPrice,
+              // Frozen snapshot — later edits to the SparePart record must never
+              // change the wording of a quotation that already quoted it.
+              stockCategory: getStockType(part.category),
+              brandSnapshot: part.brand,
+              nameSnapshot: part.name,
+              modelSnapshot: part.model,
+              specificationSnapshot: part.specification,
             }
           }),
         },
@@ -114,7 +122,7 @@ export async function createQuotation(data: QuotationInput) {
 export async function updateQuotation(id: string, data: QuotationInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canCreateQuotation(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canCreateQuotation(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = QuotationSchema.safeParse(data)
@@ -146,7 +154,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
 
     const parts = await prisma.sparePart.findMany({
       where: { id: { in: items.map((i) => i.partId) }, companyId },
-      select: { id: true, name: true, brand: true },
+      select: { id: true, name: true, brand: true, model: true, specification: true, category: true },
     })
     const partMap = new Map(parts.map((p) => [p.id, p]))
     if (parts.length !== new Set(items.map((i) => i.partId)).size) {
@@ -190,6 +198,11 @@ export async function updateQuotation(id: string, data: QuotationInput) {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               subtotal: item.quantity * item.unitPrice,
+              stockCategory: getStockType(part.category),
+              brandSnapshot: part.brand,
+              nameSnapshot: part.name,
+              modelSnapshot: part.model,
+              specificationSnapshot: part.specification,
             }
           }),
         })

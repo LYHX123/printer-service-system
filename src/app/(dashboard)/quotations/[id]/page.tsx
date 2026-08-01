@@ -23,7 +23,7 @@ export default async function QuotationDetailPage({
 }) {
   const session = await auth()
   const role = session!.user.role as import("@/types").Role
-  if (!canAccess(role, "quotations")) redirect("/dashboard")
+  if (!canAccess(role, "quotations", session!.user.modulePermissions)) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 

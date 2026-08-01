@@ -17,6 +17,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { formatCurrency } from "@/lib/utils"
 import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 import type { SparePartOption } from "@/lib/data/inventory"
+import { getStockType, STOCK_TYPE_LABELS } from "@/lib/stock-types"
 import { StockItemSearch } from "./StockItemSearch"
 
 interface CustomerProjectOption {
@@ -122,7 +123,10 @@ export function QuotationForm({
   const total = subtotal + vatAmount
 
   function addStockItem(part: SparePartOption) {
-    append({ partId: part.id, quantity: 1, unitPrice: Number(part.sellingPrice) })
+    // Unit Price is always typed in by the user (never auto-filled from the
+    // stock item's sellingPrice) — only category/brand/name/model/specification
+    // and current stock quantity are auto-populated, per spec.
+    append({ partId: part.id, quantity: 1, unitPrice: 0 })
   }
 
   async function onSubmit(data: QuotationInput) {
@@ -250,10 +254,22 @@ export function QuotationForm({
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">
-                          {part ? (part.brand ? `${part.brand} — ${part.name}` : part.name) : "Unknown item"}
-                        </p>
-                        {part && <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>}
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-slate-900 truncate">
+                            {part ? (part.brand ? `${part.brand} — ${part.name}` : part.name) : "Unknown item"}
+                          </p>
+                          {part && (
+                            <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                              {STOCK_TYPE_LABELS[getStockType(part.category)]}
+                            </span>
+                          )}
+                        </div>
+                        {part && (
+                          <p className="text-xs text-slate-400 truncate">
+                            {part.model ? `${part.model} · ` : ""}
+                            {part.stock?.quantity ?? 0} {part.unit} in stock
+                          </p>
+                        )}
                       </div>
                       <input type="hidden" {...register(`items.${index}.partId`)} />
                     </div>

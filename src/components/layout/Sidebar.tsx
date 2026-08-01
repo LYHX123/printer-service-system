@@ -12,11 +12,13 @@ import {
   Settings,
   Printer,
   CheckSquare,
+  Receipt,
+  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { canAccess, type Module } from "@/lib/permissions"
+import { canAccess, hasAnyPermission, type Module } from "@/lib/permissions"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { TranslationKey } from "@/lib/i18n/translations"
 import type { Role } from "@/types"
@@ -30,36 +32,23 @@ interface NavItem {
   icon: LucideIcon
   exact?: boolean
   module: Module
+  /** Overrides the module-level check with a specific leaf-permission prefix
+   * (used where two nav rows share one Module, e.g. Ledger vs Shop Account). */
+  permPrefix?: string
 }
 
-interface NavSection {
-  title?: string
-  items: NavItem[]
-}
-
-const NAV_SECTIONS: NavSection[] = [
-  {
-    items: [
-      { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
-      { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
-      { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
-    ],
-  },
-  {
-    title: "Operations",
-    items: [
-      { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
-      { href: "/ledger", labelKey: "ledger", label: "Ledger", icon: BookOpen, module: "ledger" },
-      { href: "/tasks", labelKey: "tasks", label: "Tasks", icon: CheckSquare, module: "tasks" },
-    ],
-  },
-  {
-    title: "Administration",
-    items: [
-      { href: "/users", labelKey: "users", label: "Users", icon: UserCog, module: "users" },
-      { href: "/settings", labelKey: "settings", label: "Settings", icon: Settings, module: "settings" },
-    ],
-  },
+// One flat, ungrouped list — no more "Operations"/"Administration" section titles.
+const NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
+  { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
+  { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
+  { href: "/invoice", labelKey: "invoice", label: "Invoice", icon: Receipt, module: "invoice" },
+  { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
+  { href: "/ledger", labelKey: "ledger", label: "Ledger", icon: BookOpen, module: "ledger", permPrefix: "ledger.general.|ledger.sales." },
+  { href: "/ledger/shop", labelKey: "shopAccount", label: "Shop Account", icon: Wallet, module: "ledger", permPrefix: "ledger.shop." },
+  { href: "/tasks", labelKey: "tasks", label: "Tasks", icon: CheckSquare, module: "tasks" },
+  { href: "/users", labelKey: "users", label: "Users", icon: UserCog, module: "users" },
+  { href: "/settings", labelKey: "settings", label: "Settings", icon: Settings, module: "settings" },
 ]
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -70,6 +59,28 @@ interface SidebarProps {
   taskCount?: number | null
   open: boolean
   onClose: () => void
+}
+
+function isNavItemVisible(item: NavItem, role: SidebarProps["role"], modulePermissions: string[]): boolean {
+  if (item.permPrefix) {
+    return item.permPrefix.split("|").some((prefix) => hasAnyPermission(role, modulePermissions, prefix))
+  }
+  return canAccess(role, item.module, modulePermissions)
+}
+
+function matchesRoute(item: NavItem, pathname: string): boolean {
+  return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+}
+
+/**
+ * Several nav items share a module (e.g. Ledger "/ledger" and Shop Account
+ * "/ledger/shop"), so a naive startsWith() check double-highlights both when
+ * on "/ledger/shop". Only the most specific (longest href) match wins.
+ */
+function getActiveHref(items: NavItem[], pathname: string): string | undefined {
+  const matches = items.filter((item) => matchesRoute(item, pathname))
+  if (matches.length === 0) return undefined
+  return matches.reduce((longest, item) => (item.href.length > longest.href.length ? item : longest)).href
 }
 
 export function Sidebar({ role, modulePermissions, taskCount = null, open, onClose }: SidebarProps) {
@@ -117,67 +128,53 @@ export function Sidebar({ role, modulePermissions, taskCount = null, open, onClo
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-          {NAV_SECTIONS.map((section) => ({
-            ...section,
-            items: section.items.filter((item) => canAccess(role, item.module, modulePermissions)),
-          }))
-            .filter((section) => section.items.length > 0)
-            .map((section, si) => (
-              <div key={si}>
-                {section.title && (
-                  <p className="mb-1.5 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {section.title}
-                  </p>
-                )}
-                <ul className="space-y-0.5">
-                  {section.items
-                    .map((item) => {
-                      const isActive = item.exact
-                        ? pathname === item.href
-                        : pathname.startsWith(item.href)
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            onClick={onClose}
-                            className={cn(
-                              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                              isActive
-                                ? "bg-blue-600/20 text-blue-400 border-l-2 border-blue-400"
-                                : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                            )}
-                          >
-                            <item.icon
-                              className={cn(
-                                "h-4 w-4 shrink-0",
-                                isActive ? "text-blue-400" : "text-slate-500"
-                              )}
-                            />
-                            <span className="flex-1 truncate">
-                              {item.labelKey ? t(item.labelKey) : item.label}
-                            </span>
-                            {item.href === "/tasks" && !!taskCount && taskCount > 0 && (
-                              <span
-                                className={cn(
-                                  "shrink-0 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none",
-                                  isActive
-                                    ? "bg-blue-400/20 text-blue-300"
-                                    : "bg-slate-700 text-slate-300"
-                                )}
-                              >
-                                {taskCount}
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      )
-                    })}
-                </ul>
-              </div>
-            )
-          )}
+        {/* Navigation — one flat, ungrouped list */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <ul className="space-y-0.5">
+            {(() => {
+              const visibleItems = NAV_ITEMS.filter((item) => isNavItemVisible(item, role, modulePermissions))
+              const activeHref = getActiveHref(visibleItems, pathname)
+              return visibleItems.map((item) => {
+                const isActive = item.href === activeHref
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-blue-600/20 text-blue-400 border-l-2 border-blue-400"
+                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          isActive ? "text-blue-400" : "text-slate-500"
+                        )}
+                      />
+                      <span className="flex-1 truncate">
+                        {item.labelKey ? t(item.labelKey) : item.label}
+                      </span>
+                      {item.href === "/tasks" && !!taskCount && taskCount > 0 && (
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none",
+                            isActive
+                              ? "bg-blue-400/20 text-blue-300"
+                              : "bg-slate-700 text-slate-300"
+                          )}
+                        >
+                          {taskCount}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })
+            })()}
+          </ul>
         </nav>
 
         {/* Footer */}

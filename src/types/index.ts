@@ -40,6 +40,9 @@ import type {
   SalesPaymentStatus,
   Invoice,
   InvoiceItem,
+  InvoiceStatus,
+  ShopAccountCategory,
+  ShopAccountEntry,
 } from "@/generated/prisma/client"
 
 export type {
@@ -84,6 +87,9 @@ export type {
   SalesPaymentStatus,
   Invoice,
   InvoiceItem,
+  InvoiceStatus,
+  ShopAccountCategory,
+  ShopAccountEntry,
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -245,6 +251,7 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   RETURN: "Return",
   DAMAGE: "Damage",
   ADJUSTMENT: "Adjustment",
+  REVERSAL: "Reversal",
 }
 
 export const COMMUNICATION_CHANNEL_LABELS: Record<CommunicationChannel, string> = {
@@ -274,6 +281,8 @@ export const LEDGER_PAYMENT_METHOD_LABELS: Record<LedgerPaymentMethod, string> =
   BANK_TRANSFER: "Bank Transfer",
   CHEQUE: "Cheque",
   CASH: "Cash",
+  CARD: "Card",
+  OTHER: "Other",
 }
 
 export const SALES_PAYMENT_STATUS_LABELS: Record<SalesPaymentStatus, string> = {
@@ -299,6 +308,21 @@ export const DEFAULT_INCOME_CATEGORIES = [
   "INSURANCE INCOME",
   "无票据收入",
 ]
+
+// Shop Account default categories — independent from the Ledger categories above.
+export const DEFAULT_SHOP_EXPENSE_CATEGORIES = [
+  "Stock Purchase",
+  "Transport",
+  "Delivery",
+  "Repair Tools",
+  "Office Expense",
+  "Utilities",
+  "Rent",
+  "Staff Expense",
+  "Miscellaneous",
+]
+
+export const DEFAULT_SHOP_INCOME_CATEGORIES = ["Other Income"]
 
 export const PART_CATEGORY_LABELS: Record<PartCategory, string> = {
   TONER: "Toner",

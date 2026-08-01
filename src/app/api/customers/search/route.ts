@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canAccess(session.user.role as Role, "ledger")) {
+  if (!canAccess(session.user.role as Role, "ledger", session.user.modulePermissions)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

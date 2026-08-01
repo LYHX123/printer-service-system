@@ -15,7 +15,7 @@ export default async function EditSparePartPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-  if (!canManageInventory(session!.user.role as Role)) redirect("/stock")
+  if (!canManageInventory(session!.user.role as Role, session!.user.modulePermissions)) redirect("/stock")
   const companyId = session!.user.companyId as string
 
   const { id } = await params
@@ -36,8 +36,9 @@ export default async function EditSparePartPage({
         partId={part.id}
         imageUrl={part.imageUrl}
         defaultValues={{
-          partNumber: part.partNumber,
           name: part.name,
+          model: part.model ?? "",
+          specification: part.specification ?? "",
           category: part.category,
           brand: part.brand ?? "",
           quantity: part.stock?.quantity ?? 0,

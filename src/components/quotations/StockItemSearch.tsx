@@ -74,7 +74,7 @@ export function StockItemSearch({ spareParts, onSelect }: StockItemSearchProps) 
                   <p className="text-sm font-medium text-slate-900 truncate">
                     {part.brand ? `${part.brand} — ` : ""}{part.name}
                   </p>
-                  <p className="text-xs text-slate-400 font-mono">{part.partNumber}</p>
+                  <p className="text-xs text-slate-400 truncate">{part.model || part.partNumber}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-medium text-slate-700">{formatCurrency(Number(part.sellingPrice))}</p>

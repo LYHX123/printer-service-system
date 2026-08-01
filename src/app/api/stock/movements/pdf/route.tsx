@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canAccess(session.user.role as Role, "inventory")) {
+  if (!canAccess(session.user.role as Role, "inventory", session.user.modulePermissions)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
   const companyId = session.user.companyId as string

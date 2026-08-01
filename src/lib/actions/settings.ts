@@ -11,7 +11,7 @@ import type { Role } from "@/types"
 export async function updateCompanySettings(data: CompanySettingsInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageSettings(session.user.role as Role)) {
+  if (!canManageSettings(session.user.role as Role, session.user.modulePermissions)) {
     return { error: "You do not have permission to manage company settings" }
   }
   const companyId = session.user.companyId as string

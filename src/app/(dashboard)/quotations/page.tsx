@@ -21,7 +21,7 @@ export default async function QuotationsPage({
 }) {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canAccess(role, "quotations")) redirect("/dashboard")
+  if (!canAccess(role, "quotations", session!.user.modulePermissions)) redirect("/dashboard")
   const { search, status } = await searchParams
   const companyId = session!.user.companyId as string
 

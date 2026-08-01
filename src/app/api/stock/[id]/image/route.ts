@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canManageInventory } from "@/lib/permissions"
-import { saveSparePartImage } from "@/lib/uploads"
+import { saveSparePartImage, deleteSparePartImage } from "@/lib/uploads"
 import { ALLOWED_IMAGE_TYPES, MAX_PHOTO_SIZE } from "@/lib/constants"
 import type { Role } from "@/types"
 
@@ -12,7 +12,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canManageInventory(session.user.role as Role)) {
+  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
   const companyId = session.user.companyId as string
@@ -48,4 +48,32 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   revalidatePath("/stock")
 
   return NextResponse.json({ imageUrl })
+}
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+  const companyId = session.user.companyId as string
+
+  const { id } = await params
+  const part = await prisma.sparePart.findFirst({ where: { id, companyId } })
+  if (!part) {
+    return NextResponse.json({ error: "Part not found" }, { status: 404 })
+  }
+
+  if (part.imageUrl) {
+    await deleteSparePartImage(part.imageUrl)
+  }
+
+  await prisma.sparePart.update({ where: { id }, data: { imageUrl: null } })
+
+  revalidatePath(`/stock/${id}/edit`)
+  revalidatePath("/stock")
+
+  return NextResponse.json({ success: true })
 }

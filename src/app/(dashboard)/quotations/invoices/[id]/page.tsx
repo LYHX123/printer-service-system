@@ -6,6 +6,7 @@ import { getInvoice } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
+import { InvoiceStatusBadge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
@@ -18,7 +19,7 @@ export default async function InvoiceDetailPage({
 }) {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canAccess(role, "quotations")) redirect("/dashboard")
+  if (!canAccess(role, "invoice", session!.user.modulePermissions)) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 
@@ -41,7 +42,12 @@ export default async function InvoiceDetailPage({
       </Link>
 
       <PageHeader
-        title={invoice.invoiceNumber}
+        title={
+          <span className="inline-flex items-center gap-2">
+            {invoice.invoiceNumber}
+            <InvoiceStatusBadge status={invoice.status} />
+          </span>
+        }
         subtitle={
           <span className="text-slate-400 text-xs">
             {format(new Date(invoice.date), "dd MMM yyyy")}

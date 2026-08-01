@@ -47,28 +47,32 @@ export function SparePartActions({
 
   return (
     <>
-      <div className="flex flex-wrap justify-end gap-2">
-        <Link href={`/stock/${partId}/edit`}>
-          <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />}>
-            Edit
+      <div className="flex flex-nowrap items-center justify-end gap-1.5">
+        <Link href={`/stock/${partId}/edit`} title="Edit">
+          <Button variant="outline" size="sm" className="h-8 w-8 px-0" aria-label="Edit">
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
         </Link>
         <Button
           variant="outline"
           size="sm"
-          icon={<ArrowLeftRight className="h-3.5 w-3.5" />}
+          className="h-8 w-8 px-0"
+          aria-label="Add Movement"
+          title="Add Movement"
           onClick={() => setMovementOpen(true)}
         >
-          Add Movement
+          <ArrowLeftRight className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="outline"
           size="sm"
-          icon={isActive ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
+          className="h-8 w-8 px-0"
+          aria-label={isActive ? "Archive" : "Reactivate"}
+          title={isActive ? "Archive" : "Reactivate"}
           onClick={toggleActive}
           loading={isPending}
         >
-          {isActive ? "Archive" : "Reactivate"}
+          {isActive ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
         </Button>
       </div>
       <AddMovementModal

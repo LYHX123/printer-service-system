@@ -24,7 +24,7 @@ export default async function StockMovementsPage({
   searchParams: Promise<{ category?: string; type?: string; search?: string; date?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "inventory")) redirect("/dashboard")
+  if (!canAccess(session!.user.role as Role, "inventory", session!.user.modulePermissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
   const { category, type, search = "", date } = await searchParams

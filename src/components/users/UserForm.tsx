@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ROLE_LABELS } from "@/types"
-import { ALL_MODULES } from "@/lib/permissions"
+import { ALL_PERMISSIONS } from "@/lib/permissions"
 import { PermissionsEditor } from "@/components/users/PermissionsEditor"
 import type { Role } from "@/types"
 
@@ -30,11 +30,10 @@ export function UserForm() {
     resolver: zodResolver(CreateUserSchema) as Resolver<CreateUserInput>,
     defaultValues: {
       name: "",
-      username: "",
       email: "",
       password: "",
       role: "RECEPTIONIST",
-      modulePermissions: [...ALL_MODULES],
+      modulePermissions: [...ALL_PERMISSIONS],
       phone: "",
       department: "",
       position: "",
@@ -42,7 +41,7 @@ export function UserForm() {
   })
 
   const role = useWatch({ control, name: "role", defaultValue: "RECEPTIONIST" }) as Role
-  const modulePermissions = useWatch({ control, name: "modulePermissions", defaultValue: [...ALL_MODULES] })
+  const modulePermissions = useWatch({ control, name: "modulePermissions", defaultValue: [...ALL_PERMISSIONS] })
 
   async function onSubmit(data: CreateUserInput) {
     const result = await createUser(data)
@@ -56,20 +55,9 @@ export function UserForm() {
       <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
 
         {/* Identity */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField label={t("fullName")} htmlFor="name" required error={errors.name?.message}>
-            <Input id="name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
-          </FormField>
-          <FormField label={t("username")} htmlFor="username" required error={errors.username?.message}>
-            <Input
-              id="username"
-              placeholder="e.g. jane_doe"
-              autoComplete="off"
-              {...register("username")}
-              error={errors.username?.message}
-            />
-          </FormField>
-        </div>
+        <FormField label={t("fullName")} htmlFor="name" required error={errors.name?.message} hint={t("nameIsLoginId")}>
+          <Input id="name" placeholder="e.g. Jane Doe" autoComplete="off" {...register("name")} error={errors.name?.message} />
+        </FormField>
 
         {/* Credentials + role */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -118,7 +106,7 @@ export function UserForm() {
             {t("moduleAccess")} <span className="text-slate-400 font-normal">/ 模块权限</span>
           </p>
           <PermissionsEditor
-            permissions={modulePermissions ?? [...ALL_MODULES]}
+            permissions={modulePermissions ?? [...ALL_PERMISSIONS]}
             userRole={role}
             isSelf={false}
             onChange={(perms) => setValue("modulePermissions", perms)}

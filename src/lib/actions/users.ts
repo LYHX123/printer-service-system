@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canManageUsers, ADMIN_SELF_PROTECTED } from "@/lib/permissions"
+import { canManageUsers, ADMIN_SELF_PROTECTED_PERMISSIONS } from "@/lib/permissions"
 import {
   CreateUserSchema,
   UpdateUserRoleSchema,
@@ -28,17 +28,17 @@ function trim(v: string | undefined | null): string | null {
 export async function createUser(data: CreateUserInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = CreateUserSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { name, username, email, password, role, modulePermissions, phone, department, position } = parsed.data
+  const { name, email, password, role, modulePermissions, phone, department, position } = parsed.data
 
-  // Check username uniqueness
-  const existingByUsername = await prisma.user.findUnique({ where: { username }, select: { id: true } })
-  if (existingByUsername) return { error: "A user with this username already exists" }
+  // Name is the login identifier now — must be unique within the company.
+  const existingByName = await prisma.user.findFirst({ where: { name, companyId }, select: { id: true } })
+  if (existingByName) return { error: "A user with this name already exists" }
 
   // Check email uniqueness (only if email is provided)
   if (email) {
@@ -52,7 +52,6 @@ export async function createUser(data: CreateUserInput) {
       data: {
         companyId,
         name,
-        username,
         email: email || null,
         passwordHash,
         role,
@@ -74,7 +73,7 @@ export async function createUser(data: CreateUserInput) {
 export async function updateUserRole(id: string, data: UpdateUserRoleInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = UpdateUserRoleSchema.safeParse(data)
@@ -99,7 +98,7 @@ export async function updateUserRole(id: string, data: UpdateUserRoleInput) {
 export async function setUserActive(id: string, isActive: boolean) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   if (id === session.user.id) return { error: "You cannot disable your own account" }
@@ -119,21 +118,19 @@ export async function setUserActive(id: string, isActive: boolean) {
 export async function updateUserPermissions(id: string, data: UpdateUserPermissionsInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const currentUserId = session.user.id as string
 
   const parsed = UpdateUserPermissionsSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid permissions" }
 
-  let permissions = parsed.data.modulePermissions
+  let permissions: string[] = parsed.data.modulePermissions
 
   // Self-protection: admin cannot accidentally remove critical modules from own account
   if (id === currentUserId) {
-    for (const m of ADMIN_SELF_PROTECTED) {
-      if (!permissions.includes(m)) {
-        permissions = [...permissions, m]
-      }
+    for (const key of ADMIN_SELF_PROTECTED_PERMISSIONS) {
+      if (!permissions.includes(key)) permissions = [...permissions, key]
     }
   }
 
@@ -152,7 +149,7 @@ export async function updateUserPermissions(id: string, data: UpdateUserPermissi
 export async function unlockUser(id: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   try {
@@ -173,20 +170,20 @@ export async function unlockUser(id: string) {
 export async function updateUserProfile(id: string, data: UpdateUserProfileInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role)) return { error: "Forbidden" }
+  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = UpdateUserProfileSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid profile data" }
 
-  const { name, username, phone, department, position, newPassword } = parsed.data
+  const { name, phone, department, position, newPassword } = parsed.data
 
-  // Check username uniqueness (exclude the user being edited)
-  const existingByUsername = await prisma.user.findFirst({
-    where: { username, NOT: { id } },
+  // Name is the login identifier now — must stay unique within the company.
+  const existingByName = await prisma.user.findFirst({
+    where: { name, companyId, NOT: { id } },
     select: { id: true },
   })
-  if (existingByUsername) return { error: "This username is already taken" }
+  if (existingByName) return { error: "A user with this name already exists" }
 
   try {
     const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
@@ -194,7 +191,6 @@ export async function updateUserProfile(id: string, data: UpdateUserProfileInput
 
     const updateData: Record<string, unknown> = {
       name,
-      username,
       phone: trim(phone),
       department: trim(department),
       position: trim(position),

@@ -56,9 +56,41 @@ export function isStockType(value: string | undefined): value is StockType {
   return STOCK_TYPES.includes(value as StockType)
 }
 
-/** Equipment items are described by Model; Consumption/Parts items by Item Name. */
-export function itemNameTranslationKey(stockType: StockType): "model" | "itemName" {
-  return stockType === "EQUIPMENT" ? "model" : "itemName"
+/**
+ * Single source of truth for the Equipment/Consumption/Parts list table's column
+ * widths + alignment. All three stock types render through the same list page,
+ * so this is naturally shared — defined once here rather than duplicated so the
+ * three views can never drift apart.
+ */
+export const STOCK_TABLE_COLUMNS = {
+  picture: { width: "8%", align: "center" as const },
+  brand: { width: "11%", align: "left" as const },
+  name: { width: "17%", align: "left" as const },
+  model: { width: "15%", align: "left" as const },
+  specification: { width: "23%", align: "left" as const },
+  quantity: { width: "9%", align: "center" as const },
+  status: { width: "9%", align: "center" as const },
+  actions: { width: "150px", align: "center" as const },
+} satisfies Record<string, { width: string; align: "left" | "center" | "right" }>
+
+/** Builds the shared `w-[...] text-{align}` class for a STOCK_TABLE_COLUMNS entry. */
+export function stockColumnClass(col: keyof typeof STOCK_TABLE_COLUMNS): string {
+  const { width, align } = STOCK_TABLE_COLUMNS[col]
+  return `w-[${width}] text-${align}`
+}
+
+/** Translation key for the "Add X Item" button/page title, by stock type. */
+export const ADD_ITEM_TRANSLATION_KEYS: Record<StockType, TranslationKey> = {
+  EQUIPMENT: "addEquipmentItem",
+  CONSUMPTION: "addConsumptionItem",
+  PARTS: "addPartItem",
+}
+
+/** Translation keys for the list empty state (title + description), by stock type. */
+export const EMPTY_STATE_TRANSLATION_KEYS: Record<StockType, { title: TranslationKey; description: TranslationKey }> = {
+  EQUIPMENT: { title: "equipmentEmptyTitle", description: "equipmentEmptyDesc" },
+  CONSUMPTION: { title: "consumptionEmptyTitle", description: "consumptionEmptyDesc" },
+  PARTS: { title: "partsEmptyTitle", description: "partsEmptyDesc" },
 }
 
 const STOCK_TYPE_COUNT_LABELS: Record<StockType, { singular: TranslationKey; plural: TranslationKey }> = {

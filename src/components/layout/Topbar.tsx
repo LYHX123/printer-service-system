@@ -88,7 +88,6 @@ function UserAvatar({ name }: { name: string }) {
 
 interface TopbarUser {
   name?: string | null
-  username?: string | null
   position?: string | null
   role: Role
 }
@@ -109,7 +108,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
   }
 
   return (
-    <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 pt-[env(safe-area-inset-top)] print:hidden">
+    <header className="flex min-h-[68px] shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 pt-[env(safe-area-inset-top)] print:hidden">
       {/* Mobile hamburger */}
       <button
         onClick={onMenuClick}
@@ -122,7 +121,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
       {/* Breadcrumb */}
       <div className="flex-1 min-w-0">
         <nav aria-label="Breadcrumb" className="hidden sm:block">
-          <ol className="flex items-center gap-1 text-xs text-slate-400">
+          <ol className="flex items-center gap-1 text-sm text-slate-400">
             {crumbs.map((crumb, i) => (
               <li key={crumb.href} className="flex items-center gap-1">
                 {i > 0 && <ChevronRight className="h-3 w-3 shrink-0" />}
@@ -139,7 +138,7 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
             ))}
           </ol>
         </nav>
-        <p className="truncate text-sm font-semibold text-slate-900 leading-tight">
+        <p className="truncate text-[15px] font-semibold text-slate-900 leading-tight">
           {currentPage}
         </p>
       </div>
@@ -150,19 +149,18 @@ export function Topbar({ user, onMenuClick }: TopbarProps) {
         <div className="hidden sm:flex items-center gap-2">
           <UserAvatar name={user.name ?? "U"} />
           <div className="hidden md:block">
-            <p className="text-sm font-medium text-slate-900 leading-tight">
+            <p className="text-[15px] font-medium text-slate-900 leading-tight">
               {user.name}
             </p>
-            <p className="text-xs text-slate-500 leading-tight">
-              {user.username ? `@${user.username}` : ""}
-              {user.position ? (user.username ? ` · ${user.position}` : user.position) : ""}
-            </p>
+            {user.position && (
+              <p className="text-xs text-slate-500 leading-tight">{user.position}</p>
+            )}
           </div>
-          <RoleBadge role={user.role} />
+          <RoleBadge role={user.role} className="text-[13px]" />
         </div>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
           title={t("logout")}
         >
           <LogOut className="h-4 w-4" />

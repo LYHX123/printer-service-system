@@ -4,18 +4,22 @@ import { redirect } from "next/navigation"
 import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, ImageOff, ArrowLeftRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { canAccess, canManageInventory } from "@/lib/permissions"
-import { getSpareParts, getStockTypeCounts } from "@/lib/data/inventory"
+import { getSpareParts, getStockTypeCounts, getStockLevel } from "@/lib/data/inventory"
+import { getLowStockThreshold } from "@/lib/stock-types"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { T, TInput } from "@/components/ui/T"
 import { Table } from "@/components/ui/table"
+import { StockLevelBadge } from "@/components/ui/badge"
 import { SparePartActions } from "@/components/inventory/SparePartActions"
 import {
   STOCK_TYPES,
   CATEGORIES_FOR_STOCK_TYPE,
   STOCK_TYPE_LABELS,
+  ADD_ITEM_TRANSLATION_KEYS,
+  EMPTY_STATE_TRANSLATION_KEYS,
+  stockColumnClass,
   isStockType,
-  itemNameTranslationKey,
   stockCountTranslationKey,
 } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
@@ -28,26 +32,15 @@ const STOCK_TYPE_ICONS: Record<StockType, LucideIcon> = {
   PARTS: Wrench,
 }
 
-const ADD_BUTTON_LABELS: Record<StockType, string> = {
-  EQUIPMENT: "Add Equipment",
-  CONSUMPTION: "Add Consumption Item",
-  PARTS: "Add Part",
-}
-
-const EMPTY_TITLES: Record<StockType, string> = {
-  EQUIPMENT: "No equipment found",
-  CONSUMPTION: "No consumption items found",
-  PARTS: "No parts found",
-}
-
 export default async function StockPage({
   searchParams,
 }: {
   searchParams: Promise<{ search?: string; type?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "inventory")) redirect("/dashboard")
-  const canEdit = canManageInventory(session!.user.role as Role)
+  const permissions = session!.user.modulePermissions
+  if (!canAccess(session!.user.role as Role, "inventory", permissions)) redirect("/dashboard")
+  const canEdit = canManageInventory(session!.user.role as Role, permissions)
   const companyId = session!.user.companyId as string
 
   const { search = "", type } = await searchParams
@@ -85,7 +78,6 @@ export default async function StockPage({
     )
   }
 
-  const itemNameKey = itemNameTranslationKey(stockType)
   const parts = await getSpareParts(companyId, {
     search: search || undefined,
     categories: CATEGORIES_FOR_STOCK_TYPE[stockType],
@@ -108,7 +100,7 @@ export default async function StockPage({
             </Link>
             {canEdit && (
               <Link href={`/stock/new?type=${stockType}`}>
-                <Button icon={<Plus className="h-4 w-4" />}>{ADD_BUTTON_LABELS[stockType]}</Button>
+                <Button icon={<Plus className="h-4 w-4" />}><T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} /></Button>
               </Link>
             )}
           </div>
@@ -136,51 +128,81 @@ export default async function StockPage({
       </form>
 
       <Table
-        tableClassName="table-fixed"
+        tableClassName="table-fixed w-full min-w-[1150px]"
         columns={[
           {
-            key: "brand",
-            label: <T k="brand" />,
-            className: "w-[16%] text-left",
-            headerClassName: "w-[16%] text-left",
-            render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
-          },
-          {
-            key: "name",
-            label: <T k={itemNameKey} />,
-            className: "w-[26%] text-left",
-            headerClassName: "w-[26%] text-left",
-            render: (row) => <span className="text-sm font-medium text-slate-900">{row.name}</span>,
-          },
-          {
-            key: "quantity",
-            label: <T k="quantity" />,
-            className: "w-[10%] text-center",
-            headerClassName: "w-[10%] text-center",
-            render: (row) => <span className="font-mono font-semibold">{row.stock?.quantity ?? 0}</span>,
-          },
-          {
             key: "image",
-            label: "Picture",
-            className: "w-[12%] text-center",
-            headerClassName: "w-[12%] text-center",
+            label: <T k="picture" />,
+            className: stockColumnClass("picture"),
+            headerClassName: stockColumnClass("picture"),
             render: (row) => (
-              <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                 {row.imageUrl ? (
-                  <Image src={row.imageUrl} alt={row.name} width={80} height={80} className="h-full w-full object-cover" unoptimized />
+                  <Image src={row.imageUrl} alt={row.name} width={48} height={48} className="h-full w-full object-cover" unoptimized />
                 ) : (
-                  <ImageOff className="h-6 w-6 text-slate-300" />
+                  <ImageOff className="h-5 w-5 text-slate-300" />
                 )}
               </div>
             ),
           },
           {
-            key: "actions",
-            label: "",
-            className: "w-[36%] text-right",
-            headerClassName: "w-[36%] text-right",
+            key: "brand",
+            label: <T k="brand" />,
+            className: stockColumnClass("brand"),
+            headerClassName: stockColumnClass("brand"),
+            render: (row) => <span className="text-sm text-slate-600">{row.brand ?? "—"}</span>,
+          },
+          {
+            key: "name",
+            label: <T k="name" />,
+            className: stockColumnClass("name"),
+            headerClassName: stockColumnClass("name"),
+            render: (row) => <span className="text-sm font-medium text-slate-900">{row.name}</span>,
+          },
+          {
+            key: "model",
+            label: <T k="model" />,
+            className: stockColumnClass("model"),
+            headerClassName: stockColumnClass("model"),
+            render: (row) => <span className="text-sm text-slate-600">{row.model ?? "—"}</span>,
+          },
+          {
+            key: "specification",
+            label: <T k="specification" />,
+            className: stockColumnClass("specification"),
+            headerClassName: stockColumnClass("specification"),
             render: (row) => (
-              <div className="flex justify-end">
+              <span
+                className="block text-xs text-slate-500 line-clamp-2 max-w-full whitespace-pre-line"
+                title={row.specification ?? undefined}
+              >
+                {row.specification ?? "—"}
+              </span>
+            ),
+          },
+          {
+            key: "quantity",
+            label: <T k="quantity" />,
+            className: stockColumnClass("quantity"),
+            headerClassName: stockColumnClass("quantity"),
+            render: (row) => <span className="font-mono font-semibold">{row.stock?.quantity ?? 0}</span>,
+          },
+          {
+            key: "status",
+            label: <T k="status" />,
+            className: stockColumnClass("status"),
+            headerClassName: stockColumnClass("status"),
+            render: (row) => (
+              <StockLevelBadge level={getStockLevel(row.stock?.quantity ?? 0, getLowStockThreshold(row.category))} />
+            ),
+          },
+          {
+            key: "actions",
+            label: <T k="actions" />,
+            className: stockColumnClass("actions"),
+            headerClassName: stockColumnClass("actions"),
+            render: (row) => (
+              <div className="flex justify-center">
                 <SparePartActions
                   partId={row.id}
                   partName={row.name}
@@ -195,8 +217,8 @@ export default async function StockPage({
         ]}
         data={parts}
         keyExtractor={(row) => row.id}
-        emptyTitle={EMPTY_TITLES[stockType]}
-        emptyDescription={search ? <T k="tryAdjustingFilters" /> : <T k="addFirstPart" />}
+        emptyTitle={<T k={EMPTY_STATE_TRANSLATION_KEYS[stockType].title} />}
+        emptyDescription={search ? <T k="tryAdjustingFilters" /> : <T k={EMPTY_STATE_TRANSLATION_KEYS[stockType].description} />}
       />
     </div>
   )

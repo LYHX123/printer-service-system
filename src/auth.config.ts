@@ -1,17 +1,22 @@
 import type { NextAuthConfig } from "next-auth"
 import { NextResponse } from "next/server"
+import { hasAnyPermission } from "@/lib/permissions"
+import type { Role } from "@/types"
 
 const PUBLIC_PATHS = ["/login"]
 
-// Maps URL path prefixes to module keys used in modulePermissions
-const MODULE_PATHS: Array<{ prefix: string; module: string }> = [
-  { prefix: "/quotations", module: "quotations" },
-  { prefix: "/customers",  module: "customers"  },
-  { prefix: "/jobs",       module: "jobs"       },
-  { prefix: "/stock",      module: "inventory"  },
-  { prefix: "/ledger",     module: "ledger"     },
-  { prefix: "/users",      module: "users"      },
-  { prefix: "/settings",   module: "settings"   },
+// Maps URL path prefixes to the leaf-permission prefix that must be present
+// (any leaf under it) for the route to be reachable. Kept in sync with
+// MODULE_PREFIX in src/lib/permissions.ts.
+const MODULE_PATHS: Array<{ prefix: string; permPrefix: string }> = [
+  { prefix: "/quotations", permPrefix: "quotations." },
+  { prefix: "/invoice",    permPrefix: "invoice."    },
+  { prefix: "/customers",  permPrefix: "customers."  },
+  { prefix: "/jobs",       permPrefix: "jobs"        },
+  { prefix: "/stock",      permPrefix: "stock."      },
+  { prefix: "/ledger",     permPrefix: "ledger."     },
+  { prefix: "/users",      permPrefix: "users."      },
+  { prefix: "/settings",   permPrefix: "settings."   },
 ]
 
 export const authConfig: NextAuthConfig = {
@@ -37,15 +42,12 @@ export const authConfig: NextAuthConfig = {
       if (isLoggedIn && !isPublic) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const user = (auth as any)?.user
-        const role = user?.role as string | undefined
+        const role = (user?.role as Role | undefined) ?? "RECEPTIONIST"
         const permissions = (user?.modulePermissions as string[] | undefined) ?? []
 
-        // Admin always passes; empty array = all access (backward compat)
-        if (role !== "ADMIN" && permissions.length > 0) {
-          const match = MODULE_PATHS.find(({ prefix }) => pathname.startsWith(prefix))
-          if (match && !permissions.includes(match.module)) {
-            return NextResponse.redirect(new URL("/dashboard", request.nextUrl.origin))
-          }
+        const match = MODULE_PATHS.find(({ prefix }) => pathname.startsWith(prefix))
+        if (match && !hasAnyPermission(role, permissions, match.permPrefix)) {
+          return NextResponse.redirect(new URL("/dashboard", request.nextUrl.origin))
         }
       }
 

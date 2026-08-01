@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canManageSettings(session.user.role as Role)) {
+  if (!canManageSettings(session.user.role as Role, session.user.modulePermissions)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
   const companyId = session.user.companyId as string
