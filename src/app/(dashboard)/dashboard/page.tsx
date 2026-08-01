@@ -11,7 +11,6 @@ import {
   getStockQuantityTotals,
   getRecentQuotations,
   getRecentInvoices,
-  getRecentTasks,
 } from "@/lib/data/dashboard"
 import { DashboardHome } from "@/components/dashboard/DashboardHome"
 import type { Role } from "@/types"
@@ -47,7 +46,6 @@ export default async function DashboardPage() {
     monthShopExpense,
     recentQuotations,
     recentInvoices,
-    recentTasks,
     recentShopEntries,
   ] = await Promise.all([
     canViewCustomers ? getCustomerCount(companyId) : Promise.resolve(null),
@@ -63,7 +61,6 @@ export default async function DashboardPage() {
     canViewShopAccount ? getCurrentMonthShopExpense(companyId) : Promise.resolve(null),
     canViewQuotations ? getRecentQuotations(companyId) : Promise.resolve([]),
     canViewInvoice ? getRecentInvoices(companyId) : Promise.resolve([]),
-    canViewTasks ? getRecentTasks(companyId, userId, role) : Promise.resolve([]),
     canViewShopAccount ? getRecentShopAccountEntries(companyId) : Promise.resolve([]),
   ])
 
@@ -93,7 +90,6 @@ export default async function DashboardPage() {
       currentMonthShopExpense={monthShopExpense}
       recentQuotations={recentQuotations}
       recentInvoices={recentInvoices}
-      recentTasks={recentTasks}
       recentShopEntries={recentShopEntries}
     />
   )

@@ -504,6 +504,7 @@ export type TranslationKey =
   | "businessOverviewSection"
   | "stockOverviewSection"
   | "financialOverviewSection"
+  | "recentActivitySection"
   | "noRecentRecords"
   | "viewAllLink"
   // Customer restructure: Company / Project / Document
@@ -1041,6 +1042,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     businessOverviewSection: "Business Overview",
     stockOverviewSection: "Stock Overview",
     financialOverviewSection: "Financial Overview",
+    recentActivitySection: "Recent Activity",
     noRecentRecords: "No recent records",
     viewAllLink: "View all →",
     mainContactName: "Main Contact Name",
@@ -1576,6 +1578,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     businessOverviewSection: "业务概览",
     stockOverviewSection: "库存概览",
     financialOverviewSection: "财务概览",
+    recentActivitySection: "最近动态",
     noRecentRecords: "暂无最近记录",
     viewAllLink: "查看全部 →",
     mainContactName: "总部联系人姓名",

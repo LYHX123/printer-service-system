@@ -17,6 +17,8 @@ interface MetricCardProps {
   href?: string
   loading?: boolean
   className?: string
+  /** Overrides the value's default `text-3xl` sizing — for cards whose value can run long (e.g. formatted currency) and needs to stay on one line at a smaller/responsive size instead of wrapping. */
+  valueClassName?: string
 }
 
 export function MetricCard({
@@ -28,6 +30,7 @@ export function MetricCard({
   href,
   loading = false,
   className,
+  valueClassName,
 }: MetricCardProps) {
   if (loading) {
     return (
@@ -52,7 +55,7 @@ export function MetricCard({
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500 truncate">
             {label}
           </p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
+          <p className={cn("mt-2 font-bold text-slate-900", valueClassName ?? "text-3xl")}>{value}</p>
           {trend && (
             <div
               className={cn(

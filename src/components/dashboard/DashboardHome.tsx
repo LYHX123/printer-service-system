@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { format } from "date-fns"
 import {
   Users,
   FileText,
@@ -15,16 +14,15 @@ import {
   TrendingUp,
   TrendingDown,
   Store,
-  Bell,
   Clock,
 } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { MetricCard } from "@/components/ui/metric-card"
 import { QuotationStatusBadge } from "@/components/ui/badge"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, cn } from "@/lib/utils"
 import type { LowStockAlert } from "@/lib/stock-types"
 import type { OverdueTaskAlert } from "@/lib/data/tasks"
-import type { RecentQuotation, RecentInvoice, RecentTask } from "@/lib/data/dashboard"
+import type { RecentQuotation, RecentInvoice } from "@/lib/data/dashboard"
 import type { ShopAccountEntryWithRelations } from "@/lib/data/shopAccount"
 
 interface DashboardHomeProps {
@@ -52,12 +50,23 @@ interface DashboardHomeProps {
   currentMonthShopExpense: number | null
   recentQuotations: RecentQuotation[]
   recentInvoices: RecentInvoice[]
-  recentTasks: RecentTask[]
   recentShopEntries: ShopAccountEntryWithRelations[]
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</h2>
+/** Max combined alerts shown on the dashboard — low stock first, then overdue tasks (most overdue first); the rest are reachable via "View all". */
+const MAX_DASHBOARD_ALERTS = 5
+
+// Long formatted-currency values (e.g. "KES 1,588,920.03") shouldn't wrap to a second
+// line and break card-height consistency — shrink smoothly with viewport width instead.
+const FINANCIAL_VALUE_CLASS = "whitespace-nowrap leading-tight text-[clamp(1.25rem,1.8vw,1.875rem)]"
+
+function SectionHeading({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</h2>
+      {action}
+    </div>
+  )
 }
 
 export function DashboardHome({
@@ -77,7 +86,6 @@ export function DashboardHome({
   currentMonthShopExpense,
   recentQuotations,
   recentInvoices,
-  recentTasks,
   recentShopEntries,
 }: DashboardHomeProps) {
   const { t } = useLanguage()
@@ -86,8 +94,16 @@ export function DashboardHome({
   const hasStockGroup = perm.stock
   const hasFinancialGroup = perm.ledger || perm.shopAccount
   const hasAlerts = perm.stock || perm.tasks
-  const hasRecentGroup = perm.quotations || perm.invoice || perm.tasks || perm.shopAccount
-  const totalAlertCount = (lowStockAlerts?.length ?? 0) + (overdueTaskAlerts?.length ?? 0)
+  const hasRecentGroup = perm.quotations || perm.invoice || perm.shopAccount
+
+  // Low stock first, then overdue tasks (already most-overdue-first from the data layer);
+  // capped so the dashboard never grows tall from a long alert list — the rest is one
+  // click away via "View all".
+  const combinedAlerts = [
+    ...(perm.stock ? lowStockAlerts.map((data) => ({ kind: "stock" as const, data })) : []),
+    ...(perm.tasks ? overdueTaskAlerts.map((data) => ({ kind: "task" as const, data })) : []),
+  ].slice(0, MAX_DASHBOARD_ALERTS)
+  const alertsViewAllHref = perm.tasks ? "/tasks" : "/stock"
 
   return (
     <div className="space-y-8">
@@ -139,118 +155,114 @@ export function DashboardHome({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {perm.ledger && (
               <>
-                <MetricCard label={t("unpaidSalesBalanceLabel")} value={formatCurrency(unpaidSalesBalance ?? 0)} icon={<Wallet className="h-5 w-5 text-red-600" />} iconBg="bg-red-50" href="/ledger/sales" />
-                <MetricCard label={t("currentMonthIncomeLabel")} value={formatCurrency(currentMonthIncome ?? 0)} icon={<TrendingUp className="h-5 w-5 text-green-600" />} iconBg="bg-green-50" href="/ledger/income-expense" />
-                <MetricCard label={t("currentMonthExpenseLabel")} value={formatCurrency(currentMonthExpense ?? 0)} icon={<TrendingDown className="h-5 w-5 text-orange-600" />} iconBg="bg-orange-50" href="/ledger/income-expense" />
+                <MetricCard label={t("unpaidSalesBalanceLabel")} value={formatCurrency(unpaidSalesBalance ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<Wallet className="h-5 w-5 text-red-600" />} iconBg="bg-red-50" href="/ledger/sales" />
+                <MetricCard label={t("currentMonthIncomeLabel")} value={formatCurrency(currentMonthIncome ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<TrendingUp className="h-5 w-5 text-green-600" />} iconBg="bg-green-50" href="/ledger/income-expense" />
+                <MetricCard label={t("currentMonthExpenseLabel")} value={formatCurrency(currentMonthExpense ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<TrendingDown className="h-5 w-5 text-orange-600" />} iconBg="bg-orange-50" href="/ledger/income-expense" />
               </>
             )}
             {perm.shopAccount && (
-              <MetricCard label={t("currentMonthShopExpenseLabel")} value={formatCurrency(currentMonthShopExpense ?? 0)} icon={<Store className="h-5 w-5 text-pink-600" />} iconBg="bg-pink-50" href="/ledger/shop" />
+              <MetricCard label={t("currentMonthShopExpenseLabel")} value={formatCurrency(currentMonthShopExpense ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<Store className="h-5 w-5 text-pink-600" />} iconBg="bg-pink-50" href="/ledger/shop" />
             )}
           </div>
         </section>
       )}
 
-      {/* Group 4: Alerts */}
+      {/* Group 4: Alerts — capped to MAX_DASHBOARD_ALERTS, low stock first then most-overdue-first tasks */}
       {hasAlerts && (
         <section>
-          <SectionHeading>{t("alertsLabel")}</SectionHeading>
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <Bell className="h-4 w-4 text-slate-400" />
-              <h3 className="text-sm font-semibold text-slate-900">{t("alertsLabel")}</h3>
-            </div>
-            {totalAlertCount === 0 ? (
-              <p className="text-sm text-slate-400">{t("noAlertsLabel")}</p>
+          <SectionHeading
+            action={
+              <Link href={alertsViewAllHref} className="text-xs text-blue-600 hover:underline">
+                {t("viewAllLink")}
+              </Link>
+            }
+          >
+            {t("alertsLabel")}
+          </SectionHeading>
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            {combinedAlerts.length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-slate-400">{t("noAlertsLabel")}</p>
             ) : (
-              <div className="space-y-1.5">
-                {perm.stock && lowStockAlerts.map((alert) => (
-                  <Link
-                    key={`stock-${alert.id}`}
-                    href={`/stock/${alert.id}/edit`}
-                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-amber-50 transition-colors"
-                  >
-                    <span className="flex items-center gap-2 text-amber-700">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                      {alert.brand ? `${alert.brand} — ` : ""}{alert.name}
-                    </span>
-                    <span className="text-xs font-medium text-amber-600">
-                      {alert.isOutOfStock ? t("outOfStock") : t("lowStock")} ({alert.quantity})
-                    </span>
-                  </Link>
-                ))}
-                {perm.tasks && overdueTaskAlerts.map((alert) => (
-                  <Link
-                    key={`task-${alert.id}`}
-                    href={`/tasks?taskId=${alert.id}`}
-                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-red-50 transition-colors"
-                  >
-                    <span className="flex items-center gap-2 text-red-700">
-                      <Clock className="h-3.5 w-3.5 shrink-0" />
-                      {alert.title}
-                    </span>
-                    <span className="text-xs font-medium text-red-600">
-                      {alert.daysInactive}d
-                    </span>
-                  </Link>
-                ))}
+              <div className="divide-y divide-slate-50">
+                {combinedAlerts.map((alert) =>
+                  alert.kind === "stock" ? (
+                    <Link
+                      key={`stock-${alert.data.id}`}
+                      href={`/stock/${alert.data.id}/edit`}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors"
+                    >
+                      <span className="flex min-w-0 items-center gap-2 text-sm text-amber-700">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{alert.data.brand ? `${alert.data.brand} — ` : ""}{alert.data.name}</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-medium text-amber-600">
+                        {alert.data.isOutOfStock ? t("outOfStock") : t("lowStock")} ({alert.data.quantity})
+                      </span>
+                    </Link>
+                  ) : (
+                    <Link
+                      key={`task-${alert.data.id}`}
+                      href={`/tasks?taskId=${alert.data.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors"
+                    >
+                      <span className="flex min-w-0 items-center gap-2 text-sm text-red-700">
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{alert.data.title}</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-medium text-red-600">
+                        {alert.data.daysInactive}d
+                      </span>
+                    </Link>
+                  )
+                )}
               </div>
             )}
           </div>
         </section>
       )}
 
-      {/* Group 5: Recent records */}
+      {/* Group 5: Recent activity — Quotations + Sales side by side, Shop Account full width below */}
       {hasRecentGroup && (
         <section>
-          <SectionHeading>{t("dashboard")}</SectionHeading>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {perm.quotations && (
-              <RecentListCard title={t("recentQuotationsLabel")} viewAllHref="/quotations" emptyLabel={t("noRecentRecords")}>
-                {recentQuotations.map((q) => (
-                  <Link key={q.id} href={`/quotations/${q.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{q.quotationNumber}</p>
-                      <p className="truncate text-xs text-slate-400">{q.customer.companyName}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="text-xs font-medium text-slate-600">{formatCurrency(q.totalCost)}</span>
-                      <QuotationStatusBadge status={q.status} />
-                    </div>
-                  </Link>
-                ))}
-              </RecentListCard>
-            )}
+          <SectionHeading>{t("recentActivitySection")}</SectionHeading>
+          <div className="space-y-4">
+            {(perm.quotations || perm.invoice) && (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {perm.quotations && (
+                  <RecentListCard title={t("recentQuotationsLabel")} viewAllHref="/quotations" emptyLabel={t("noRecentRecords")}>
+                    {recentQuotations.map((q) => (
+                      <Link key={q.id} href={`/quotations/${q.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-900">{q.quotationNumber}</p>
+                          <p className="truncate text-xs text-slate-400">{q.customer.companyName}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="text-xs font-medium text-slate-600">{formatCurrency(q.totalCost)}</span>
+                          <QuotationStatusBadge status={q.status} />
+                        </div>
+                      </Link>
+                    ))}
+                  </RecentListCard>
+                )}
 
-            {perm.invoice && (
-              <RecentListCard title={t("recentSalesLabel")} viewAllHref="/invoice" emptyLabel={t("noRecentRecords")}>
-                {recentInvoices.map((inv) => (
-                  <Link key={inv.id} href={`/quotations/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{inv.invoiceNumber}</p>
-                      <p className="truncate text-xs text-slate-400">{inv.customer.companyName}</p>
-                    </div>
-                    <span className="shrink-0 text-xs font-medium text-slate-600">{formatCurrency(inv.totalAmount)}</span>
-                  </Link>
-                ))}
-              </RecentListCard>
-            )}
-
-            {perm.tasks && (
-              <RecentListCard title={t("recentTasksLabel")} viewAllHref="/tasks" emptyLabel={t("noRecentRecords")}>
-                {recentTasks.map((task) => (
-                  <Link key={task.id} href={`/tasks?taskId=${task.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <p className="truncate text-sm font-medium text-slate-900">{task.title}</p>
-                    <span className={`shrink-0 text-xs font-medium ${task.status === "ACTIVE" ? "text-blue-600" : "text-slate-400"}`}>
-                      {format(new Date(task.createdAt), "dd MMM")}
-                    </span>
-                  </Link>
-                ))}
-              </RecentListCard>
+                {perm.invoice && (
+                  <RecentListCard title={t("recentSalesLabel")} viewAllHref="/invoice" emptyLabel={t("noRecentRecords")}>
+                    {recentInvoices.map((inv) => (
+                      <Link key={inv.id} href={`/quotations/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-900">{inv.invoiceNumber}</p>
+                          <p className="truncate text-xs text-slate-400">{inv.customer.companyName}</p>
+                        </div>
+                        <span className="shrink-0 text-xs font-medium text-slate-600">{formatCurrency(inv.totalAmount)}</span>
+                      </Link>
+                    ))}
+                  </RecentListCard>
+                )}
+              </div>
             )}
 
             {perm.shopAccount && (
-              <RecentListCard title={t("recentShopEntriesLabel")} viewAllHref="/ledger/shop" emptyLabel={t("noRecentRecords")}>
+              <RecentListCard title={t("recentShopEntriesLabel")} viewAllHref="/ledger/shop" emptyLabel={t("noRecentRecords")} minHeight>
                 {recentShopEntries.map((entry) => (
                   <Link key={entry.id} href="/ledger/shop" className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
                     <div className="min-w-0">
@@ -275,11 +287,16 @@ function RecentListCard({
   title,
   viewAllHref,
   emptyLabel,
+  /** Gives the empty state a deliberate, modest min-height (~120px) instead of
+   * collapsing to a thin strip — used for cards that render full-width (e.g.
+   * Shop Account), where a bare one-line empty state looks unbalanced. */
+  minHeight = false,
   children,
 }: {
   title: string
   viewAllHref: string
   emptyLabel: string
+  minHeight?: boolean
   children: React.ReactNode
 }) {
   const { t } = useLanguage()
@@ -294,7 +311,9 @@ function RecentListCard({
         </Link>
       </div>
       {isEmpty ? (
-        <p className="px-4 py-6 text-center text-sm text-slate-400">{emptyLabel}</p>
+        <div className={cn("flex items-center justify-center px-4 py-6", minHeight && "min-h-[120px]")}>
+          <p className="text-center text-sm text-slate-400">{emptyLabel}</p>
+        </div>
       ) : (
         <div className="divide-y divide-slate-50">{children}</div>
       )}

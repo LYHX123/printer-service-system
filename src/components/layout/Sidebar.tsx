@@ -35,6 +35,13 @@ interface NavItem {
   /** Overrides the module-level check with a specific leaf-permission prefix
    * (used where two nav rows share one Module, e.g. Ledger vs Shop Account). */
   permPrefix?: string
+  /**
+   * Extra route prefixes that should also count as this item being active.
+   * Needed for Invoice: /invoice is just a redirect (see src/app/(dashboard)/invoice/page.tsx),
+   * so the browser's real pathname always ends up under /quotations/invoices/** — without this,
+   * the Quotations item (href "/quotations") would win that match instead of Invoice.
+   */
+  matchHrefs?: string[]
 }
 
 // One flat, ungrouped list — no more "Operations"/"Administration" section titles.
@@ -42,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
   { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
   { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
-  { href: "/invoice", labelKey: "invoice", label: "Invoice", icon: Receipt, module: "invoice" },
+  { href: "/invoice", labelKey: "invoice", label: "Invoice", icon: Receipt, module: "invoice", matchHrefs: ["/quotations/invoices"] },
   { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
   { href: "/ledger", labelKey: "ledger", label: "Ledger", icon: BookOpen, module: "ledger", permPrefix: "ledger.general.|ledger.sales." },
   { href: "/ledger/shop", labelKey: "shopAccount", label: "Shop Account", icon: Wallet, module: "ledger", permPrefix: "ledger.shop." },
@@ -68,19 +75,30 @@ function isNavItemVisible(item: NavItem, role: SidebarProps["role"], modulePermi
   return canAccess(role, item.module, modulePermissions)
 }
 
-function matchesRoute(item: NavItem, pathname: string): boolean {
-  return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+function matchesHref(href: string, exact: boolean | undefined, pathname: string): boolean {
+  return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
 }
 
 /**
- * Several nav items share a module (e.g. Ledger "/ledger" and Shop Account
- * "/ledger/shop"), so a naive startsWith() check double-highlights both when
- * on "/ledger/shop". Only the most specific (longest href) match wins.
+ * Picks the active nav item using longest-prefix match across each item's
+ * primary href plus any matchHrefs alternates. This handles two kinds of
+ * overlap: nav items that share a module prefix (e.g. Ledger "/ledger" vs
+ * Shop Account "/ledger/shop") and items whose real routes live under a
+ * different item's URL space (e.g. Invoice pages under /quotations/invoices).
+ * In both cases the most specific (longest) matching href wins, and only its
+ * owning nav item is reported active — never two at once.
  */
 function getActiveHref(items: NavItem[], pathname: string): string | undefined {
-  const matches = items.filter((item) => matchesRoute(item, pathname))
-  if (matches.length === 0) return undefined
-  return matches.reduce((longest, item) => (item.href.length > longest.href.length ? item : longest)).href
+  let best: { itemHref: string; matchedHrefLength: number } | undefined
+  for (const item of items) {
+    for (const href of [item.href, ...(item.matchHrefs ?? [])]) {
+      if (!matchesHref(href, item.exact, pathname)) continue
+      if (!best || href.length > best.matchedHrefLength) {
+        best = { itemHref: item.href, matchedHrefLength: href.length }
+      }
+    }
+  }
+  return best?.itemHref
 }
 
 export function Sidebar({ role, modulePermissions, taskCount = null, open, onClose }: SidebarProps) {
