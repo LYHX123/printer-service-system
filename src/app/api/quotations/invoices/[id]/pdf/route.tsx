@@ -5,8 +5,7 @@ import { auth } from "@/lib/auth"
 import { getInvoiceForPdf } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
 import { InvoiceDocument } from "@/components/pdf/InvoiceDocument"
-import { generatePdf, PdfConversionUnavailableError } from "@/lib/templateEngine"
-import { buildInvoiceExcelData } from "@/lib/templateData/invoice"
+import { generateInvoicePdf, PdfConversionUnavailableError } from "@/lib/invoiceExcel"
 import type { Role } from "@/types"
 
 export async function GET(
@@ -32,7 +31,7 @@ export async function GET(
 
   // Primary: Excel Template Engine -> LibreOffice -> PDF.
   try {
-    const pdfPath = await generatePdf("invoice", buildInvoiceExcelData(invoice))
+    const pdfPath = await generateInvoicePdf(invoice)
     const buffer = await readFile(pdfPath)
     return new NextResponse(new Uint8Array(buffer), {
       headers: {

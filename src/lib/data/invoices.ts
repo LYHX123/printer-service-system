@@ -6,9 +6,16 @@ const INVOICE_ITEM_PART_SELECT = {
   partNumber: true,
   name: true,
   brand: true,
+  model: true,
+  specification: true,
+  unit: true,
+  category: true,
 } as const
 
-type InvoiceItemPart = Pick<SparePart, "id" | "partNumber" | "name" | "brand">
+type InvoiceItemPart = Pick<
+  SparePart,
+  "id" | "partNumber" | "name" | "brand" | "model" | "specification" | "unit" | "category"
+>
 
 export type InvoiceItemWithPart = InvoiceItem & { part: InvoiceItemPart | null }
 

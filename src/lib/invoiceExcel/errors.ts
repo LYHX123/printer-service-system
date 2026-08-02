@@ -1,8 +1,8 @@
 import { ExcelTemplateError } from "@/lib/excelTemplate"
 
-export class QuotationExcelError extends ExcelTemplateError {
+export class InvoiceExcelError extends ExcelTemplateError {
   constructor(message: string) {
     super(message)
-    this.name = "QuotationExcelError"
+    this.name = "InvoiceExcelError"
   }
 }

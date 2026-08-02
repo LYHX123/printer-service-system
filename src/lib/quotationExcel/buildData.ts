@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import { getStockType } from "@/lib/stock-types"
+import { getStockType, isStockType } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
 import type { QuotationPdfData } from "@/lib/data/quotations"
 
@@ -65,7 +65,8 @@ export function buildQuotationExcelData(quotation: QuotationPdfData): QuotationE
     // historical row predates that snapshot, fall back to the live linked
     // SparePart's category; if the SparePart itself is gone too, fall back
     // to the old free-text name so a historical Quotation can still export.
-    const stockType = (item.stockCategory as StockType | null) ?? (item.part ? getStockType(item.part.category) : null)
+    const snapshotStockType = item.stockCategory ?? undefined
+    const stockType = (isStockType(snapshotStockType) ? snapshotStockType : null) ?? (item.part ? getStockType(item.part.category) : null)
     const itemName = (stockType ? stockTypeToItemName(stockType) : name).toUpperCase()
 
     return {

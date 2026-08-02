@@ -9,13 +9,12 @@ import {
   planProductRows,
   insertExtraProductRows,
 } from "@/lib/excelTemplate"
-import { loadProductImage, insertProductPicture } from "./picture"
-import { buildQuotationExcelData } from "./buildData"
-import { QuotationExcelError } from "./errors"
-import type { QuotationPdfData } from "@/lib/data/quotations"
+import { buildInvoiceExcelData } from "./buildData"
+import { InvoiceExcelError } from "./errors"
+import type { InvoicePdfData } from "@/lib/data/invoices"
 
-const TEMPLATE_PATH = path.join(process.cwd(), "templates", "quotation", "quotation template.xlsx")
-const OUTPUT_DIR = path.join(process.cwd(), "storage", "generated", "quotation")
+const TEMPLATE_PATH = path.join(process.cwd(), "templates", "invoice", "invoice template.xlsx")
+const OUTPUT_DIR = path.join(process.cwd(), "storage", "generated", "invoice")
 const MIN_PRODUCT_ROWS = 10
 
 function slugify(value: string): string {
@@ -34,7 +33,6 @@ interface ProductColumns {
   qty: number
   unitPrice: number
   amount: number
-  picture: number
 }
 
 function findProductColumns(sheet: ExcelJS.Worksheet, templateRow: number): ProductColumns {
@@ -46,14 +44,13 @@ function findProductColumns(sheet: ExcelJS.Worksheet, templateRow: number): Prod
     qty: "{{QTY}}",
     unitPrice: "{{UNIT_PRICE}}",
     amount: "{{AMOUNT}}",
-    picture: "{{PICTURE}}",
   }
 
   const columns = {} as ProductColumns
   for (const key of Object.keys(tokens) as (keyof ProductColumns)[]) {
     const col = findColumnForTokenInRow(sheet, templateRow, tokens[key])
     if (col === null) {
-      throw new QuotationExcelError(`Quotation Excel template row ${templateRow} is missing the ${tokens[key]} placeholder.`)
+      throw new InvoiceExcelError(`Invoice Excel template row ${templateRow} is missing the ${tokens[key]} placeholder.`)
     }
     columns[key] = col
   }
@@ -61,44 +58,43 @@ function findProductColumns(sheet: ExcelJS.Worksheet, templateRow: number): Prod
 }
 
 /**
- * Generates the Quotation Excel document from the formal template
- * (templates/quotation/quotation template.xlsx), filling every dynamic
- * placeholder in place while leaving the template's logo, borders, fonts,
- * colors, merges, NOTE/terms text, and page setup completely untouched.
+ * Generates the Invoice Excel document from the formal template
+ * (templates/invoice/invoice template.xlsx) — the Invoice equivalent of
+ * quotationExcel/generate.ts, sharing the same placeholder-search and
+ * dynamic-row-insertion engine (src/lib/excelTemplate) so the two stay
+ * behaviorally in sync. The only real difference is this template has no
+ * SAMPLE/picture column.
  *
  * Nothing about the template's row layout is hardcoded: the product
  * template row, its columns, and the Subtotal/VAT/Total cells are all
- * located by searching for their {{TOKEN}} text at generation time, so a
- * future template edit (as long as the placeholders remain) never requires
- * a code change here.
+ * located by searching for their {{TOKEN}} text at generation time.
  */
-export async function generateQuotationExcel(quotation: QuotationPdfData): Promise<string> {
+export async function generateInvoiceExcel(invoice: InvoicePdfData): Promise<string> {
   const workbook = new ExcelJS.Workbook()
   try {
     await workbook.xlsx.readFile(TEMPLATE_PATH)
   } catch (error) {
-    throw new QuotationExcelError(
-      `Quotation Excel template not found or unreadable: ${TEMPLATE_PATH} (${error instanceof Error ? error.message : String(error)})`
+    throw new InvoiceExcelError(
+      `Invoice Excel template not found or unreadable: ${TEMPLATE_PATH} (${error instanceof Error ? error.message : String(error)})`
     )
   }
 
   const sheet = workbook.worksheets[0]
   if (!sheet) {
-    throw new QuotationExcelError("Quotation Excel template has no worksheet.")
+    throw new InvoiceExcelError("Invoice Excel template has no worksheet.")
   }
 
-  const data = buildQuotationExcelData(quotation)
+  const data = buildInvoiceExcelData(invoice)
 
   // 1. Header placeholders — safe to replace before any row math, since
   //    they live above the product table and are unaffected by it.
   replacePlaceholder(sheet, "{{CUSTOMER_NAME}}", data.customerName)
   replacePlaceholder(sheet, "{{CUSTOMER_PIN}}", data.customerPin)
-  replacePlaceholder(sheet, "{{QUOTATION_DATE}}", data.quotationDate)
-  replacePlaceholder(sheet, "{{QUOTATION_NUMBER}}", data.quotationNumber)
+  replacePlaceholder(sheet, "{{INVOICE_DATE}}", data.invoiceDate)
+  replacePlaceholder(sheet, "{{INVOICE_NO}}", data.invoiceNumber)
 
   // 2. Locate the product template row, its reserved area, and the final
-  //    row count (max of item count / minimum / reserved) — all derived
-  //    from placeholder search, shared with the Invoice Excel engine.
+  //    row count — shared with the Quotation Excel engine.
   const layout = planProductRows(sheet, "{{ITEM_NO}}", "{{SUBTOTAL}}", data.items.length, MIN_PRODUCT_ROWS)
   const { templateRow, finalRowCount } = layout
   const columns = findProductColumns(sheet, templateRow)
@@ -114,12 +110,12 @@ export async function generateQuotationExcel(quotation: QuotationPdfData): Promi
   const vatLoc = findPlaceholderCell(sheet, "{{VAT_AMOUNT}}")
   const totalLoc = findPlaceholderCell(sheet, "{{TOTAL_AMOUNT}}")
   if (!subtotalLoc || !vatLoc || !totalLoc) {
-    throw new QuotationExcelError("Quotation Excel template is missing one of {{SUBTOTAL}} / {{VAT_AMOUNT}} / {{TOTAL_AMOUNT}} after row insertion.")
+    throw new InvoiceExcelError("Invoice Excel template is missing one of {{SUBTOTAL}} / {{VAT_AMOUNT}} / {{TOTAL_AMOUNT}} after row insertion.")
   }
 
   // 5. Compute the single uniform row height: the max requirement across
-  //    every product row (real items AND blank padding rows), each with its
-  //    own picture-presence check.
+  //    every product row (real items AND blank padding rows). No picture
+  //    column on this template, so there's no picture-height contribution.
   const itemNameColWidth = Number(sheet.getColumn(columns.itemName).width ?? 16)
   const descriptionColWidth = Number(sheet.getColumn(columns.description).width ?? 22)
 
@@ -131,7 +127,7 @@ export async function generateQuotationExcel(quotation: QuotationPdfData): Promi
       description: item?.description ?? "",
       itemNameColWidth,
       descriptionColWidth,
-      hasPicture: Boolean(item?.pictureUrl),
+      hasPicture: false,
     })
     uniformHeight = Math.max(uniformHeight, required)
   }
@@ -163,31 +159,17 @@ export async function generateQuotationExcel(quotation: QuotationPdfData): Promi
       row.getCell(columns.unitPrice).value = null
       row.getCell(columns.amount).value = null
     }
-    // The SAMPLE cell's {{PICTURE}} text is always cleared here — an embedded
-    // image (if any) is a separate floating drawing layered on top in step 8,
-    // never the cell's own text content. Rows with no picture must end up
-    // completely empty, never showing the literal placeholder.
-    row.getCell(columns.picture).value = null
   }
 
-  // 7. Pictures — embedded, never as literal placeholder text or a broken
-  //    link; a row with no picture is left completely empty.
-  for (let i = 0; i < data.items.length; i++) {
-    const item = data.items[i]
-    if (!item.pictureUrl) continue
-    const image = await loadProductImage(item.pictureUrl)
-    if (!image) continue
-    insertProductPicture(workbook, sheet, templateRow + i, columns.picture, image, uniformHeight)
-  }
-
-  // 8. Footer totals — real numeric cells, using the template's existing
-  //    number format (already baked into the cell's style).
+  // 7. Footer totals — real numeric cells, using the template's existing
+  //    number format (already baked into the cell's style). Read straight
+  //    from the Invoice record — never re-derived from a hardcoded VAT rate.
   replacePlaceholder(sheet, "{{SUBTOTAL}}", round2(data.subtotal))
   replacePlaceholder(sheet, "{{VAT_AMOUNT}}", round2(data.vatAmount))
   replacePlaceholder(sheet, "{{TOTAL_AMOUNT}}", round2(data.totalAmount))
 
   await mkdir(OUTPUT_DIR, { recursive: true })
-  const fileName = `${slugify(data.quotationNumber) || quotation.id}.xlsx`
+  const fileName = `${slugify(data.invoiceNumber) || invoice.id}.xlsx`
   const outputPath = path.join(OUTPUT_DIR, fileName)
   await workbook.xlsx.writeFile(outputPath)
 

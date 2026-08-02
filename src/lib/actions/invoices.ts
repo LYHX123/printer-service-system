@@ -87,7 +87,11 @@ export async function generateInvoice(quotationId: string, data: GenerateInvoice
             description: item.part
               ? [item.part.brand, item.part.name].filter(Boolean).join(" ")
               : (item.description ?? ""),
-            unit: item.part?.unit ?? null,
+            // Prefer the Quotation's own frozen snapshot over the live Stock
+            // value — the Quotation is already the source of truth by the
+            // time it's invoiced (matches the stockCategory/brand/etc. lines
+            // below, which all carry forward the Quotation's snapshot too).
+            unit: item.unitSnapshot ?? item.part?.unit ?? null,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             amount: item.subtotal,

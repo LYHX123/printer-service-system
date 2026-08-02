@@ -3,8 +3,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { getInvoiceForPdf } from "@/lib/data/invoices"
 import { canAccess } from "@/lib/permissions"
-import { generateExcel, TemplateEngineError } from "@/lib/templateEngine"
-import { buildInvoiceExcelData } from "@/lib/templateData/invoice"
+import { generateInvoiceExcel, InvoiceExcelError } from "@/lib/invoiceExcel"
 import type { Role } from "@/types"
 
 export async function GET(
@@ -28,9 +27,9 @@ export async function GET(
 
   let outputPath: string
   try {
-    outputPath = await generateExcel("invoice", buildInvoiceExcelData(invoice))
+    outputPath = await generateInvoiceExcel(invoice)
   } catch (error) {
-    if (error instanceof TemplateEngineError) {
+    if (error instanceof InvoiceExcelError) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     throw error
