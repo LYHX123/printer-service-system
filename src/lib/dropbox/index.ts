@@ -1,4 +1,4 @@
-export { isDropboxConfigured, getDropboxEnvConfig } from "./env"
+export { isDropboxConfigured, getDropboxEnvConfig, getDropboxPublicOrigin } from "./env"
 export type { DropboxEnvConfig } from "./env"
 export { encryptToken, decryptToken } from "./token"
 export { buildAuthorizeUrl, exchangeCodeForToken, refreshAccessToken } from "./oauth"

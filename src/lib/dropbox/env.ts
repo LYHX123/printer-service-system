@@ -41,3 +41,32 @@ export function getDropboxEnvConfig(): DropboxEnvConfig {
     tokenEncryptionKey: process.env.DROPBOX_TOKEN_ENCRYPTION_KEY!.trim(),
   }
 }
+
+/**
+ * The public-facing origin the browser should ever be redirected to after
+ * OAuth — derived from DROPBOX_REDIRECT_URI, never from an incoming
+ * request's own URL. Behind Docker/Caddy in production, `request.url` (and
+ * `request.nextUrl.origin`) reflect the address the Next.js process itself
+ * is bound to inside the container (e.g. http://0.0.0.0:3000), not the
+ * public domain the user's browser actually talked to — using that as a
+ * redirect target sends the browser somewhere it can never reach.
+ * DROPBOX_REDIRECT_URI is operator-configured server-side config that
+ * already correctly names the public origin for each environment
+ * (http://localhost:3000 locally, https://service.enfbgroup.com in
+ * production), so it's the correct — and only — source of truth here.
+ */
+export function getDropboxPublicOrigin(): string {
+  const { redirectUri } = getDropboxEnvConfig()
+
+  let parsed: URL
+  try {
+    parsed = new URL(redirectUri)
+  } catch {
+    throw new DropboxConfigurationError(`DROPBOX_REDIRECT_URI is not a valid absolute URL: "${redirectUri}"`)
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new DropboxConfigurationError(`DROPBOX_REDIRECT_URI must be an http(s) URL, got "${redirectUri}"`)
+  }
+
+  return parsed.origin
+}

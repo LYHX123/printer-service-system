@@ -91,6 +91,53 @@ async function main() {
   const state2 = generateOAuthState()
   console.log(state !== state2 ? "PASS" : "FAIL")
 
+  console.log("\n=== I. Public origin derivation (production 0.0.0.0 redirect bug fix) ===")
+  const { getDropboxPublicOrigin } = await import("@/lib/dropbox/env")
+  // getDropboxPublicOrigin() takes no request/URL argument — it can only
+  // ever read DROPBOX_REDIRECT_URI, so re-setting that env var between
+  // calls (module-level env reads happen fresh inside the function body,
+  // not at import time) is enough to exercise every scenario below.
+
+  console.log("\n--- I.A. Local DROPBOX_REDIRECT_URI ---")
+  process.env.DROPBOX_REDIRECT_URI = "http://localhost:3000/api/dropbox/callback"
+  const localOrigin = getDropboxPublicOrigin()
+  console.log("Derived origin:", localOrigin)
+  console.log(localOrigin === "http://localhost:3000" ? "PASS" : "FAIL")
+  const localSuccessUrl = new URL("/settings?dropboxConnected=1", localOrigin).toString()
+  console.log("Success redirect:", localSuccessUrl)
+  console.log(localSuccessUrl === "http://localhost:3000/settings?dropboxConnected=1" ? "PASS" : "FAIL")
+
+  console.log("\n--- I.B. Production DROPBOX_REDIRECT_URI, even with a 0.0.0.0-style incoming request ---")
+  process.env.DROPBOX_REDIRECT_URI = "https://service.enfbgroup.com/api/dropbox/callback"
+  // Simulates what request.url looks like inside the container in production.
+  const simulatedContainerRequestUrl = "http://0.0.0.0:3000/api/dropbox/callback?code=abc&state=xyz"
+  console.log("Simulated incoming request.url (must be ignored):", simulatedContainerRequestUrl)
+  const prodOrigin = getDropboxPublicOrigin()
+  console.log("Derived origin:", prodOrigin)
+  console.log(prodOrigin === "https://service.enfbgroup.com" ? "PASS" : "FAIL")
+  console.log(!prodOrigin.includes("0.0.0.0") ? "PASS — never resolves to 0.0.0.0" : "FAIL")
+  const prodSuccessUrl = new URL("/settings?dropboxConnected=1", prodOrigin).toString()
+  console.log("Success redirect:", prodSuccessUrl)
+  console.log(prodSuccessUrl === "https://service.enfbgroup.com/settings?dropboxConnected=1" ? "PASS" : "FAIL")
+
+  console.log("\n--- I.C. Error redirect also uses the public origin ---")
+  const errorUrl = new URL("/settings", prodOrigin)
+  errorUrl.searchParams.set("dropboxError", "Dropbox authorization state mismatch — please try connecting again.")
+  console.log("Error redirect:", errorUrl.toString())
+  console.log(errorUrl.toString().startsWith("https://service.enfbgroup.com/settings?dropboxError=") ? "PASS" : "FAIL")
+
+  console.log("\n--- I.D. Invalid DROPBOX_REDIRECT_URI is rejected, not silently accepted ---")
+  process.env.DROPBOX_REDIRECT_URI = "not-a-valid-url"
+  try {
+    getDropboxPublicOrigin()
+    console.log("FAIL — should have thrown")
+  } catch (err) {
+    console.log("Correctly threw:", err instanceof Error ? err.constructor.name : err)
+    console.log("PASS")
+  }
+  // restore for anything after this point
+  process.env.DROPBOX_REDIRECT_URI = "http://localhost:3000/api/dropbox/callback"
+
   console.log("\nAll Dropbox Foundation local tests complete.")
 }
 
