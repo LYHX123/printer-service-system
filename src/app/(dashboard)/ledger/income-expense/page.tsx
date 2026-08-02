@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { ChevronLeft, TrendingUp, TrendingDown, Scale, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canAllocateReceipt } from "@/lib/permissions"
 import { getLedgerEntries, getLedgerCategories, getLedgerMonthStats } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
@@ -26,8 +26,11 @@ export default async function IncomeExpenseBookPage({
   searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string; search?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "ledger", session!.user.modulePermissions)) redirect("/dashboard")
+  const role = session!.user.role as Role
+  const permissions = session!.user.modulePermissions as string[]
+  if (!canAccess(role, "ledger", permissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
+  const canAllocate = canAllocateReceipt(role, permissions)
 
   const { from, to, type, categoryId, search } = await searchParams
   const validType = TYPES.includes(type as LedgerEntryType) ? (type as LedgerEntryType) : undefined
@@ -62,7 +65,7 @@ export default async function IncomeExpenseBookPage({
       <PageHeader
         title={<T k="incomeExpenseBook" />}
         subtitle={<T k="incomeExpenseBookDesc" />}
-        actions={<LedgerAddButtons categories={categories} />}
+        actions={<LedgerAddButtons categories={categories} canAllocate={canAllocate} />}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
@@ -160,7 +163,7 @@ export default async function IncomeExpenseBookPage({
           {
             key: "actions",
             label: "",
-            render: (row) => <LedgerEntryActions entry={row} categories={categories} />,
+            render: (row) => <LedgerEntryActions entry={row} categories={categories} canAllocate={canAllocate} />,
           },
         ]}
         data={entries}

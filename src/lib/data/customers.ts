@@ -155,10 +155,10 @@ export async function getCustomersWithBranches(companyId: string): Promise<
 /** Lightweight list for dropdowns */
 export async function getCustomerOptions(
   companyId: string
-): Promise<Pick<Customer, "id" | "name" | "code" | "companyName">[]> {
+): Promise<Pick<Customer, "id" | "name" | "code" | "companyName" | "pinNumber">[]> {
   return prisma.customer.findMany({
     where: { companyId, isActive: true },
-    select: { id: true, name: true, code: true, companyName: true },
+    select: { id: true, name: true, code: true, companyName: true, pinNumber: true },
     orderBy: { companyName: "asc" },
   })
 }

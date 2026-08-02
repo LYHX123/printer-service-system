@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Pencil, Send, CheckCircle, XCircle, Download, FileSpreadsheet, Receipt } from "lucide-react"
+import { Pencil, Send, CheckCircle, XCircle, Download, FileSpreadsheet, Receipt, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QuotationStatusModal } from "./QuotationStatusModal"
 import { GenerateInvoiceModal } from "./GenerateInvoiceModal"
@@ -15,7 +15,9 @@ interface QuotationActionsProps {
   quotationId: string
   status: QuotationStatus
   role: Role
-  suggestedInvoiceNumber: string
+  /** Null when this quotation has no invoice yet — shows "Create Invoice" instead of "View Invoice". At most one invoice per quotation (enforced by a DB unique constraint). */
+  existingInvoice: { id: string; invoiceNumber: string } | null
+  canConvertToInvoice: boolean
   customerPin: string
   defaultVatPercent: number
 }
@@ -23,8 +25,8 @@ interface QuotationActionsProps {
 export function QuotationActions({
   quotationId,
   status,
-  role,
-  suggestedInvoiceNumber,
+  existingInvoice,
+  canConvertToInvoice,
   customerPin,
   defaultVatPercent,
 }: QuotationActionsProps) {
@@ -88,13 +90,23 @@ export function QuotationActions({
           </>
         )}
 
-        <Button
-          size="sm"
-          icon={<Receipt className="h-3.5 w-3.5" />}
-          onClick={() => setInvoiceModalOpen(true)}
-        >
-          {t("generateInvoice")}
-        </Button>
+        {existingInvoice ? (
+          <Link href={`/quotations/invoices/${existingInvoice.id}`}>
+            <Button size="sm" variant="outline" icon={<ArrowRight className="h-3.5 w-3.5" />}>
+              {t("viewInvoice")}
+            </Button>
+          </Link>
+        ) : (
+          canConvertToInvoice && (
+            <Button
+              size="sm"
+              icon={<Receipt className="h-3.5 w-3.5" />}
+              onClick={() => setInvoiceModalOpen(true)}
+            >
+              {t("generateInvoice")}
+            </Button>
+          )
+        )}
       </div>
 
       {statusModal && (
@@ -106,14 +118,15 @@ export function QuotationActions({
         />
       )}
 
-      <GenerateInvoiceModal
-        isOpen={invoiceModalOpen}
-        onClose={() => setInvoiceModalOpen(false)}
-        quotationId={quotationId}
-        suggestedInvoiceNumber={suggestedInvoiceNumber}
-        customerPin={customerPin}
-        defaultVatPercent={defaultVatPercent}
-      />
+      {!existingInvoice && (
+        <GenerateInvoiceModal
+          isOpen={invoiceModalOpen}
+          onClose={() => setInvoiceModalOpen(false)}
+          quotationId={quotationId}
+          customerPin={customerPin}
+          defaultVatPercent={defaultVatPercent}
+        />
+      )}
     </>
   )
 }

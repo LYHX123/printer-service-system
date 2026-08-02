@@ -1,12 +1,13 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ChevronLeft, Receipt } from "lucide-react"
+import { ChevronLeft, Plus, Receipt } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getInvoices } from "@/lib/data/invoices"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canCreateInvoice, canEditInvoice, canDeleteInvoice } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Table } from "@/components/ui/table"
 import { InvoiceStatusBadge } from "@/components/ui/badge"
+import { InvoiceListActions } from "@/components/quotations/InvoiceListActions"
 import { T, TInput } from "@/components/ui/T"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
@@ -20,7 +21,8 @@ export default async function InvoicesPage({
 }) {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canAccess(role, "invoice", session!.user.modulePermissions)) redirect("/dashboard")
+  const permissions = session!.user.modulePermissions as string[]
+  if (!canAccess(role, "invoice", permissions)) redirect("/dashboard")
   const { search } = await searchParams
   const companyId = session!.user.companyId as string
 
@@ -39,6 +41,13 @@ export default async function InvoicesPage({
       <PageHeader
         title={<T k="invoices" />}
         subtitle={<T k="invoicesDesc" />}
+        actions={
+          canCreateInvoice(role, permissions) && (
+            <Link href="/quotations/invoices/new">
+              <Button icon={<Plus className="h-4 w-4" />}><T k="createInvoice" /></Button>
+            </Link>
+          )
+        }
       />
 
       <form method="get" className="filter-bar mb-4 flex flex-wrap gap-2">
@@ -74,23 +83,9 @@ export default async function InvoicesPage({
             render: (row) => <span className="text-sm font-medium text-slate-900">{row.customer.companyName}</span>,
           },
           {
-            key: "quotation",
-            label: <T k="quotations" />,
-            render: (row) => (
-              <Link href={`/quotations/${row.quotation.id}`} className="text-xs text-blue-600 hover:underline">
-                {row.quotation.quotationNumber}
-              </Link>
-            ),
-          },
-          {
             key: "totalAmount",
             label: <T k="total" />,
             render: (row) => <span className="text-sm font-semibold text-slate-900">{formatCurrency(row.totalAmount)}</span>,
-          },
-          {
-            key: "status",
-            label: <T k="status" />,
-            render: (row) => <InvoiceStatusBadge status={row.status} />,
           },
           {
             key: "date",
@@ -100,14 +95,23 @@ export default async function InvoicesPage({
             ),
           },
           {
+            key: "status",
+            label: <T k="status" />,
+            render: (row) => <InvoiceStatusBadge status={row.status} />,
+          },
+          {
             key: "actions",
             label: "",
             headerClassName: "text-right",
             className: "text-right",
             render: (row) => (
-              <Link href={`/quotations/invoices/${row.id}`} className="text-xs text-blue-600 hover:underline whitespace-nowrap">
-                <T k="view" /> →
-              </Link>
+              <InvoiceListActions
+                invoiceId={row.id}
+                status={row.status}
+                hasSalesLedgerEntry={Boolean(row.salesLedgerEntry)}
+                canEdit={canEditInvoice(role, permissions)}
+                canDelete={canDeleteInvoice(role, permissions)}
+              />
             ),
           },
         ]}

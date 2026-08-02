@@ -7,8 +7,7 @@ import {
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation } from "@/lib/data/quotations"
-import { getInvoicesForQuotation, suggestInvoiceNumber } from "@/lib/data/invoices"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canConvertQuotationToInvoice } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { QuotationStatusBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
@@ -34,11 +33,6 @@ export default async function QuotationDetailPage({
   const vatPercent = Number(quotation.vatPercent)
   const totalCost = Number(quotation.totalCost)
   const vatAmount = (subtotal * vatPercent) / 100
-
-  const [invoices, invoiceNumberSuggestion] = await Promise.all([
-    getInvoicesForQuotation(quotation.id, companyId),
-    suggestInvoiceNumber(companyId),
-  ])
 
   return (
     <div>
@@ -70,7 +64,8 @@ export default async function QuotationDetailPage({
             quotationId={quotation.id}
             status={quotation.status}
             role={role}
-            suggestedInvoiceNumber={invoiceNumberSuggestion}
+            existingInvoice={quotation.invoice ? { id: quotation.invoice.id, invoiceNumber: quotation.invoice.invoiceNumber } : null}
+            canConvertToInvoice={canConvertQuotationToInvoice(role, session!.user.modulePermissions)}
             customerPin={quotation.customer.pinNumber ?? ""}
             defaultVatPercent={vatPercent}
           />
@@ -150,26 +145,22 @@ export default async function QuotationDetailPage({
             </dl>
           </div>
 
-          {/* Invoices generated from this quotation */}
-          {invoices.length > 0 && (
+          {/* Invoice generated from this quotation (at most one) */}
+          {quotation.invoice && (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-slate-400" />
                 <T k="invoices" />
               </h3>
-              <ul className="space-y-2 text-sm">
-                {invoices.map((inv) => (
-                  <li key={inv.id} className="flex items-center justify-between">
-                    <Link
-                      href={`/quotations/invoices/${inv.id}`}
-                      className="font-mono text-xs font-semibold text-blue-600 hover:underline"
-                    >
-                      {inv.invoiceNumber}
-                    </Link>
-                    <span className="text-xs text-slate-500">{format(new Date(inv.date), "dd MMM yyyy")}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex items-center justify-between text-sm">
+                <Link
+                  href={`/quotations/invoices/${quotation.invoice.id}`}
+                  className="font-mono text-xs font-semibold text-blue-600 hover:underline"
+                >
+                  {quotation.invoice.invoiceNumber}
+                </Link>
+                <span className="text-xs text-slate-500">{format(new Date(quotation.invoice.date), "dd MMM yyyy")}</span>
+              </div>
             </div>
           )}
         </div>

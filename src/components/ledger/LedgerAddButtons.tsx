@@ -7,7 +7,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { LedgerEntryModal } from "./LedgerEntryModal"
 import type { LedgerCategory, LedgerEntryType } from "@/types"
 
-export function LedgerAddButtons({ categories }: { categories: LedgerCategory[] }) {
+export function LedgerAddButtons({ categories, canAllocate }: { categories: LedgerCategory[]; canAllocate: boolean }) {
   const { t } = useLanguage()
   const [openType, setOpenType] = useState<LedgerEntryType | null>(null)
 
@@ -35,6 +35,7 @@ export function LedgerAddButtons({ categories }: { categories: LedgerCategory[] 
           onClose={() => setOpenType(null)}
           categories={categories}
           defaultType={openType}
+          canAllocate={canAllocate}
         />
       )}
     </>

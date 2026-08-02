@@ -130,7 +130,15 @@ export default async function SalesLedgerPage({
             render: (row) => <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(row.date), "dd MMM yyyy")}</span>,
           },
           { key: "customerName", label: <T k="salesCustomerName" />, render: (row) => <span className="text-sm font-medium text-slate-900">{row.customerName}</span> },
-          { key: "orderNo", label: <T k="orderNo" />, render: (row) => <span className="text-xs text-slate-500">{row.orderNo ?? "—"}</span> },
+          {
+            key: "orderNo",
+            label: <T k="orderNo" />,
+            render: (row) => (
+              <Link href={`/ledger/sales/${row.id}`} className="text-xs text-blue-600 hover:underline">
+                {row.orderNo ?? row.id.slice(0, 8)}
+              </Link>
+            ),
+          },
           {
             key: "invoiceAmount",
             label: <T k="invoiceAmount" />,

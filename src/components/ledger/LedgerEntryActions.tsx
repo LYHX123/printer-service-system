@@ -14,9 +14,10 @@ import type { LedgerCategory, LedgerEntryWithRelations } from "@/types"
 interface LedgerEntryActionsProps {
   entry: LedgerEntryWithRelations
   categories: LedgerCategory[]
+  canAllocate: boolean
 }
 
-export function LedgerEntryActions({ entry, categories }: LedgerEntryActionsProps) {
+export function LedgerEntryActions({ entry, categories, canAllocate }: LedgerEntryActionsProps) {
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
@@ -58,6 +59,7 @@ export function LedgerEntryActions({ entry, categories }: LedgerEntryActionsProp
         categories={categories}
         defaultType={entry.type}
         entry={entry}
+        canAllocate={canAllocate}
       />
       <Modal
         isOpen={confirmOpen}

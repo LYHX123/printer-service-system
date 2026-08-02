@@ -3,7 +3,7 @@
 import { useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Pencil, Archive, ArchiveRestore } from "lucide-react"
+import { Eye, Pencil, Archive, ArchiveRestore } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { setCustomerActive } from "@/lib/actions/customers"
@@ -32,6 +32,11 @@ export function CustomerActions({ customerId, isActive }: CustomerActionsProps) 
 
   return (
     <div className="flex justify-end gap-2">
+      <Link href={`/customers/${customerId}`}>
+        <Button variant="outline" size="sm" icon={<Eye className="h-3.5 w-3.5" />}>
+          View
+        </Button>
+      </Link>
       <Link href={`/customers/${customerId}/edit`}>
         <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />}>
           Edit

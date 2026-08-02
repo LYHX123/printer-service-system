@@ -42,6 +42,7 @@ export default async function EditQuotationPage({
   }
 
   const defaultValues: QuotationInput = {
+    quotationNumber: quotation.quotationNumber,
     customerId: quotation.customerId,
     customerBranchId: quotation.customerBranchId ?? "",
     contactName: quotation.contactName ?? "",

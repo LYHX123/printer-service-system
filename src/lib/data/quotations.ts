@@ -8,6 +8,7 @@ import type {
   Company,
   QuotationStatus,
   SparePart,
+  Invoice,
 } from "@/types"
 
 const QUOTATION_ITEM_PART_SELECT = {
@@ -61,7 +62,10 @@ export async function getQuotations(
       customer: { select: { id: true, name: true, code: true, companyName: true } },
       createdBy: { select: { id: true, name: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { quotationSortNumber: { sort: "desc", nulls: "last" } },
+      { createdAt: "desc" },
+    ],
   })
 
   return quotations.map((q) => ({ ...q, totalCost: Number(q.totalCost) }))
@@ -72,6 +76,8 @@ export type QuotationDetail = Quotation & {
   createdBy: Pick<User, "id" | "name">
   items: QuotationItemWithPart[]
   convertedJob: Pick<ServiceJob, "id" | "jobNumber"> | null
+  // At most one — quotationId is @unique on Invoice.
+  invoice: Pick<Invoice, "id" | "invoiceNumber" | "status" | "date" | "totalAmount"> | null
 }
 
 export async function getQuotation(
@@ -95,6 +101,7 @@ export async function getQuotation(
       createdBy: { select: { id: true, name: true } },
       items: { orderBy: { createdAt: "asc" }, include: { part: { select: QUOTATION_ITEM_PART_SELECT } } },
       convertedJob: { select: { id: true, jobNumber: true } },
+      invoice: { select: { id: true, invoiceNumber: true, status: true, date: true, totalAmount: true } },
     },
   }) as Promise<QuotationDetail | null>
 }

@@ -1,12 +1,20 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { ChevronLeft, User, Download, FileSpreadsheet, FileText, Package } from "lucide-react"
+import { ChevronLeft, User, Download, FileSpreadsheet, FileText, Package, Wallet } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getInvoice } from "@/lib/data/invoices"
-import { canAccess } from "@/lib/permissions"
+import {
+  canAccess,
+  canEditInvoice,
+  canDeleteInvoice,
+  canConfirmInvoice,
+  canCancelInvoice,
+  canCreateSalesRecord,
+} from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { InvoiceStatusBadge } from "@/components/ui/badge"
+import { InvoiceStatusBadge, SalesPaymentStatusBadge } from "@/components/ui/badge"
+import { InvoiceActions } from "@/components/quotations/InvoiceActions"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
@@ -19,7 +27,8 @@ export default async function InvoiceDetailPage({
 }) {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canAccess(role, "invoice", session!.user.modulePermissions)) redirect("/dashboard")
+  const permissions = session!.user.modulePermissions as string[]
+  if (!canAccess(role, "invoice", permissions)) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 
@@ -54,7 +63,7 @@ export default async function InvoiceDetailPage({
           </span>
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <a href={`/api/quotations/invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
               <Button size="sm" icon={<Download className="h-3.5 w-3.5" />}>
                 <T k="downloadPdf" />
@@ -65,6 +74,16 @@ export default async function InvoiceDetailPage({
                 <T k="downloadExcel" />
               </Button>
             </a>
+            <InvoiceActions
+              invoiceId={invoice.id}
+              status={invoice.status}
+              salesLedgerEntryId={invoice.salesLedgerEntry?.id ?? null}
+              canEdit={canEditInvoice(role, permissions)}
+              canDelete={canDeleteInvoice(role, permissions)}
+              canConfirm={canConfirmInvoice(role, permissions)}
+              canCancel={canCancelInvoice(role, permissions)}
+              canCreateSalesRecordPerm={canCreateSalesRecord(role, permissions)}
+            />
           </div>
         }
       />
@@ -88,11 +107,15 @@ export default async function InvoiceDetailPage({
             <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="details" /></h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-slate-500"><T k="quotations" /></dt>
+                <dt className="text-slate-500"><T k="source" /></dt>
                 <dd>
-                  <Link href={`/quotations/${invoice.quotation.id}`} className="text-blue-600 hover:underline">
-                    {invoice.quotation.quotationNumber}
-                  </Link>
+                  {invoice.quotation ? (
+                    <Link href={`/quotations/${invoice.quotation.id}`} className="text-blue-600 hover:underline">
+                      {invoice.quotation.quotationNumber}
+                    </Link>
+                  ) : (
+                    <span className="text-slate-700"><T k="directInvoice" /></span>
+                  )}
                 </dd>
               </div>
               <div className="flex justify-between">
@@ -104,6 +127,32 @@ export default async function InvoiceDetailPage({
                 <dd className="text-slate-700">{format(new Date(invoice.date), "dd MMM yyyy")}</dd>
               </div>
             </dl>
+          </div>
+
+          {/* Sales Ledger linkage */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-slate-400" />
+              <T k="salesLedgerLinkage" />
+            </h3>
+            {invoice.salesLedgerEntry ? (
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-slate-500"><T k="paidAmount" /></dt>
+                  <dd className="text-slate-700">{formatCurrency(Number(invoice.salesLedgerEntry.amountReceived))}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-slate-500"><T k="balance" /></dt>
+                  <dd className="text-slate-700">{formatCurrency(Number(invoice.salesLedgerEntry.balance))}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-slate-500"><T k="paymentStatus" /></dt>
+                  <dd><SalesPaymentStatusBadge status={invoice.salesLedgerEntry.paymentStatus} /></dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-sm text-slate-400 italic"><T k="notLinkedToSalesLedger" /></p>
+            )}
           </div>
         </div>
 

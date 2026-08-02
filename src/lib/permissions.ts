@@ -12,14 +12,15 @@ import type { Role } from "@/types"
 export type PermissionKey =
   | "dashboard.view"
   | "customers.view" | "customers.create" | "customers.edit" | "customers.delete" | "customers.files.upload"
-  | "quotations.view" | "quotations.create" | "quotations.edit" | "quotations.delete" | "quotations.export"
-  | "invoice.view" | "invoice.create" | "invoice.edit" | "invoice.delete" | "invoice.confirm" | "invoice.cancel"
+  | "quotations.view" | "quotations.create" | "quotations.edit" | "quotations.delete" | "quotations.export" | "quotations.convertToInvoice"
+  | "invoice.view" | "invoice.create" | "invoice.edit" | "invoice.delete" | "invoice.confirm" | "invoice.cancel" | "invoice.createSalesRecord"
   | "stock.equipment.view" | "stock.equipment.create" | "stock.equipment.edit" | "stock.equipment.delete" | "stock.equipment.adjust"
   | "stock.consumption.view" | "stock.consumption.create" | "stock.consumption.edit" | "stock.consumption.delete" | "stock.consumption.adjust"
   | "stock.parts.view" | "stock.parts.create" | "stock.parts.edit" | "stock.parts.delete" | "stock.parts.adjust"
   | "ledger.general.view" | "ledger.general.create" | "ledger.general.edit" | "ledger.general.delete" | "ledger.general.export"
   | "ledger.sales.view" | "ledger.sales.create" | "ledger.sales.edit" | "ledger.sales.delete" | "ledger.sales.export"
   | "ledger.shop.view" | "ledger.shop.create" | "ledger.shop.edit" | "ledger.shop.delete" | "ledger.shop.export"
+  | "ledger.receipts.allocate"
   | "tasks.view" | "tasks.create" | "tasks.editOwn" | "tasks.editAll" | "tasks.delete"
   | "tasks.nodes.create" | "tasks.nodes.edit" | "tasks.nodes.delete"
   | "users.view" | "users.create" | "users.edit" | "users.delete" | "users.permissions.manage"
@@ -62,6 +63,7 @@ export const PERMISSION_TREE: PermNode[] = [
       { key: "quotations.edit", en: "Edit", zh: "编辑" },
       { key: "quotations.delete", en: "Delete", zh: "删除" },
       { key: "quotations.export", en: "Export", zh: "导出" },
+      { key: "quotations.convertToInvoice", en: "Convert to Invoice", zh: "生成发票" },
     ],
   },
   {
@@ -73,6 +75,7 @@ export const PERMISSION_TREE: PermNode[] = [
       { key: "invoice.delete", en: "Delete", zh: "删除" },
       { key: "invoice.confirm", en: "Confirm", zh: "确认" },
       { key: "invoice.cancel", en: "Cancel", zh: "取消" },
+      { key: "invoice.createSalesRecord", en: "Create Sales Record", zh: "加入销售台账" },
     ],
   },
   {
@@ -141,6 +144,12 @@ export const PERMISSION_TREE: PermNode[] = [
           { key: "ledger.shop.edit", en: "Edit", zh: "编辑" },
           { key: "ledger.shop.delete", en: "Delete", zh: "删除" },
           { key: "ledger.shop.export", en: "Export", zh: "导出" },
+        ],
+      },
+      {
+        key: "ledger.receipts", en: "Receipt Allocation", zh: "收款分配",
+        leaves: [
+          { key: "ledger.receipts.allocate", en: "Allocate", zh: "分配" },
         ],
       },
     ],
@@ -334,6 +343,7 @@ export const canCreateQuotationPerm = (role: Role, p: string[]) => hasPermission
 export const canEditQuotationPerm = (role: Role, p: string[]) => hasPermission(role, p, "quotations.edit")
 export const canDeleteQuotationPerm = (role: Role, p: string[]) => hasPermission(role, p, "quotations.delete")
 export const canExportQuotation = (role: Role, p: string[]) => hasPermission(role, p, "quotations.export")
+export const canConvertQuotationToInvoice = (role: Role, p: string[]) => hasPermission(role, p, "quotations.convertToInvoice")
 
 export const canViewInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.view")
 export const canCreateInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.create")
@@ -341,6 +351,7 @@ export const canEditInvoice = (role: Role, p: string[]) => hasPermission(role, p
 export const canDeleteInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.delete")
 export const canConfirmInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.confirm")
 export const canCancelInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.cancel")
+export const canCreateSalesRecord = (role: Role, p: string[]) => hasPermission(role, p, "invoice.createSalesRecord")
 
 export type StockBucket = "equipment" | "consumption" | "parts"
 export const canViewStock = (role: Role, p: string[], bucket: StockBucket) => hasPermission(role, p, `stock.${bucket}.view` as PermissionKey)
@@ -355,6 +366,7 @@ export const canCreateLedgerEntryPerm = (role: Role, p: string[], book: LedgerBo
 export const canEditLedgerEntryPerm = (role: Role, p: string[], book: LedgerBook) => hasPermission(role, p, `ledger.${book}.edit` as PermissionKey)
 export const canDeleteLedgerEntryPerm = (role: Role, p: string[], book: LedgerBook) => hasPermission(role, p, `ledger.${book}.delete` as PermissionKey)
 export const canExportLedgerBook = (role: Role, p: string[], book: LedgerBook) => hasPermission(role, p, `ledger.${book}.export` as PermissionKey)
+export const canAllocateReceipt = (role: Role, p: string[]) => hasPermission(role, p, "ledger.receipts.allocate")
 
 export const canViewUsers = (role: Role, p: string[]) => hasPermission(role, p, "users.view")
 export const canCreateUserPerm = (role: Role, p: string[]) => hasPermission(role, p, "users.create")

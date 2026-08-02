@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { getCustomerDetail } from "@/lib/data/customers"
 import { getCustomerBranches } from "@/lib/data/customerBranches"
 import { getCustomerDocuments } from "@/lib/data/customerDocuments"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canUploadCustomerFile } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,7 @@ export default async function CustomerDetailPage({
     getCustomerBranches(id, companyId),
     getCustomerDocuments(id, companyId),
   ])
+  const canManageDocuments = canUploadCustomerFile(role, permissions)
 
   return (
     <div>
@@ -103,7 +104,7 @@ export default async function CustomerDetailPage({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <CustomerDocuments customerId={id} documents={documents} projects={projects} canManage />
+          <CustomerDocuments customerId={id} documents={documents} projects={projects} canManage={canManageDocuments} />
         </div>
       </div>
     </div>

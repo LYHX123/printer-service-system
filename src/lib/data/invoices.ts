@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { generateInvoiceNumber } from "@/lib/utils"
-import type { Invoice, InvoiceItem, Customer, Quotation, User, Company, SparePart } from "@/types"
+import type { Invoice, InvoiceItem, Customer, Quotation, User, Company, SparePart, SalesLedgerEntry } from "@/types"
 
 const INVOICE_ITEM_PART_SELECT = {
   id: true,
@@ -13,11 +12,12 @@ type InvoiceItemPart = Pick<SparePart, "id" | "partNumber" | "name" | "brand">
 
 export type InvoiceItemWithPart = InvoiceItem & { part: InvoiceItemPart | null }
 
-export type InvoiceListItem = Pick<Invoice, "id" | "invoiceNumber" | "date" | "createdAt" | "status"> & {
+export type InvoiceListItem = Pick<Invoice, "id" | "invoiceNumber" | "date" | "createdAt" | "status" | "source"> & {
   totalAmount: number
   customer: Pick<Customer, "id" | "companyName">
-  quotation: Pick<Quotation, "id" | "quotationNumber">
+  quotation: Pick<Quotation, "id" | "quotationNumber"> | null
   createdBy: Pick<User, "id" | "name">
+  salesLedgerEntry: { id: string } | null
 }
 
 export async function getInvoices(
@@ -45,11 +45,16 @@ export async function getInvoices(
       totalAmount: true,
       createdAt: true,
       status: true,
+      source: true,
       customer: { select: { id: true, companyName: true } },
       quotation: { select: { id: true, quotationNumber: true } },
       createdBy: { select: { id: true, name: true } },
+      salesLedgerEntry: { select: { id: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { invoiceSortNumber: { sort: "desc", nulls: "last" } },
+      { createdAt: "desc" },
+    ],
   })
 
   return invoices.map((inv) => ({ ...inv, totalAmount: Number(inv.totalAmount) })) as unknown as InvoiceListItem[]
@@ -57,10 +62,11 @@ export async function getInvoices(
 
 export type InvoiceDetail = Invoice & {
   customer: Pick<Customer, "id" | "companyName" | "name" | "pinNumber">
-  quotation: Pick<Quotation, "id" | "quotationNumber">
+  quotation: Pick<Quotation, "id" | "quotationNumber"> | null
   createdBy: Pick<User, "id" | "name">
   company: Pick<Company, "id" | "name" | "address" | "kraPin" | "currency">
   items: InvoiceItemWithPart[]
+  salesLedgerEntry: Pick<SalesLedgerEntry, "id" | "amountReceived" | "balance" | "paymentStatus"> | null
 }
 
 export async function getInvoice(id: string, companyId: string): Promise<InvoiceDetail | null> {
@@ -72,13 +78,14 @@ export async function getInvoice(id: string, companyId: string): Promise<Invoice
       createdBy: { select: { id: true, name: true } },
       company: { select: { id: true, name: true, address: true, kraPin: true, currency: true } },
       items: { include: { part: { select: INVOICE_ITEM_PART_SELECT } } },
+      salesLedgerEntry: { select: { id: true, amountReceived: true, balance: true, paymentStatus: true } },
     },
   }) as Promise<InvoiceDetail | null>
 }
 
 export type InvoicePdfData = Invoice & {
   customer: Pick<Customer, "id" | "companyName" | "name" | "pinNumber">
-  quotation: Pick<Quotation, "id" | "quotationNumber">
+  quotation: Pick<Quotation, "id" | "quotationNumber"> | null
   createdBy: Pick<User, "id" | "name">
   company: Pick<Company, "id" | "name" | "address" | "kraPin" | "logoUrl" | "currency" | "timezone">
   items: InvoiceItemWithPart[]
@@ -99,25 +106,3 @@ export async function getInvoiceForPdf(id: string, companyId: string): Promise<I
   }) as Promise<InvoicePdfData | null>
 }
 
-export async function getInvoicesForQuotation(
-  quotationId: string,
-  companyId: string
-): Promise<(Pick<Invoice, "id" | "invoiceNumber" | "date"> & { totalAmount: number })[]> {
-  const invoices = await prisma.invoice.findMany({
-    where: { quotationId, companyId },
-    select: { id: true, invoiceNumber: true, date: true, totalAmount: true },
-    orderBy: { createdAt: "desc" },
-  })
-  return invoices.map((inv) => ({ ...inv, totalAmount: Number(inv.totalAmount) }))
-}
-
-/** Suggests the next invoice number for the current month; the user can still edit it before generating. */
-export async function suggestInvoiceNumber(companyId: string): Promise<string> {
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  const count = await prisma.invoice.count({
-    where: { companyId, createdAt: { gte: monthStart, lt: monthEnd } },
-  })
-  return generateInvoiceNumber(now, count + 1)
-}

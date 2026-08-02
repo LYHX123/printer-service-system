@@ -151,6 +151,8 @@ export type LedgerEntryWithRelations = Omit<LedgerEntry, "amount"> & {
   amount: number
   category: Pick<LedgerCategory, "id" | "name" | "type">
   createdBy: Pick<User, "id" | "name">
+  customer: Pick<Customer, "id" | "companyName"> | null
+  allocations: { salesLedgerEntryId: string; amount: number; orderNo: string | null }[]
 }
 
 // ─── Status transitions ───────────────────────────────────────────────────────

@@ -14,6 +14,26 @@ export function formatCurrency(amount: number | string, currency: string = DEFAU
   return `${currency} ${formatted}`
 }
 
+/**
+ * Today's date as YYYY-MM-DD in the CALLER's local timezone — not UTC. Using
+ * `new Date().toISOString().slice(0, 10)` shifts to UTC first and can show
+ * yesterday's or tomorrow's date depending on the caller's timezone/time of
+ * day; this reads the local calendar fields directly instead.
+ *
+ * Only meaningful when called in the browser (the user's actual local time) —
+ * calling it in a Server Component would use the server's timezone, not the
+ * visiting user's, so date-default fields should compute this client-side
+ * (e.g. in a useEffect after mount) rather than passing it down as a prop
+ * computed on the server.
+ */
+export function todayLocalDate(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 export function generateJobNumber(sequence: number): string {
   const year = new Date().getFullYear()
   return `JOB-${year}${String(sequence).padStart(4, "0")}`

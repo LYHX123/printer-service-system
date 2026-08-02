@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canUploadCustomerFile } from "@/lib/permissions"
 import { getStorageProvider } from "@/lib/storage"
 import { logActivity } from "@/lib/audit"
 import type { Role } from "@/types"
@@ -17,7 +17,7 @@ export async function DELETE(
   }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) {
+  if (!canAccess(role, "customers", permissions) || !canUploadCustomerFile(role, permissions)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
   const companyId = session.user.companyId as string

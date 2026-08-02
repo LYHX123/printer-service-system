@@ -87,11 +87,27 @@ export async function getLedgerEntries(
     include: {
       category: { select: { id: true, name: true, type: true } },
       createdBy: { select: { id: true, name: true } },
+      customer: { select: { id: true, companyName: true } },
+      allocations: {
+        select: {
+          salesLedgerEntryId: true,
+          allocatedAmount: true,
+          salesLedgerEntry: { select: { orderNo: true } },
+        },
+      },
     },
     orderBy: { date: "desc" },
   })
 
-  const entries: LedgerEntryWithRelations[] = rows.map((e) => ({ ...e, amount: Number(e.amount) }))
+  const entries: LedgerEntryWithRelations[] = rows.map((e) => ({
+    ...e,
+    amount: Number(e.amount),
+    allocations: e.allocations.map((a) => ({
+      salesLedgerEntryId: a.salesLedgerEntryId,
+      amount: Number(a.allocatedAmount),
+      orderNo: a.salesLedgerEntry.orderNo,
+    })),
+  }))
 
   if (!search?.trim()) return entries
 
@@ -141,7 +157,9 @@ export type SalesLedgerListItem = Omit<SalesLedgerEntry, "invoiceAmount" | "amou
   amountReceived: number
   balance: number
   customerId: string | null
+  invoiceId: string | null
   createdBy: { id: string; name: string }
+  _count: { allocations: number }
 }
 
 export async function getSalesLedgerEntries(
@@ -168,8 +186,14 @@ export async function getSalesLedgerEntries(
     },
     include: {
       createdBy: { select: { id: true, name: true } },
+      _count: { select: { allocations: true } },
     },
+    // Strictly by the linked Invoice's natural business number first (spec: Invoice Number
+    // descending, unaffected by edits/payments) — legacy/manual entries with no linked
+    // Invoice fall through to the pre-existing referenceYear/referenceSequence scheme so
+    // they keep their relative order among themselves instead of all clumping together.
     orderBy: [
+      { invoice: { invoiceSortNumber: { sort: "desc", nulls: "last" } } },
       { referenceYear: { sort: "desc", nulls: "last" } },
       { referenceSequence: { sort: "desc", nulls: "last" } },
       { date: "desc" },
@@ -177,8 +201,7 @@ export async function getSalesLedgerEntries(
     ],
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (entries as any[]).map((e) => ({
+  return entries.map((e) => ({
     ...e,
     invoiceAmount: Number(e.invoiceAmount),
     amountReceived: Number(e.amountReceived),
@@ -193,4 +216,81 @@ export async function getUnpaidSalesBalance(companyId: string): Promise<number> 
     _sum: { balance: true },
   })
   return Number(result._sum.balance ?? 0)
+}
+
+/** A customer's UNPAID/PARTIAL Sales Ledger entries — feeds the Receipt Allocation panel on the Income form. */
+export type AllocatableSalesLedgerEntry = {
+  id: string
+  orderNo: string | null
+  invoiceAmount: number
+  amountReceived: number
+  balance: number
+}
+
+export async function getUnpaidSalesLedgerEntriesForCustomer(
+  customerId: string,
+  companyId: string
+): Promise<AllocatableSalesLedgerEntry[]> {
+  const entries = await prisma.salesLedgerEntry.findMany({
+    where: {
+      companyId,
+      customerId,
+      isArchived: false,
+      paymentStatus: { in: ["UNPAID", "PARTIAL"] },
+    },
+    select: { id: true, orderNo: true, invoiceAmount: true, amountReceived: true, balance: true },
+    orderBy: [
+      { invoice: { invoiceSortNumber: { sort: "desc", nulls: "last" } } },
+      { date: "desc" },
+    ],
+  })
+  return entries.map((e) => ({
+    ...e,
+    invoiceAmount: Number(e.invoiceAmount),
+    amountReceived: Number(e.amountReceived),
+    balance: Number(e.balance),
+  }))
+}
+
+/** Sales Ledger detail — entry + its full Payment History (every ReceiptAllocation, joined to the receiving LedgerEntry). */
+export type SalesLedgerDetail = SalesLedgerListItem & {
+  invoice: { id: string; invoiceNumber: string } | null
+  paymentHistory: {
+    id: string
+    amount: number
+    date: Date
+    referenceNo: string | null
+    createdBy: { id: string; name: string }
+  }[]
+}
+
+export async function getSalesLedgerEntry(id: string, companyId: string): Promise<SalesLedgerDetail | null> {
+  const entry = await prisma.salesLedgerEntry.findFirst({
+    where: { id, companyId },
+    include: {
+      createdBy: { select: { id: true, name: true } },
+      invoice: { select: { id: true, invoiceNumber: true } },
+      _count: { select: { allocations: true } },
+      allocations: {
+        include: { ledgerEntry: { select: { id: true, date: true, referenceNo: true, createdBy: { select: { id: true, name: true } } } } },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  })
+  if (!entry) return null
+
+  const { allocations, ...rest } = entry
+  return {
+    ...rest,
+    invoiceAmount: Number(rest.invoiceAmount),
+    amountReceived: Number(rest.amountReceived),
+    balance: Number(rest.balance),
+    paymentHistory: allocations.map((a) => ({
+      id: a.id,
+      amount: Number(a.allocatedAmount),
+      date: a.ledgerEntry.date,
+      referenceNo: a.ledgerEntry.referenceNo,
+      createdBy: a.ledgerEntry.createdBy,
+    })),
+  } as SalesLedgerDetail
 }

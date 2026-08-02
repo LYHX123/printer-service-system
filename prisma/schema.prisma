@@ -246,6 +246,7 @@ model User {
   createdInvoices           Invoice[]
   uploadedCustomerDocuments CustomerDocument[]
   auditLogs                 AuditLog[]
+  createdReceiptAllocations ReceiptAllocation[]
 }
 
 model Customer {
@@ -273,6 +274,7 @@ model Customer {
   communicationLogs  CommunicationLog[]
   salesLedgerEntries SalesLedgerEntry[]
   invoices           Invoice[]
+  ledgerEntries      LedgerEntry[]
 }
 
 // Branches or project sites that belong to a customer — surfaced in the UI as "Project"
@@ -424,9 +426,10 @@ model ServiceJob {
 }
 
 model Quotation {
-  id               String          @id @default(uuid())
-  quotationNumber  String          @unique // QTYYYYMM-NNN
-  companyId        String
+  id                  String          @id @default(uuid())
+  quotationNumber     String          @unique // user-entered business number (e.g. QT00455); legacy rows keep their original auto-generated QTYYYYMM-NNN value
+  quotationSortNumber Int? // trailing numeric portion of quotationNumber, for natural-number sort — see src/lib/numbering.ts
+  companyId           String
   customerId       String
   customerBranchId String? // selected Project ("Head Office" when null)
   contactName      String? // contact snapshot, frozen at creation/selection time
@@ -453,7 +456,7 @@ model Quotation {
   items             QuotationItem[]
   convertedJob      ServiceJob?        @relation("QuotationConversion")
   communicationLogs CommunicationLog[]
-  invoices          Invoice[]
+  invoice           Invoice? // at most one — quotationId is @unique on Invoice
 }
 
 model QuotationItem {
@@ -477,28 +480,35 @@ model QuotationItem {
   part      SparePart? @relation(fields: [partId], references: [id])
 }
 
-// Generated from a quotation's items at any quotation status. Not unique per quotation —
-// a quotation may be re-invoiced (e.g. correcting the invoice number/date) without losing
-// the earlier record.
+// One Invoice per Quotation at most (quotationId is unique when present — enforced from
+// the invoice_salesledger_receipt_refactor migration onward). An Invoice may also be
+// created directly, with no Quotation at all (source = DIRECT, quotationId = null).
+enum InvoiceSource {
+  FROM_QUOTATION
+  DIRECT
+}
+
 model Invoice {
-  id            String        @id @default(uuid())
-  invoiceNumber String        @unique
-  companyId     String
-  quotationId   String
-  customerId    String
-  customerPin   String? // snapshot, editable at generation time — may differ from the customer record
-  date          DateTime
-  subtotal      Decimal       @db.Decimal(12, 2)
-  vatPercent    Decimal       @db.Decimal(5, 2)
-  vatAmount     Decimal       @db.Decimal(12, 2)
-  totalAmount   Decimal       @db.Decimal(12, 2)
-  receivedBy    String?
-  // Stock-deduction workflow. Existing rows are backfilled to CONFIRMED (they already
-  // represent finalized documents) but WITHOUT retroactive InventoryTransaction rows —
-  // only invoices confirmed going forward actually move stock. See confirmInvoice()/
-  // cancelInvoice() in src/lib/actions/invoices.ts. Confirm/cancel are service-layer
-  // only for now; no UI button is wired up yet.
-  status        InvoiceStatus @default(CONFIRMED)
+  id                String        @id @default(uuid())
+  invoiceNumber     String        @unique // user-entered business number (e.g. CN00455); legacy rows keep their original auto-generated INVYYYYMM-NNN value
+  invoiceSortNumber Int? // trailing numeric portion of invoiceNumber, for natural-number sort — see src/lib/numbering.ts
+  source            InvoiceSource @default(FROM_QUOTATION)
+  companyId         String
+  quotationId       String?       @unique
+  customerId        String
+  customerPin       String? // snapshot, editable at generation time — may differ from the customer record
+  date              DateTime
+  subtotal          Decimal       @db.Decimal(12, 2)
+  vatPercent        Decimal       @db.Decimal(5, 2)
+  vatAmount         Decimal       @db.Decimal(12, 2)
+  totalAmount       Decimal       @db.Decimal(12, 2)
+  receivedBy        String?
+  remarks           String? // free-text notes, mainly used on Direct invoices (no Quotation.remarks to inherit from)
+  // Stock-deduction workflow. Existing rows (all created before this field existed) were
+  // backfilled to CONFIRMED without retroactive InventoryTransaction rows. Going forward,
+  // every new invoice (from either source) is born DRAFT and only moves stock once
+  // explicitly confirmed — see confirmInvoice()/cancelInvoice() in src/lib/actions/invoices.ts.
+  status        InvoiceStatus @default(DRAFT)
   confirmedById String? // plain user-id reference, no FK relation (avoids widening User)
   confirmedAt   DateTime?
   cancelledById String?
@@ -507,11 +517,12 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  company   Company       @relation(fields: [companyId], references: [id])
-  quotation Quotation     @relation(fields: [quotationId], references: [id])
-  customer  Customer      @relation(fields: [customerId], references: [id])
-  createdBy User          @relation(fields: [createdById], references: [id])
-  items     InvoiceItem[]
+  company          Company           @relation(fields: [companyId], references: [id])
+  quotation        Quotation?        @relation(fields: [quotationId], references: [id])
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  createdBy        User              @relation(fields: [createdById], references: [id])
+  items            InvoiceItem[]
+  salesLedgerEntry SalesLedgerEntry?
 }
 
 model InvoiceItem {
@@ -807,13 +818,19 @@ model LedgerEntry {
   paymentMethod LedgerPaymentMethod
   referenceNo   String?
   remark        String?
+  // Set when this INCOME entry is a customer receipt that may be allocated against one or
+  // more Sales Ledger invoices — see ReceiptAllocation. Left null for non-customer income
+  // (e.g. "Other Income") and for all EXPENSE entries.
+  customerId    String?
   createdById   String
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
-  company   Company        @relation(fields: [companyId], references: [id])
-  category  LedgerCategory @relation(fields: [categoryId], references: [id])
-  createdBy User           @relation(fields: [createdById], references: [id])
+  company     Company             @relation(fields: [companyId], references: [id])
+  category    LedgerCategory      @relation(fields: [categoryId], references: [id])
+  customer    Customer?           @relation(fields: [customerId], references: [id])
+  createdBy   User                @relation(fields: [createdById], references: [id])
+  allocations ReceiptAllocation[]
 }
 
 // ─── Shop Account Module ───────────────────────────────────────────────────────
@@ -928,13 +945,42 @@ model SalesLedgerEntry {
   paymentStatus     SalesPaymentStatus @default(UNPAID)
   remark            String?
   isArchived        Boolean            @default(false)
+  // Set when this entry was created from Invoice Detail's "Create Sales Record" action —
+  // at most one Sales Ledger entry per Invoice (enforced by @unique). Legacy/manual entries
+  // (created directly in the Sales Ledger, not from an Invoice) keep this null forever.
+  invoiceId         String?            @unique
   createdById       String
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  company   Company   @relation(fields: [companyId], references: [id])
-  customer  Customer? @relation(fields: [customerId], references: [id])
-  createdBy User      @relation(fields: [createdById], references: [id])
+  company     Company             @relation(fields: [companyId], references: [id])
+  customer    Customer?           @relation(fields: [customerId], references: [id])
+  invoice     Invoice?            @relation(fields: [invoiceId], references: [id])
+  createdBy   User                @relation(fields: [createdById], references: [id])
+  allocations ReceiptAllocation[]
 
   @@index([companyId, referenceYear(sort: Desc), referenceSequence(sort: Desc)])
+}
+
+// Records one customer-receipt LedgerEntry being applied against one Sales Ledger invoice.
+// A single receipt may be split across several invoices (several rows, same ledgerEntryId);
+// a single invoice may receive several receipts over time (several rows, same
+// salesLedgerEntryId). SalesLedgerEntry.amountReceived/balance/paymentStatus are always
+// recomputed from SUM(allocatedAmount) here, never incremented by hand — see
+// recomputeSalesLedgerEntry() in src/lib/actions/ledger.ts.
+model ReceiptAllocation {
+  id                 String   @id @default(uuid())
+  ledgerEntryId      String
+  salesLedgerEntryId String
+  allocatedAmount    Decimal  @db.Decimal(12, 2)
+  createdById        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  ledgerEntry      LedgerEntry      @relation(fields: [ledgerEntryId], references: [id], onDelete: Cascade)
+  salesLedgerEntry SalesLedgerEntry @relation(fields: [salesLedgerEntryId], references: [id])
+  createdBy        User             @relation(fields: [createdById], references: [id])
+
+  @@index([ledgerEntryId])
+  @@index([salesLedgerEntryId])
 }

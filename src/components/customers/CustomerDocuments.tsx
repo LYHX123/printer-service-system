@@ -3,14 +3,14 @@
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Plus, Download, Trash2, FileText } from "lucide-react"
+import { Plus, Download, Trash2, FileText, Upload, RefreshCw } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { FormField } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES } from "@/lib/constants"
+import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES, CUSTOMER_KYC_DOCUMENT_TYPES } from "@/lib/constants"
 import type { TranslationKey } from "@/lib/i18n/translations"
 import type { CustomerDocumentListItem } from "@/lib/data/customerDocuments"
 import type { CustomerBranchDetail } from "@/lib/data/customerBranches"
@@ -27,12 +27,195 @@ const DOCUMENT_TYPE_KEYS: Record<(typeof CUSTOMER_DOCUMENT_TYPES)[number], Trans
   ID_DOCUMENT: "documentTypeIdDocument",
   CORRESPONDENCE: "documentTypeCorrespondence",
   OTHER: "documentTypeOther",
+  REGISTRATION_CERTIFICATE: "registrationCertificate",
+  PIN_CERTIFICATE: "pinCertificate",
+  CR12: "cr12",
 }
 
-function formatFileSize(bytes: number): string {
+// Generic "Other documents" upload only offers the original free-form types — the 3 KYC
+// types each get their own dedicated slot above (see KycDocumentSlot) so there's exactly
+// one upload path per KYC type, not two competing ones.
+const GENERIC_DOCUMENT_TYPES = CUSTOMER_DOCUMENT_TYPES.filter(
+  (type) => !(CUSTOMER_KYC_DOCUMENT_TYPES as readonly string[]).includes(type)
+)
+
+export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+async function uploadCustomerDocument(customerId: string, file: File, documentType: string, projectId?: string) {
+  const formData = new FormData()
+  formData.set("file", file)
+  formData.set("documentType", documentType)
+  if (projectId) formData.set("projectId", projectId)
+  const res = await fetch(`/api/customers/${customerId}/documents`, { method: "POST", body: formData })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error ?? "Failed to upload document")
+  return body.document as { id: string }
+}
+
+async function deleteCustomerDocument(customerId: string, documentId: string) {
+  const res = await fetch(`/api/customers/${customerId}/documents/${documentId}`, { method: "DELETE" })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error ?? "Failed to delete document")
+  }
+}
+
+// ─── One fixed, named row per KYC document type (Registration Certificate / PIN
+// Certificate / CR12) — self-contained upload/replace/delete, per spec: each slot is
+// independently optional, keeps its original filename, and records who/when uploaded.
+
+interface KycDocumentSlotProps {
+  customerId: string
+  type: (typeof CUSTOMER_KYC_DOCUMENT_TYPES)[number]
+  doc: CustomerDocumentListItem | undefined
+  canManage: boolean
+  onChanged: () => void
+}
+
+function KycDocumentSlot({ customerId, type, doc, canManage, onChanged }: KycDocumentSlotProps) {
+  const toast = useToast()
+  const { t } = useLanguage()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  function pickFile() {
+    fileInputRef.current?.click()
+  }
+
+  async function handleFileChosen(replacingId: string | null) {
+    const file = fileInputRef.current?.files?.[0]
+    if (!file) return
+    if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
+      toast.error(t("documentTypeNotAllowed"))
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      return
+    }
+    if (file.size > MAX_DOCUMENT_SIZE) {
+      toast.error(t("documentTooLarge"))
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      return
+    }
+
+    setBusy(true)
+    try {
+      await uploadCustomerDocument(customerId, file, type)
+      // Replace = upload the new one first, then drop the old one — never leaves the
+      // customer with zero copies of the document if the upload itself fails.
+      if (replacingId) {
+        await deleteCustomerDocument(customerId, replacingId).catch(() => {
+          toast.error(t("replaceDocumentPartial"))
+        })
+      }
+      toast.success(t("documentUploaded"))
+      onChanged()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("documentUploadFailed"))
+    } finally {
+      setBusy(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  async function handleDelete() {
+    if (!doc) return
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+    setBusy(true)
+    try {
+      await deleteCustomerDocument(customerId, doc.id)
+      toast.success(t("documentDeleted"))
+      onChanged()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("documentDeleteFailed"))
+    } finally {
+      setBusy(false)
+      setConfirmingDelete(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept={ALLOWED_DOCUMENT_TYPES.join(",")}
+        onChange={() => handleFileChosen(doc ? doc.id : null)}
+      />
+      <div className="flex min-w-0 items-center gap-3">
+        <FileText className={`h-8 w-8 shrink-0 ${doc ? "text-slate-300" : "text-slate-200"}`} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-900">{t(DOCUMENT_TYPE_KEYS[type])}</p>
+          {doc ? (
+            <p className="truncate text-xs text-slate-500">
+              {doc.originalFileName}
+              {" · "}
+              {format(new Date(doc.createdAt), "dd MMM yyyy")}
+              {" · "}
+              {doc.uploadedBy.name}
+              {" · "}
+              {formatFileSize(doc.fileSize)}
+            </p>
+          ) : (
+            <p className="text-xs italic text-slate-400">{t("documentNotUploaded")}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        {doc && (
+          <a href={doc.url} target="_blank" rel="noopener noreferrer">
+            <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
+              {t("download")}
+            </Button>
+          </a>
+        )}
+        {canManage && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            icon={doc ? <RefreshCw className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
+            loading={busy && !confirmingDelete}
+            onClick={pickFile}
+          >
+            {doc ? t("replace") : t("uploadFile")}
+          </Button>
+        )}
+        {canManage && doc && (
+          confirmingDelete ? (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-500">{t("confirmDeleteDocument")}</span>
+              <button type="button" className="font-medium text-red-600 underline" onClick={handleDelete}>
+                {t("delete")}
+              </button>
+              <button type="button" className="text-slate-500" onClick={() => setConfirmingDelete(false)}>
+                {t("cancel")}
+              </button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+              loading={busy && confirmingDelete}
+              onClick={handleDelete}
+            >
+              {t("delete")}
+            </Button>
+          )
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function CustomerDocuments({ customerId, documents, projects, canManage }: CustomerDocumentsProps) {
@@ -47,6 +230,19 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
+  function refresh() {
+    router.refresh()
+  }
+
+  // documents is already ordered createdAt desc, so the first match per type is the latest.
+  const kycDocs = CUSTOMER_KYC_DOCUMENT_TYPES.map((type) => ({
+    type,
+    doc: documents.find((d) => d.documentType === type),
+  }))
+  const genericDocs = documents.filter(
+    (d) => !(CUSTOMER_KYC_DOCUMENT_TYPES as readonly string[]).includes(d.documentType ?? "")
+  )
+
   function openModal() {
     setDocumentType("OTHER")
     setProjectId("")
@@ -56,34 +252,26 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
   async function handleUpload() {
     const file = fileInputRef.current?.files?.[0]
     if (!file) {
-      toast.error("Please choose a file")
+      toast.error(t("pleaseChooseFile"))
       return
     }
     if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
-      toast.error("Only JPG, PNG, WEBP, PDF, and Word documents are allowed")
+      toast.error(t("documentTypeNotAllowed"))
       return
     }
     if (file.size > MAX_DOCUMENT_SIZE) {
-      toast.error("File exceeds 10MB limit")
+      toast.error(t("documentTooLarge"))
       return
     }
 
-    const formData = new FormData()
-    formData.set("file", file)
-    formData.set("documentType", documentType)
-    if (projectId) formData.set("projectId", projectId)
-
     setUploading(true)
     try {
-      const res = await fetch(`/api/customers/${customerId}/documents`, { method: "POST", body: formData })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        toast.error(body.error ?? "Failed to upload document")
-        return
-      }
-      toast.success("Document uploaded")
+      await uploadCustomerDocument(customerId, file, documentType, projectId || undefined)
+      toast.success(t("documentUploaded"))
       setModalOpen(false)
-      router.refresh()
+      refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("documentUploadFailed"))
     } finally {
       setUploading(false)
     }
@@ -96,14 +284,11 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
     }
     setDeletingId(id)
     try {
-      const res = await fetch(`/api/customers/${customerId}/documents/${id}`, { method: "DELETE" })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        toast.error(body.error ?? "Failed to delete document")
-        return
-      }
-      toast.success("Document deleted")
-      router.refresh()
+      await deleteCustomerDocument(customerId, id)
+      toast.success(t("documentDeleted"))
+      refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("documentDeleteFailed"))
     } finally {
       setDeletingId(null)
       setConfirmingDeleteId(null)
@@ -113,7 +298,7 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900">{t("documents")}</h2>
+        <h2 className="text-sm font-semibold text-slate-900">{t("customerDocuments")}</h2>
         {canManage && (
           <Button type="button" variant="outline" size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openModal}>
             {t("uploadFile")}
@@ -121,11 +306,16 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
         )}
       </div>
 
-      {documents.length === 0 ? (
-        <p className="text-sm text-slate-400 italic">{t("noDocumentsYet")}</p>
-      ) : (
-        <div className="space-y-2">
-          {documents.map((doc) => (
+      <div className="space-y-2">
+        {kycDocs.map(({ type, doc }) => (
+          <KycDocumentSlot key={type} customerId={customerId} type={type} doc={doc} canManage={canManage} onChanged={refresh} />
+        ))}
+      </div>
+
+      {genericDocs.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("otherDocuments")}</h3>
+          {genericDocs.map((doc) => (
             <div
               key={doc.id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3"
@@ -215,7 +405,7 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
           </FormField>
           <FormField label={t("documentType")} htmlFor="documentType">
             <Select id="documentType" value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
-              {CUSTOMER_DOCUMENT_TYPES.map((type) => (
+              {GENERIC_DOCUMENT_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {t(DOCUMENT_TYPE_KEYS[type])}
                 </option>

@@ -11,7 +11,9 @@ import { logActivity } from "@/lib/audit"
 import type { CustomerWithProjectsInput, CustomerInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
-export async function createCustomer(data: CustomerWithProjectsInput) {
+export async function createCustomer(
+  data: CustomerWithProjectsInput
+): Promise<{ error: string } | { success: true; id: string }> {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
@@ -76,7 +78,7 @@ export async function createCustomer(data: CustomerWithProjectsInput) {
   })
 
   revalidatePath("/customers")
-  redirect("/customers")
+  return { success: true as const, id: customerId }
 }
 
 export async function updateCustomer(id: string, data: CustomerInput) {

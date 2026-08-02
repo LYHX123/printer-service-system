@@ -19,4 +19,14 @@ export const CUSTOMER_DOCUMENT_TYPES = [
   "ID_DOCUMENT",
   "CORRESPONDENCE",
   "OTHER",
+  "REGISTRATION_CERTIFICATE",
+  "PIN_CERTIFICATE",
+  "CR12",
+] as const
+
+/** Fixed, named document slots shown on Customer create/detail — one Choose-File/Upload control each, per the business's 3 standard KYC documents. */
+export const CUSTOMER_KYC_DOCUMENT_TYPES = [
+  "REGISTRATION_CERTIFICATE",
+  "PIN_CERTIFICATE",
+  "CR12",
 ] as const

@@ -15,7 +15,6 @@ interface GenerateInvoiceModalProps {
   isOpen: boolean
   onClose: () => void
   quotationId: string
-  suggestedInvoiceNumber: string
   customerPin: string
   defaultVatPercent: number
 }
@@ -28,15 +27,16 @@ export function GenerateInvoiceModal({
   isOpen,
   onClose,
   quotationId,
-  suggestedInvoiceNumber,
   customerPin,
   defaultVatPercent,
 }: GenerateInvoiceModalProps) {
   const toast = useToast()
   const { t } = useLanguage()
 
+  // No auto-suggested number — invoiceNumber is always manually typed by the user
+  // (e.g. "CN00455"), never system-generated.
   const defaultValues: GenerateInvoiceInput = {
-    invoiceNumber: suggestedInvoiceNumber,
+    invoiceNumber: "",
     date: todayIso(),
     customerPin,
     vatPercent: defaultVatPercent,
@@ -60,7 +60,7 @@ export function GenerateInvoiceModal({
   async function onSubmit(data: GenerateInvoiceInput) {
     const result = await generateInvoice(quotationId, data)
     if (result?.error) {
-      toast.error(result.error)
+      toast.error(result.error === "INVOICE_NUMBER_EXISTS" ? t("invoiceNumberExists") : result.error)
       return
     }
     // Success path redirects server-side to the new invoice.
@@ -90,7 +90,7 @@ export function GenerateInvoiceModal({
           required
           error={errors.invoiceNumber?.message}
         >
-          <Input id="invoiceNumber" {...register("invoiceNumber")} />
+          <Input id="invoiceNumber" placeholder="e.g. CN00455" {...register("invoiceNumber")} />
         </FormField>
         <FormField
           label={t("invoiceDateLabel")}

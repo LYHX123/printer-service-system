@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canCreateQuotation } from "@/lib/permissions"
 import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
-import { generateQuotationNumber } from "@/lib/utils"
+import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { getStockType } from "@/lib/stock-types"
 import { logActivity } from "@/lib/audit"
 import { QUOTATION_STATUS_TRANSITIONS } from "@/types"
@@ -41,9 +41,13 @@ export async function createQuotation(data: QuotationInput) {
     internalNotes,
     items,
   } = parsed.data
+  const quotationNumber = normalizeBusinessNumber(parsed.data.quotationNumber)
 
   let quotation: { id: string }
   try {
+    const existingNumber = await prisma.quotation.findUnique({ where: { quotationNumber } })
+    if (existingNumber) return { error: "QUOTATION_NUMBER_EXISTS" }
+
     const parts = await prisma.sparePart.findMany({
       where: { id: { in: items.map((i) => i.partId) }, companyId },
       select: { id: true, name: true, brand: true, model: true, specification: true, category: true },
@@ -52,17 +56,6 @@ export async function createQuotation(data: QuotationInput) {
     if (parts.length !== new Set(items.map((i) => i.partId)).size) {
       return { error: "One or more stock items are invalid" }
     }
-
-    const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    const count = await prisma.quotation.count({
-      where: {
-        companyId,
-        createdAt: { gte: monthStart, lt: monthEnd },
-      },
-    })
-    const quotationNumber = generateQuotationNumber(now, count + 1)
 
     const subtotal = items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
@@ -73,6 +66,7 @@ export async function createQuotation(data: QuotationInput) {
     quotation = await prisma.quotation.create({
       data: {
         quotationNumber,
+        quotationSortNumber: extractTrailingNumber(quotationNumber),
         companyId,
         customerId,
         customerBranchId: customerBranchId || null,
@@ -141,6 +135,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
     internalNotes,
     items,
   } = parsed.data
+  const quotationNumber = normalizeBusinessNumber(parsed.data.quotationNumber)
 
   try {
     const existing = await prisma.quotation.findFirst({
@@ -151,6 +146,12 @@ export async function updateQuotation(id: string, data: QuotationInput) {
     if (existing.status !== "DRAFT" && existing.status !== "SENT") {
       return { error: "Only draft or sent quotations can be edited" }
     }
+
+    const existingNumber = await prisma.quotation.findFirst({
+      where: { quotationNumber, companyId, NOT: { id } },
+      select: { id: true },
+    })
+    if (existingNumber) return { error: "QUOTATION_NUMBER_EXISTS" }
 
     const parts = await prisma.sparePart.findMany({
       where: { id: { in: items.map((i) => i.partId) }, companyId },
@@ -173,6 +174,8 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       await tx.quotation.update({
         where: { id },
         data: {
+          quotationNumber,
+          quotationSortNumber: extractTrailingNumber(quotationNumber),
           customerId,
           customerBranchId: newCustomerBranchId,
           contactName: contactName || null,

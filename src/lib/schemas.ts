@@ -144,6 +144,7 @@ export const QuotationItemInputSchema = z.object({
 export type QuotationItemInput = z.infer<typeof QuotationItemInputSchema>
 
 export const QuotationSchema = z.object({
+  quotationNumber: z.string().min(1, "Quotation number is required").max(50),
   customerId: z.string().min(1, "Customer is required"),
   customerBranchId: z.string().optional().or(z.literal("")),
   contactName: z.string().max(150).optional().or(z.literal("")),
@@ -192,6 +193,27 @@ export const GenerateInvoiceSchema = z.object({
 })
 
 export type GenerateInvoiceInput = z.infer<typeof GenerateInvoiceSchema>
+
+export const InvoiceItemInputSchema = z.object({
+  partId: z.string().min(1, "Stock item is required"),
+  quantity: z.coerce.number().int().min(1, "Min 1"),
+  unitPrice: z.coerce.number().min(0, "Must be ≥ 0"),
+})
+
+export type InvoiceItemInput = z.infer<typeof InvoiceItemInputSchema>
+
+/** Direct invoice — created without a Quotation. Used for both create and edit (edit is only ever allowed while the invoice is still DRAFT). */
+export const DirectInvoiceSchema = z.object({
+  invoiceNumber: z.string().min(1, "Invoice number is required").max(50),
+  customerId: z.string().min(1, "Customer is required"),
+  customerPin: z.string().max(30).optional().or(z.literal("")),
+  date: z.string().min(1, "Date is required"),
+  vatPercent: z.coerce.number().min(0).max(100).default(DEFAULT_VAT_PERCENT),
+  remarks: z.string().max(2000).optional().or(z.literal("")),
+  items: z.array(InvoiceItemInputSchema).min(1, "Add at least one stock item"),
+})
+
+export type DirectInvoiceInput = z.infer<typeof DirectInvoiceSchema>
 
 // ─── Repair Report ────────────────────────────────────────────────────────────
 
@@ -327,6 +349,14 @@ export type StockMovementInput = z.infer<typeof StockMovementSchema>
 
 const NEW_CATEGORY_VALUE = "__new__"
 
+/** One receipt (INCOME LedgerEntry) applied against one Sales Ledger invoice — see ReceiptAllocation. */
+export const ReceiptAllocationInputSchema = z.object({
+  salesLedgerEntryId: z.string().min(1),
+  amount: z.coerce.number().positive("Must be greater than 0"),
+})
+
+export type ReceiptAllocationInput = z.infer<typeof ReceiptAllocationInputSchema>
+
 export const LedgerEntrySchema = z
   .object({
     type: z.enum(["INCOME", "EXPENSE"]),
@@ -337,10 +367,18 @@ export const LedgerEntrySchema = z
     paymentMethod: z.enum(["MPESA", "BANK_TRANSFER", "CHEQUE", "CASH"]),
     referenceNo: z.string().max(100).optional().or(z.literal("")),
     remark: z.string().max(500).optional().or(z.literal("")),
+    // Only meaningful when type === "INCOME" — identifies the customer this receipt
+    // came from, so it can be allocated against their Sales Ledger invoices.
+    customerId: z.string().optional().or(z.literal("")),
+    allocations: z.array(ReceiptAllocationInputSchema).optional().default([]),
   })
   .superRefine((data, ctx) => {
     if (data.categoryId === NEW_CATEGORY_VALUE && !data.newCategoryName?.trim()) {
       ctx.addIssue({ code: "custom", path: ["newCategoryName"], message: "Category name is required" })
+    }
+    const totalAllocated = data.allocations.reduce((sum, a) => sum + a.amount, 0)
+    if (totalAllocated > data.amount) {
+      ctx.addIssue({ code: "custom", path: ["allocations"], message: "Total allocated cannot exceed the receipt amount" })
     }
   })
 

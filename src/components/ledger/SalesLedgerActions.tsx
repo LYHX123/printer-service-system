@@ -31,13 +31,20 @@ export function SalesLedgerActions({ entry }: { entry: SalesLedgerListItem }) {
 
   return (
     <>
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditOpen(true)}>
+      <div className="flex flex-row flex-nowrap items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 whitespace-nowrap"
+          icon={<Pencil className="h-3.5 w-3.5" />}
+          onClick={() => setEditOpen(true)}
+        >
           {t("edit")}
         </Button>
         <Button
           variant="outline"
           size="sm"
+          className="shrink-0 whitespace-nowrap"
           icon={entry.isArchived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
           onClick={toggleArchived}
           loading={isPending}

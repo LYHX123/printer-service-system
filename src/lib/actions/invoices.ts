@@ -4,10 +4,20 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canCreateQuotation, canConfirmInvoice, canCancelInvoice } from "@/lib/permissions"
-import { GenerateInvoiceSchema } from "@/lib/schemas"
+import {
+  canCreateQuotation,
+  canCreateInvoice,
+  canEditInvoice,
+  canDeleteInvoice,
+  canConfirmInvoice,
+  canCancelInvoice,
+  canCreateSalesRecord,
+} from "@/lib/permissions"
+import { GenerateInvoiceSchema, DirectInvoiceSchema } from "@/lib/schemas"
+import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
-import type { GenerateInvoiceInput } from "@/lib/schemas"
+import { getStockType } from "@/lib/stock-types"
+import type { GenerateInvoiceInput, DirectInvoiceInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
 export type StockShortfall = {
@@ -27,98 +37,346 @@ export async function generateInvoice(quotationId: string, data: GenerateInvoice
 
   const parsed = GenerateInvoiceSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
-  const { invoiceNumber, date, customerPin, vatPercent } = parsed.data
+  const { date, customerPin, vatPercent } = parsed.data
+  const invoiceNumber = normalizeBusinessNumber(parsed.data.invoiceNumber)
 
   let invoiceId: string
   try {
     // Invoices can be generated from a quotation at any status — generation never
     // changes the quotation's own status (that remains a separate, user-driven action).
+    // At most one Invoice per Quotation (quotationId is @unique) — the quotation detail
+    // page only offers this action when quotation.invoice is still null.
     const quotation = await prisma.quotation.findFirst({
       where: { id: quotationId, companyId },
       include: {
         customer: { select: { id: true, companyName: true } },
         items: { include: { part: { select: { id: true, name: true, brand: true, unit: true } } } },
+        invoice: { select: { id: true } },
       },
     })
     if (!quotation) return { error: "Quotation not found" }
+    if (quotation.invoice) return { error: "This quotation already has an invoice" }
 
     const existingNumber = await prisma.invoice.findUnique({ where: { invoiceNumber } })
-    if (existingNumber) return { error: "Invoice number already in use" }
+    if (existingNumber) return { error: "INVOICE_NUMBER_EXISTS" }
 
     const subtotal = Number(quotation.subtotal)
     const vatAmount = (subtotal * vatPercent) / 100
     const totalAmount = subtotal + vatAmount
     const invoiceDate = new Date(`${date}T12:00:00`)
 
-    const invoice = await prisma.$transaction(async (tx) => {
-      const created = await tx.invoice.create({
-        data: {
-          invoiceNumber,
-          companyId,
-          quotationId,
-          customerId: quotation.customerId,
-          customerPin: customerPin || null,
-          date: invoiceDate,
-          subtotal,
-          vatPercent,
-          vatAmount,
-          totalAmount,
-          createdById: userId,
-          items: {
-            create: quotation.items.map((item) => ({
-              partId: item.partId,
-              description: item.part
-                ? [item.part.brand, item.part.name].filter(Boolean).join(" ")
-                : (item.description ?? ""),
-              unit: item.part?.unit ?? null,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              amount: item.subtotal,
-              // Carried forward from the quotation's own frozen snapshot — the
-              // quotation is already the source of truth by the time it's invoiced.
-              stockCategory: item.stockCategory,
-              brandSnapshot: item.brandSnapshot,
-              nameSnapshot: item.nameSnapshot,
-              modelSnapshot: item.modelSnapshot,
-              specificationSnapshot: item.specificationSnapshot,
-            })),
-          },
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        invoiceSortNumber: extractTrailingNumber(invoiceNumber),
+        source: "FROM_QUOTATION",
+        status: "DRAFT",
+        companyId,
+        quotationId,
+        customerId: quotation.customerId,
+        customerPin: customerPin || null,
+        date: invoiceDate,
+        subtotal,
+        vatPercent,
+        vatAmount,
+        totalAmount,
+        createdById: userId,
+        items: {
+          create: quotation.items.map((item) => ({
+            partId: item.partId,
+            description: item.part
+              ? [item.part.brand, item.part.name].filter(Boolean).join(" ")
+              : (item.description ?? ""),
+            unit: item.part?.unit ?? null,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            amount: item.subtotal,
+            // Carried forward from the quotation's own frozen snapshot — the
+            // quotation is already the source of truth by the time it's invoiced.
+            stockCategory: item.stockCategory,
+            brandSnapshot: item.brandSnapshot,
+            nameSnapshot: item.nameSnapshot,
+            modelSnapshot: item.modelSnapshot,
+            specificationSnapshot: item.specificationSnapshot,
+          })),
         },
-        select: { id: true },
-      })
-
-      // Optional: mirror the invoice into the Sales Ledger as a fresh unpaid entry.
-      const { balance, status } = computeSalesLedgerStatus(totalAmount, 0)
-      await tx.salesLedgerEntry.create({
-        data: {
-          companyId,
-          date: invoiceDate,
-          customerName: quotation.customer.companyName,
-          customerId: quotation.customerId,
-          orderNo: invoiceNumber,
-          invoiceAmount: totalAmount,
-          amountReceived: 0,
-          balance,
-          paymentStatus: status,
-          remark: `Invoice ${invoiceNumber} for Quotation ${quotation.quotationNumber}`,
-          createdById: userId,
-        },
-      })
-
-      return created
+      },
+      select: { id: true },
     })
 
     invoiceId = invoice.id
 
     revalidatePath(`/quotations/${quotationId}`)
     revalidatePath("/quotations/invoices")
-    revalidatePath("/ledger/sales")
   } catch (err) {
     console.error("generateInvoice failed:", err)
     return { error: "Failed to generate invoice" }
   }
 
   redirect(`/quotations/invoices/${invoiceId}`)
+}
+
+/** Creates an invoice with no Quotation — items are picked directly from Stock. Always born DRAFT (source = DIRECT), same as generateInvoice(). */
+export async function createDirectInvoice(data: DirectInvoiceInput) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canCreateInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+  const userId = session.user.id as string
+
+  const parsed = DirectInvoiceSchema.safeParse(data)
+  if (!parsed.success) return { error: "Invalid form data" }
+  const { customerId, customerPin, date, vatPercent, remarks, items } = parsed.data
+  const invoiceNumber = normalizeBusinessNumber(parsed.data.invoiceNumber)
+
+  let invoiceId: string
+  try {
+    const existingNumber = await prisma.invoice.findUnique({ where: { invoiceNumber } })
+    if (existingNumber) return { error: "INVOICE_NUMBER_EXISTS" }
+
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!customer) return { error: "Customer not found" }
+
+    const parts = await prisma.sparePart.findMany({
+      where: { id: { in: items.map((i) => i.partId) }, companyId },
+      select: { id: true, name: true, brand: true, model: true, specification: true, category: true, unit: true },
+    })
+    const partMap = new Map(parts.map((p) => [p.id, p]))
+    if (parts.length !== new Set(items.map((i) => i.partId)).size) {
+      return { error: "One or more stock items are invalid" }
+    }
+
+    const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+    const vatAmount = (subtotal * vatPercent) / 100
+    const totalAmount = subtotal + vatAmount
+    const invoiceDate = new Date(`${date}T12:00:00`)
+
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        invoiceSortNumber: extractTrailingNumber(invoiceNumber),
+        source: "DIRECT",
+        status: "DRAFT",
+        companyId,
+        quotationId: null,
+        customerId,
+        customerPin: customerPin || null,
+        date: invoiceDate,
+        subtotal,
+        vatPercent,
+        vatAmount,
+        totalAmount,
+        remarks: remarks || null,
+        createdById: userId,
+        items: {
+          create: items.map((item) => {
+            const part = partMap.get(item.partId)!
+            return {
+              partId: item.partId,
+              description: [part.brand, part.name].filter(Boolean).join(" "),
+              unit: part.unit,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              amount: item.quantity * item.unitPrice,
+              // Frozen snapshot, same rationale as QuotationItem/generateInvoice's items —
+              // later edits to the SparePart record must never change a past invoice's wording.
+              stockCategory: getStockType(part.category),
+              brandSnapshot: part.brand,
+              nameSnapshot: part.name,
+              modelSnapshot: part.model,
+              specificationSnapshot: part.specification,
+            }
+          }),
+        },
+      },
+      select: { id: true },
+    })
+
+    invoiceId = invoice.id
+    revalidatePath("/quotations/invoices")
+  } catch (err) {
+    console.error("createDirectInvoice failed:", err)
+    return { error: "Failed to create invoice" }
+  }
+
+  redirect(`/quotations/invoices/${invoiceId}`)
+}
+
+/** Edits an invoice — only ever allowed while it's still DRAFT (mirrors updateQuotation's DRAFT/SENT-only rule), regardless of source. Works for both FROM_QUOTATION and DIRECT invoices. */
+export async function updateInvoice(id: string, data: DirectInvoiceInput) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canEditInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+
+  const parsed = DirectInvoiceSchema.safeParse(data)
+  if (!parsed.success) return { error: "Invalid form data" }
+  const { customerId, customerPin, date, vatPercent, remarks, items } = parsed.data
+  const invoiceNumber = normalizeBusinessNumber(parsed.data.invoiceNumber)
+
+  try {
+    const existing = await prisma.invoice.findFirst({ where: { id, companyId }, select: { status: true } })
+    if (!existing) return { error: "Invoice not found" }
+    if (existing.status !== "DRAFT") return { error: "Only draft invoices can be edited" }
+
+    const existingNumber = await prisma.invoice.findFirst({
+      where: { invoiceNumber, companyId, NOT: { id } },
+      select: { id: true },
+    })
+    if (existingNumber) return { error: "INVOICE_NUMBER_EXISTS" }
+
+    const parts = await prisma.sparePart.findMany({
+      where: { id: { in: items.map((i) => i.partId) }, companyId },
+      select: { id: true, name: true, brand: true, model: true, specification: true, category: true, unit: true },
+    })
+    const partMap = new Map(parts.map((p) => [p.id, p]))
+    if (parts.length !== new Set(items.map((i) => i.partId)).size) {
+      return { error: "One or more stock items are invalid" }
+    }
+
+    const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+    const vatAmount = (subtotal * vatPercent) / 100
+    const totalAmount = subtotal + vatAmount
+    const invoiceDate = new Date(`${date}T12:00:00`)
+
+    await prisma.$transaction(async (tx) => {
+      await tx.invoiceItem.deleteMany({ where: { invoiceId: id } })
+      await tx.invoice.update({
+        where: { id },
+        data: {
+          invoiceNumber,
+          invoiceSortNumber: extractTrailingNumber(invoiceNumber),
+          customerId,
+          customerPin: customerPin || null,
+          date: invoiceDate,
+          subtotal,
+          vatPercent,
+          vatAmount,
+          totalAmount,
+          remarks: remarks || null,
+        },
+      })
+      if (items.length > 0) {
+        await tx.invoiceItem.createMany({
+          data: items.map((item) => {
+            const part = partMap.get(item.partId)!
+            return {
+              invoiceId: id,
+              partId: item.partId,
+              description: [part.brand, part.name].filter(Boolean).join(" "),
+              unit: part.unit,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              amount: item.quantity * item.unitPrice,
+              stockCategory: getStockType(part.category),
+              brandSnapshot: part.brand,
+              nameSnapshot: part.name,
+              modelSnapshot: part.model,
+              specificationSnapshot: part.specification,
+            }
+          }),
+        })
+      }
+    })
+
+    revalidatePath(`/quotations/invoices/${id}`)
+    revalidatePath("/quotations/invoices")
+  } catch (err) {
+    console.error("updateInvoice failed:", err)
+    return { error: "Failed to update invoice" }
+  }
+
+  redirect(`/quotations/invoices/${id}`)
+}
+
+/**
+ * Deletes an invoice. Allowed only when DRAFT (never deducted stock) or CANCELLED
+ * (stock already reversed by cancelInvoice) — a CONFIRMED invoice must be cancelled
+ * first. Also blocked outright if a Sales Ledger record already exists for it (no
+ * "unlink" flow in this round — the error tells the caller why).
+ */
+export async function deleteInvoice(id: string): Promise<{ error: string } | { success: true }> {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canDeleteInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id, companyId },
+    select: { status: true, salesLedgerEntry: { select: { id: true } } },
+  })
+  if (!invoice) return { error: "Invoice not found" }
+  if (invoice.salesLedgerEntry) {
+    return { error: "This invoice is linked to a Sales Ledger record and cannot be deleted" }
+  }
+  if (invoice.status !== "DRAFT" && invoice.status !== "CANCELLED") {
+    return { error: "Only draft or cancelled invoices can be deleted" }
+  }
+
+  try {
+    await prisma.invoice.delete({ where: { id } })
+    revalidatePath("/quotations/invoices")
+    return { success: true }
+  } catch (err) {
+    console.error("deleteInvoice failed:", err)
+    return { error: "Failed to delete invoice" }
+  }
+}
+
+/**
+ * Converts an Invoice into a Sales Ledger entry — an explicit, one-time action
+ * (not automatic on invoice generation). Duplicate-prevention is enforced at the
+ * DB level (SalesLedgerEntry.invoiceId is @unique); the upfront check here just
+ * gives a friendlier error than a raw constraint violation.
+ */
+export async function createSalesLedgerFromInvoice(
+  invoiceId: string
+): Promise<{ error: string } | { success: true; id: string }> {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canCreateSalesRecord(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+  const userId = session.user.id as string
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, companyId },
+    include: {
+      customer: { select: { id: true, companyName: true } },
+      salesLedgerEntry: { select: { id: true } },
+    },
+  })
+  if (!invoice) return { error: "Invoice not found" }
+  if (invoice.salesLedgerEntry) return { error: "This invoice already has a Sales Ledger record" }
+
+  try {
+    const totalAmount = Number(invoice.totalAmount)
+    const { balance, status } = computeSalesLedgerStatus(totalAmount, 0)
+    const entry = await prisma.salesLedgerEntry.create({
+      data: {
+        companyId,
+        date: invoice.date,
+        customerName: invoice.customer.companyName,
+        customerId: invoice.customerId,
+        orderNo: invoice.invoiceNumber,
+        referenceSequence: invoice.invoiceSortNumber,
+        invoiceAmount: totalAmount,
+        amountReceived: 0,
+        balance,
+        paymentStatus: status,
+        remark: `Invoice ${invoice.invoiceNumber}`,
+        invoiceId: invoice.id,
+        createdById: userId,
+      },
+      select: { id: true },
+    })
+
+    revalidatePath(`/quotations/invoices/${invoiceId}`)
+    revalidatePath("/ledger/sales")
+    return { success: true, id: entry.id }
+  } catch (err) {
+    console.error("createSalesLedgerFromInvoice failed:", err)
+    return { error: "Failed to create sales record" }
+  }
 }
 
 /**
@@ -130,11 +388,10 @@ export async function generateInvoice(quotationId: string, data: GenerateInvoice
  * Idempotent: an invoice that isn't currently DRAFT is rejected outright, so
  * calling this twice on the same invoice can never deduct stock twice.
  *
- * Note: today's `generateInvoice()` still creates invoices as CONFIRMED
- * immediately (unchanged legacy behavior — that flow has never deducted stock
- * and isn't part of this round's scope). This function exists for the future
- * DRAFT-first workflow described in the upgrade spec; it is not wired to any
- * UI button yet.
+ * Every new invoice (from either source — generateInvoice or createDirectInvoice)
+ * is born DRAFT; this is the only path that ever deducts stock. Invoices created
+ * before this workflow existed were backfilled to CONFIRMED without retroactive
+ * stock movement (see the migration that added this column).
  */
 export async function confirmInvoice(
   invoiceId: string

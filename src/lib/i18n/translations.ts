@@ -331,6 +331,8 @@ export type TranslationKey =
   | "permissionDenied"
   | "nameAlreadyExists"
   | "nameRequired"
+  | "quotationNumberExists"
+  | "invoiceNumberExists"
   | "addSalesRecord"
   | "editSalesRecord"
   | "noSalesLedgerFound"
@@ -469,6 +471,43 @@ export type TranslationKey =
   | "noInvoicesDesc"
   | "invoiceItems"
   | "receivedBy"
+  | "viewInvoice"
+  | "directInvoice"
+  | "fromQuotation"
+  | "createInvoice"
+  | "paidAmount"
+  | "applyToSalesRecords"
+  | "allocateAmount"
+  | "allocatedAmount"
+  | "unallocatedAmount"
+  | "receiptAllocation"
+  | "paymentHistory"
+  | "createSalesRecord"
+  | "viewSalesRecord"
+  | "confirm"
+  | "receiptAmount"
+  | "lineTotal"
+  | "product"
+  | "stockCategoryLabel"
+  | "noItemsAdded"
+  | "invoiceDateLabel2"
+  | "stockShortfallDesc"
+  | "confirmInvoiceConfirm"
+  | "cancelInvoiceConfirm"
+  | "deleteInvoiceConfirm"
+  | "invoiceDeleted"
+  | "invoiceConfirmed"
+  | "invoiceCancelled"
+  | "salesRecordCreated"
+  | "stockStatus"
+  | "salesLedgerLinkage"
+  | "notLinkedToSalesLedger"
+  | "noUnpaidInvoicesForCustomer"
+  | "allocationExceedsBalance"
+  | "allocationExceedsReceipt"
+  | "amountReceivedLockedHint"
+  | "salesLedgerDetail"
+  | "backToSalesLedger"
   // Notification popup
   | "overdueTasksLabel"
   | "taskOverdueNotice"
@@ -545,6 +584,22 @@ export type TranslationKey =
   | "documentTypeIdDocument"
   | "documentTypeCorrespondence"
   | "documentTypeOther"
+  | "customerDocuments"
+  | "registrationCertificate"
+  | "pinCertificate"
+  | "cr12"
+  | "documentNotUploaded"
+  | "replace"
+  | "documentUploaded"
+  | "documentUploadFailed"
+  | "documentDeleted"
+  | "documentDeleteFailed"
+  | "documentTypeNotAllowed"
+  | "documentTooLarge"
+  | "pleaseChooseFile"
+  | "replaceDocumentPartial"
+  | "otherDocuments"
+  | "viewCustomer"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -865,6 +920,43 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noInvoicesDesc: "Invoices generated from approved quotations will appear here.",
     invoiceItems: "Invoice Items",
     receivedBy: "Received By",
+    viewInvoice: "View Invoice",
+    directInvoice: "Direct Invoice",
+    fromQuotation: "From Quotation",
+    createInvoice: "Create Invoice",
+    paidAmount: "Paid Amount",
+    applyToSalesRecords: "Apply to Sales Records",
+    allocateAmount: "Allocate",
+    allocatedAmount: "Allocated",
+    unallocatedAmount: "Unallocated",
+    receiptAllocation: "Receipt Allocation",
+    paymentHistory: "Payment History",
+    createSalesRecord: "Create Sales Record",
+    viewSalesRecord: "View Sales Record",
+    confirm: "Confirm",
+    receiptAmount: "Receipt Amount",
+    lineTotal: "Line Total",
+    product: "Product",
+    stockCategoryLabel: "Stock Category",
+    noItemsAdded: "No items added yet. Search for a stock item above to add it.",
+    invoiceDateLabel2: "Invoice Date",
+    stockShortfallDesc: "Insufficient stock for one or more items",
+    confirmInvoiceConfirm: "Confirm this invoice? Stock will be deducted for all stock-linked items.",
+    cancelInvoiceConfirm: "Cancel this invoice? Any deducted stock will be restored.",
+    deleteInvoiceConfirm: "Delete this invoice? This cannot be undone.",
+    invoiceDeleted: "Invoice deleted",
+    invoiceConfirmed: "Invoice confirmed",
+    invoiceCancelled: "Invoice cancelled",
+    salesRecordCreated: "Sales record created",
+    stockStatus: "Stock Status",
+    salesLedgerLinkage: "Sales Ledger",
+    notLinkedToSalesLedger: "Not yet added to Sales Ledger",
+    noUnpaidInvoicesForCustomer: "This customer has no unpaid or partially paid invoices",
+    allocationExceedsBalance: "Allocation cannot exceed this invoice's balance",
+    allocationExceedsReceipt: "Total allocated cannot exceed the receipt amount",
+    amountReceivedLockedHint: "Computed from Receipt Allocations — edit via the Income record instead",
+    salesLedgerDetail: "Sales Ledger Detail",
+    backToSalesLedger: "Sales Ledger",
     // Notification popup
     overdueTasksLabel: "Overdue Tasks",
     taskOverdueNotice: "Task overdue",
@@ -941,6 +1033,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     fileUploadFailed: "File upload failed",
     permissionDenied: "Permission denied",
     nameAlreadyExists: "Name already exists",
+    quotationNumberExists: "Quotation number already exists.",
+    invoiceNumberExists: "Invoice number already exists.",
     nameRequired: "Name is required",
     addSalesRecord: "Add Sales Record",
     editSalesRecord: "Edit Sales Record",
@@ -1082,6 +1176,22 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     documentTypeIdDocument: "ID Document",
     documentTypeCorrespondence: "Correspondence",
     documentTypeOther: "Other",
+    customerDocuments: "Customer Documents",
+    registrationCertificate: "Registration Certificate",
+    pinCertificate: "PIN Certificate",
+    cr12: "CR12",
+    documentNotUploaded: "Not uploaded",
+    replace: "Replace",
+    documentUploaded: "Document uploaded",
+    documentUploadFailed: "Failed to upload document",
+    documentDeleted: "Document deleted",
+    documentDeleteFailed: "Failed to delete document",
+    documentTypeNotAllowed: "Only JPG, PNG, WEBP, PDF, and Word documents are allowed",
+    documentTooLarge: "File exceeds 10MB limit",
+    pleaseChooseFile: "Please choose a file",
+    replaceDocumentPartial: "New file uploaded, but the old one could not be removed",
+    otherDocuments: "Other Documents",
+    viewCustomer: "View Customer",
   },
   zh: {
     // Common
@@ -1401,6 +1511,43 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     noInvoicesDesc: "由已批准报价单生成的发票将显示在此处。",
     invoiceItems: "发票项目",
     receivedBy: "签收人",
+    viewInvoice: "查看发票",
+    directInvoice: "直接开票",
+    fromQuotation: "来自报价单",
+    createInvoice: "新建发票",
+    paidAmount: "已付金额",
+    applyToSalesRecords: "关联销售台账",
+    allocateAmount: "分配",
+    allocatedAmount: "已分配",
+    unallocatedAmount: "未分配",
+    receiptAllocation: "收款分配",
+    paymentHistory: "收款记录",
+    createSalesRecord: "加入销售台账",
+    viewSalesRecord: "查看销售记录",
+    confirm: "确认",
+    receiptAmount: "收款金额",
+    lineTotal: "小计",
+    product: "产品",
+    stockCategoryLabel: "库存分类",
+    noItemsAdded: "尚未添加任何项目。请在上方搜索库存项目以添加。",
+    invoiceDateLabel2: "发票日期",
+    stockShortfallDesc: "一个或多个项目库存不足",
+    confirmInvoiceConfirm: "确认此发票？所有关联库存的项目将扣减库存。",
+    cancelInvoiceConfirm: "取消此发票？已扣减的库存将恢复。",
+    deleteInvoiceConfirm: "删除此发票？此操作无法撤销。",
+    invoiceDeleted: "发票已删除",
+    invoiceConfirmed: "发票已确认",
+    invoiceCancelled: "发票已取消",
+    salesRecordCreated: "销售记录已创建",
+    stockStatus: "库存状态",
+    salesLedgerLinkage: "销售台账",
+    notLinkedToSalesLedger: "尚未加入销售台账",
+    noUnpaidInvoicesForCustomer: "该客户没有未付款或部分付款的发票",
+    allocationExceedsBalance: "分配金额不能超过该发票的余额",
+    allocationExceedsReceipt: "分配总额不能超过收款金额",
+    amountReceivedLockedHint: "由收款分配自动计算 — 请通过对应的收入记录修改",
+    salesLedgerDetail: "销售台账详情",
+    backToSalesLedger: "销售台账",
     // Notification popup
     overdueTasksLabel: "超期任务",
     taskOverdueNotice: "任务已超期",
@@ -1477,6 +1624,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     fileUploadFailed: "文件上传失败",
     permissionDenied: "无权限",
     nameAlreadyExists: "名称已存在",
+    quotationNumberExists: "报价编号已存在。",
+    invoiceNumberExists: "发票编号已存在。",
     nameRequired: "名称为必填项",
     addSalesRecord: "新增销售记录",
     editSalesRecord: "编辑销售记录",
@@ -1618,5 +1767,21 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     documentTypeIdDocument: "证件",
     documentTypeCorrespondence: "往来函件",
     documentTypeOther: "其他",
+    customerDocuments: "客户资料",
+    registrationCertificate: "注册证书",
+    pinCertificate: "PIN证书",
+    cr12: "CR12文件",
+    documentNotUploaded: "尚未上传",
+    replace: "替换",
+    documentUploaded: "文件已上传",
+    documentUploadFailed: "文件上传失败",
+    documentDeleted: "文件已删除",
+    documentDeleteFailed: "文件删除失败",
+    documentTypeNotAllowed: "仅支持 JPG、PNG、WEBP、PDF 和 Word 文件",
+    documentTooLarge: "文件大小超过 10MB 限制",
+    pleaseChooseFile: "请选择文件",
+    replaceDocumentPartial: "新文件已上传，但旧文件删除失败",
+    otherDocuments: "其他文件",
+    viewCustomer: "查看客户",
   },
 }
