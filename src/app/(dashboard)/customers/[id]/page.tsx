@@ -71,6 +71,10 @@ export default async function CustomerDetailPage({
               <p className="text-sm text-slate-900">{customer.pinNumber || "—"}</p>
             </div>
             <div>
+              <p className="text-xs font-medium text-slate-500">Short Name</p>
+              <p className="text-sm text-slate-900">{customer.shortName || "—"}</p>
+            </div>
+            <div>
               <p className="text-xs font-medium text-slate-500">Main Address</p>
               <p className="text-sm text-slate-900">{customer.location || "—"}</p>
             </div>

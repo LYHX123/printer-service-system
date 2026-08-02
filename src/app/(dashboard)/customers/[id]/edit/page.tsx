@@ -34,6 +34,7 @@ export default async function EditCustomerPage({
         customerId={id}
         defaultValues={{
           companyName: customer.companyName,
+          shortName: customer.shortName ?? "",
           pinNumber: customer.pinNumber ?? "",
           name: customer.name ?? "",
           phone: customer.phone ?? "",

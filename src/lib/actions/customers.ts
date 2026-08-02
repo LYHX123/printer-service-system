@@ -25,7 +25,7 @@ export async function createCustomer(
   const parsed = CustomerWithProjectsSchema.safeParse(data)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid form data" }
 
-  const { companyName, pinNumber, name, phone, location, email, notes, projects } = parsed.data
+  const { companyName, shortName, pinNumber, name, phone, location, email, notes, projects } = parsed.data
 
   let customerId: string
   try {
@@ -38,6 +38,7 @@ export async function createCustomer(
           companyId,
           code,
           companyName,
+          shortName: shortName || null,
           pinNumber: pinNumber || null,
           name: name || null,
           phone: phone || null,
@@ -92,7 +93,7 @@ export async function updateCustomer(id: string, data: CustomerInput) {
   const parsed = CustomerSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
-  const { companyName, pinNumber, name, phone, location, email, notes } = parsed.data
+  const { companyName, shortName, pinNumber, name, phone, location, email, notes } = parsed.data
 
   try {
     const existing = await prisma.customer.findFirst({ where: { id, companyId } })
@@ -102,6 +103,7 @@ export async function updateCustomer(id: string, data: CustomerInput) {
       where: { id },
       data: {
         companyName,
+        shortName: shortName || null,
         pinNumber: pinNumber || null,
         name: name || null,
         phone: phone || null,

@@ -199,6 +199,7 @@ model Company {
   invoices              Invoice[]
   customerDocuments     CustomerDocument[]
   auditLogs             AuditLog[]
+  dropboxConnection     DropboxConnection?
 }
 
 model User {
@@ -247,6 +248,7 @@ model User {
   uploadedCustomerDocuments CustomerDocument[]
   auditLogs                 AuditLog[]
   createdReceiptAllocations ReceiptAllocation[]
+  createdDropboxConnections DropboxConnection[]
 }
 
 model Customer {
@@ -254,6 +256,7 @@ model Customer {
   companyId   String
   code        String   @unique
   companyName String
+  shortName   String? // e.g. "CSCEC" — reserved for future Dropbox/Quotation file naming (QT00455-CSCEC-V1.xlsx); not unique, not sanitized here
   name        String?
   pinNumber   String?
   phone       String?
@@ -352,6 +355,27 @@ model AuditLog {
   performedBy User    @relation(fields: [performedById], references: [id])
 
   @@index([companyId, entityType, entityId])
+}
+
+// Dropbox Foundation (Phase 1) — one OAuth connection per Company. Only the
+// refresh token is persisted (encrypted), never the App Secret or the
+// short-lived access token, which is minted on demand from the refresh
+// token at request time (see src/lib/dropbox/).
+model DropboxConnection {
+  id                    String    @id @default(uuid())
+  companyId             String    @unique
+  provider              String    @default("dropbox")
+  accountId             String?
+  accountName           String?
+  accountEmail          String?
+  encryptedRefreshToken String
+  status                String    @default("CONNECTED") // CONNECTED | DISCONNECTED
+  connectedAt           DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  createdById           String?
+
+  company   Company @relation(fields: [companyId], references: [id])
+  createdBy User?   @relation(fields: [createdById], references: [id])
 }
 
 model Equipment {

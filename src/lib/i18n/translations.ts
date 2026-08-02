@@ -44,6 +44,7 @@ export type TranslationKey =
   // Customers
   | "customerName"
   | "companyName"
+  | "shortName"
   | "pinNumber"
   | "phone"
   | "email"
@@ -360,6 +361,29 @@ export type TranslationKey =
   | "failedToUploadLogo"
   | "logoFormatHint"
   | "fullCompanyAddress"
+  // Dropbox Integration
+  | "dropboxIntegration"
+  | "dropboxIntegrationDesc"
+  | "dropboxConfiguration"
+  | "dropboxConfigured"
+  | "dropboxConfigMissing"
+  | "dropboxConfigMissingDesc"
+  | "dropboxConnectionStatus"
+  | "dropboxConnected"
+  | "dropboxDisconnected"
+  | "dropboxAccount"
+  | "dropboxEmail"
+  | "dropboxRootFolder"
+  | "dropboxLastConnected"
+  | "connectDropbox"
+  | "testConnection"
+  | "initializeFolders"
+  | "disconnectDropbox"
+  | "dropboxDisconnectConfirmTitle"
+  | "dropboxDisconnectConfirmDesc"
+  | "dropboxConnectionSuccessful"
+  | "dropboxFoldersInitialized"
+  | "dropboxConnectedToast"
   // Users
   | "active"
   | "disabledStatus"
@@ -639,6 +663,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // Customers
     customerName: "Contact Name",
     companyName: "Company Name",
+    shortName: "Short Name",
     pinNumber: "PIN No",
     phone: "Phone",
     email: "Email",
@@ -1063,6 +1088,29 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     failedToUploadLogo: "Failed to upload logo",
     logoFormatHint: "PNG, JPG or WEBP. Max 5MB.",
     fullCompanyAddress: "Full company address",
+    // Dropbox Integration
+    dropboxIntegration: "Dropbox Integration",
+    dropboxIntegrationDesc: "Connect Dropbox to store Customer, Quotation, and Invoice files.",
+    dropboxConfiguration: "Configuration",
+    dropboxConfigured: "Configured",
+    dropboxConfigMissing: "Configuration Missing",
+    dropboxConfigMissingDesc: "Dropbox environment variables are not set on this server. Contact your administrator.",
+    dropboxConnectionStatus: "Connection",
+    dropboxConnected: "Connected",
+    dropboxDisconnected: "Disconnected",
+    dropboxAccount: "Account",
+    dropboxEmail: "Email",
+    dropboxRootFolder: "Root Folder",
+    dropboxLastConnected: "Last Connected",
+    connectDropbox: "Connect Dropbox",
+    testConnection: "Test Connection",
+    initializeFolders: "Initialize Folders",
+    disconnectDropbox: "Disconnect",
+    dropboxDisconnectConfirmTitle: "Disconnect Dropbox?",
+    dropboxDisconnectConfirmDesc: "Disconnecting Dropbox will stop synchronization but will not delete files already stored in Dropbox.",
+    dropboxConnectionSuccessful: "Connection successful",
+    dropboxFoldersInitialized: "Dropbox folders initialized successfully",
+    dropboxConnectedToast: "Dropbox connected",
     // Users
     active: "Active",
     disabledStatus: "Disabled",
@@ -1230,6 +1278,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // Customers
     customerName: "联系人",
     companyName: "公司名称",
+    shortName: "简称",
     pinNumber: "PIN 号",
     phone: "电话",
     email: "邮箱",
@@ -1654,6 +1703,29 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     failedToUploadLogo: "徽标上传失败",
     logoFormatHint: "PNG、JPG 或 WEBP 格式，最大 5MB。",
     fullCompanyAddress: "公司完整地址",
+    // Dropbox Integration
+    dropboxIntegration: "Dropbox 集成",
+    dropboxIntegrationDesc: "连接 Dropbox 以存储 Customer、Quotation 和 Invoice 文件。",
+    dropboxConfiguration: "配置状态",
+    dropboxConfigured: "已配置",
+    dropboxConfigMissing: "配置缺失",
+    dropboxConfigMissingDesc: "服务器未设置 Dropbox 环境变量，请联系管理员。",
+    dropboxConnectionStatus: "连接状态",
+    dropboxConnected: "已连接",
+    dropboxDisconnected: "未连接",
+    dropboxAccount: "账户",
+    dropboxEmail: "邮箱",
+    dropboxRootFolder: "根目录",
+    dropboxLastConnected: "最近连接时间",
+    connectDropbox: "连接 Dropbox",
+    testConnection: "测试连接",
+    initializeFolders: "初始化目录",
+    disconnectDropbox: "断开连接",
+    dropboxDisconnectConfirmTitle: "断开 Dropbox 连接？",
+    dropboxDisconnectConfirmDesc: "断开连接将停止同步，但不会删除已存储在 Dropbox 中的文件。",
+    dropboxConnectionSuccessful: "连接成功",
+    dropboxFoldersInitialized: "Dropbox 目录初始化成功",
+    dropboxConnectedToast: "Dropbox 已连接",
     // Users
     active: "启用",
     disabledStatus: "已禁用",

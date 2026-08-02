@@ -79,6 +79,7 @@ export interface CustomerDetail {
   id: string
   code: string
   companyName: string
+  shortName: string | null
   pinNumber: string | null
   name: string | null
   phone: string | null
@@ -99,6 +100,7 @@ export async function getCustomerDetail(
       id: true,
       code: true,
       companyName: true,
+      shortName: true,
       pinNumber: true,
       name: true,
       phone: true,
