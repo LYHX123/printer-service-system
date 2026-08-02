@@ -5,8 +5,7 @@ import { auth } from "@/lib/auth"
 import { getQuotationForPdf } from "@/lib/data/quotations"
 import { canAccess } from "@/lib/permissions"
 import { QuotationDocument } from "@/components/pdf/QuotationDocument"
-import { generatePdf, PdfConversionUnavailableError } from "@/lib/templateEngine"
-import { buildQuotationExcelData } from "@/lib/templateData/quotation"
+import { generateQuotationPdf, PdfConversionUnavailableError } from "@/lib/quotationExcel"
 import type { Role } from "@/types"
 
 export async function GET(
@@ -32,7 +31,7 @@ export async function GET(
 
   // Primary: Excel Template Engine -> LibreOffice -> PDF.
   try {
-    const pdfPath = await generatePdf("quotation", buildQuotationExcelData(quotation))
+    const pdfPath = await generateQuotationPdf(quotation)
     const buffer = await readFile(pdfPath)
     return new NextResponse(new Uint8Array(buffer), {
       headers: {

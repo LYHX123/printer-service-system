@@ -143,7 +143,7 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
                         <option value="">— Select from inventory (optional) —</option>
                         {spareParts.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.partNumber} — {p.name} ({formatCurrency(Number(p.sellingPrice))}, {p.stock?.quantity ?? 0} {p.unit} in stock)
+                            {p.partNumber} — {p.name} ({formatCurrency(Number(p.sellingPrice))}, {p.stock?.quantity ?? 0} {p.unit || "units"} in stock)
                           </option>
                         ))}
                       </Select>

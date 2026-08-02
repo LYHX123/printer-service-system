@@ -132,7 +132,7 @@ export default async function StockMovementsPage({
             headerClassName: "text-right",
             render: (row) => (
               <span className={`font-mono ${row.quantity < 0 ? "text-red-600" : row.quantity > 0 ? "text-green-700" : "text-slate-500"}`}>
-                {row.quantity > 0 ? "+" : ""}{row.quantity} {row.part.unit}
+                {row.quantity > 0 ? "+" : ""}{row.quantity} {row.part.unit ?? ""}
               </span>
             ),
           },

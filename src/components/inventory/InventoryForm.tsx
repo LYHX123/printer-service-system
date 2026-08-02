@@ -159,6 +159,21 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
           <FormField label={t("model")} htmlFor="model" error={errors.model?.message}>
             <Input id="model" placeholder="e.g. M428fdw" {...register("model")} error={errors.model?.message} />
           </FormField>
+          <FormField label={t("unit")} htmlFor="unit" error={errors.unit?.message}>
+            <Input id="unit" placeholder="e.g. PCS, SET, BOX" {...register("unit")} error={errors.unit?.message} />
+          </FormField>
+        </div>
+
+        <FormField label={t("specification")} htmlFor="specification" error={errors.specification?.message}>
+          <Textarea
+            id="specification"
+            rows={3}
+            placeholder="e.g. Compatible with HP LaserJet Pro / additional notes"
+            {...register("specification")}
+          />
+        </FormField>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("quantity")} htmlFor="quantity" required error={errors.quantity?.message}>
             <Input
               id="quantity"
@@ -173,15 +188,6 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
             />
           </FormField>
         </div>
-
-        <FormField label={t("specification")} htmlFor="specification" error={errors.specification?.message}>
-          <Textarea
-            id="specification"
-            rows={3}
-            placeholder="e.g. Compatible with HP LaserJet Pro / additional notes"
-            {...register("specification")}
-          />
-        </FormField>
 
         <div>
           <p className="mb-2 text-sm font-medium text-slate-700">{t("picture")}</p>

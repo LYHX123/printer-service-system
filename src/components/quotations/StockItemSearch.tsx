@@ -78,7 +78,7 @@ export function StockItemSearch({ spareParts, onSelect }: StockItemSearchProps) 
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-medium text-slate-700">{formatCurrency(Number(part.sellingPrice))}</p>
-                  <p className="text-xs text-slate-400">{part.stock?.quantity ?? 0} {part.unit} in stock</p>
+                  <p className="text-xs text-slate-400">{part.stock?.quantity ?? 0} {part.unit || "units"} in stock</p>
                 </div>
               </button>
             ))

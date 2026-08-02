@@ -51,19 +51,18 @@ async function findLibreOffice(): Promise<string | null> {
 }
 
 /**
- * Generates a PDF for the given document type by rendering it through
- * generateExcel() and converting the result with a local LibreOffice
- * install (headless). Throws PdfConversionUnavailableError when no
- * LibreOffice binary can be found or the conversion itself fails — callers
- * should catch this and fall back to the old PDF generator.
+ * Converts an already-generated .xlsx file to PDF via a local headless
+ * LibreOffice install. Shared by generatePdf() below (Invoice's own
+ * Excel-Template-Engine path) and by the dedicated Quotation Excel engine's
+ * PDF route, so both document types get identical Excel-to-PDF rendering
+ * without duplicating the LibreOffice lookup/invocation logic.
  */
-export async function generatePdf(type: TemplateType, data: GenerateExcelData): Promise<string> {
+export async function convertExcelToPdf(excelPath: string): Promise<string> {
   const binary = await findLibreOffice()
   if (!binary) {
     throw new PdfConversionUnavailableError()
   }
 
-  const excelPath = await generateExcel(type, data)
   const outDir = path.dirname(excelPath)
 
   try {
@@ -88,4 +87,16 @@ export async function generatePdf(type: TemplateType, data: GenerateExcelData): 
   }
 
   return pdfPath
+}
+
+/**
+ * Generates a PDF for the given document type by rendering it through
+ * generateExcel() and converting the result with a local LibreOffice
+ * install (headless). Throws PdfConversionUnavailableError when no
+ * LibreOffice binary can be found or the conversion itself fails — callers
+ * should catch this and fall back to the old PDF generator.
+ */
+export async function generatePdf(type: TemplateType, data: GenerateExcelData): Promise<string> {
+  const excelPath = await generateExcel(type, data)
+  return convertExcelToPdf(excelPath)
 }

@@ -16,11 +16,17 @@ const QUOTATION_ITEM_PART_SELECT = {
   partNumber: true,
   name: true,
   brand: true,
+  model: true,
+  specification: true,
   unit: true,
   imageUrl: true,
+  category: true,
 } as const
 
-type QuotationItemPart = Pick<SparePart, "id" | "partNumber" | "name" | "brand" | "unit" | "imageUrl">
+type QuotationItemPart = Pick<
+  SparePart,
+  "id" | "partNumber" | "name" | "brand" | "model" | "specification" | "unit" | "imageUrl" | "category"
+>
 
 export type QuotationItemWithPart = QuotationItem & { part: QuotationItemPart | null }
 

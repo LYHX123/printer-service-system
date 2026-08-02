@@ -199,7 +199,7 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
                         {part && (
                           <p className="text-xs text-slate-400 truncate">
                             {part.model ? `${part.model} · ` : ""}
-                            {part.stock?.quantity ?? 0} {part.unit} in stock
+                            {part.stock?.quantity ?? 0} {part.unit || "units"} in stock
                           </p>
                         )}
                       </div>

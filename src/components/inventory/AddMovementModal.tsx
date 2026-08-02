@@ -24,7 +24,7 @@ function todayIso(): string {
 interface AddMovementModalProps {
   partId: string
   partName: string
-  unit: string
+  unit: string | null
   currentQuantity: number
   isOpen: boolean
   onClose: () => void
@@ -53,6 +53,7 @@ export function AddMovementModal({
 
   const selectedType = watch("type")
   const isAdjustment = selectedType === "ADJUSTMENT"
+  const unitLabel = unit || "units"
 
   function handleClose() {
     reset()
@@ -75,7 +76,7 @@ export function AddMovementModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Add Stock Movement"
-      description={`${partName} — Current Qty: ${currentQuantity} ${unit}`}
+      description={`${partName} — Current Qty: ${currentQuantity} ${unitLabel}`}
       footer={
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={handleClose}>
@@ -100,7 +101,7 @@ export function AddMovementModal({
           label={isAdjustment ? "New Quantity" : "Quantity"}
           htmlFor="movementQuantity"
           required
-          hint={isAdjustment ? `Set the actual quantity on hand, in ${unit}.` : `Amount to ${selectedType === "IN" || selectedType === "RETURN" ? "add" : "remove"}, in ${unit}.`}
+          hint={isAdjustment ? `Set the actual quantity on hand, in ${unitLabel}.` : `Amount to ${selectedType === "IN" || selectedType === "RETURN" ? "add" : "remove"}, in ${unitLabel}.`}
           error={errors.quantity?.message}
         >
           <Input id="movementQuantity" type="number" min={0} step={1} {...register("quantity")} />

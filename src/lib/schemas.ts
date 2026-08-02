@@ -313,7 +313,12 @@ export const SparePartSchema = z.object({
   brand: z.string().min(1, "Brand is required").max(100),
   supplier: z.string().max(150).optional().or(z.literal("")),
   compatibleWith: z.string().max(300).optional().or(z.literal("")),
-  unit: z.string().max(20).default("pcs"),
+  unit: z
+    .string()
+    .max(30, "Must be 30 characters or fewer")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v?.trim().toUpperCase()),
   unitCost: z.coerce.number().min(0, "Must be ≥ 0").default(0),
   sellingPrice: z.coerce.number().min(0, "Must be ≥ 0").default(0),
   reorderLevel: z.coerce.number().int().min(0).default(0),

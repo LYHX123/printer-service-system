@@ -68,6 +68,7 @@ export const STOCK_TABLE_COLUMNS = {
   name: { width: "17%", align: "left" as const },
   model: { width: "15%", align: "left" as const },
   specification: { width: "23%", align: "left" as const },
+  unit: { width: "8%", align: "center" as const },
   quantity: { width: "9%", align: "center" as const },
   status: { width: "9%", align: "center" as const },
   actions: { width: "150px", align: "center" as const },

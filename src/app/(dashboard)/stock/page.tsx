@@ -181,6 +181,13 @@ export default async function StockPage({
             ),
           },
           {
+            key: "unit",
+            label: <T k="unit" />,
+            className: stockColumnClass("unit"),
+            headerClassName: stockColumnClass("unit"),
+            render: (row) => <span className="text-sm text-slate-600">{row.unit ?? "—"}</span>,
+          },
+          {
             key: "quantity",
             label: <T k="quantity" />,
             className: stockColumnClass("quantity"),

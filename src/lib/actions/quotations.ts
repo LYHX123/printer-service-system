@@ -9,13 +9,65 @@ import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
 import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { getStockType } from "@/lib/stock-types"
 import { logActivity } from "@/lib/audit"
+import { saveQuotationItemPictureSnapshot } from "@/lib/uploads"
 import { QUOTATION_STATUS_TRANSITIONS } from "@/types"
 import type { QuotationInput, QuotationStatusInput } from "@/lib/schemas"
-import type { Role } from "@/types"
+import type { Role, PartCategory } from "@/types"
 
 function computeTotal(subtotal: number, vatPercent: number): number {
   const vatAmount = (subtotal * vatPercent) / 100
   return subtotal + vatAmount
+}
+
+type QuotationPart = {
+  id: string
+  name: string
+  brand: string | null
+  model: string | null
+  specification: string | null
+  category: PartCategory
+  unit: string | null
+  imageUrl: string | null
+}
+
+/**
+ * Copies each freshly-saved QuotationItem's linked SparePart picture into its
+ * own immutable snapshot file (see saveQuotationItemPictureSnapshot), so the
+ * Quotation Excel export never retroactively changes if the SparePart's
+ * picture is replaced later. Runs after the quotation row itself is
+ * committed — file I/O has no place inside a DB transaction — and is
+ * best-effort: a failed copy just leaves pictureSnapshot unset, and the
+ * Excel generator's fallback chain (snapshot -> live SparePart -> blank)
+ * covers it from there.
+ */
+async function snapshotQuotationItemPictures(
+  quotationId: string,
+  partMap: Map<string, QuotationPart>
+): Promise<void> {
+  const savedItems = await prisma.quotationItem.findMany({
+    where: { quotationId },
+    select: { id: true, partId: true },
+  })
+
+  await Promise.all(
+    savedItems.map(async (item) => {
+      if (!item.partId) return
+      const part = partMap.get(item.partId)
+      if (!part?.imageUrl) return
+
+      try {
+        const snapshotUrl = await saveQuotationItemPictureSnapshot(item.id, part.imageUrl)
+        if (snapshotUrl) {
+          await prisma.quotationItem.update({
+            where: { id: item.id },
+            data: { pictureSnapshot: snapshotUrl },
+          })
+        }
+      } catch (err) {
+        console.error(`Failed to snapshot picture for quotation item ${item.id}:`, err)
+      }
+    })
+  )
 }
 
 export async function createQuotation(data: QuotationInput) {
@@ -44,15 +96,16 @@ export async function createQuotation(data: QuotationInput) {
   const quotationNumber = normalizeBusinessNumber(parsed.data.quotationNumber)
 
   let quotation: { id: string }
+  let partMap: Map<string, QuotationPart>
   try {
     const existingNumber = await prisma.quotation.findUnique({ where: { quotationNumber } })
     if (existingNumber) return { error: "QUOTATION_NUMBER_EXISTS" }
 
     const parts = await prisma.sparePart.findMany({
       where: { id: { in: items.map((i) => i.partId) }, companyId },
-      select: { id: true, name: true, brand: true, model: true, specification: true, category: true },
+      select: { id: true, name: true, brand: true, model: true, specification: true, category: true, unit: true, imageUrl: true },
     })
-    const partMap = new Map(parts.map((p) => [p.id, p]))
+    partMap = new Map(parts.map((p) => [p.id, p]))
     if (parts.length !== new Set(items.map((i) => i.partId)).size) {
       return { error: "One or more stock items are invalid" }
     }
@@ -97,6 +150,7 @@ export async function createQuotation(data: QuotationInput) {
               nameSnapshot: part.name,
               modelSnapshot: part.model,
               specificationSnapshot: part.specification,
+              unitSnapshot: part.unit,
             }
           }),
         },
@@ -108,6 +162,16 @@ export async function createQuotation(data: QuotationInput) {
   } catch (err) {
     console.error("createQuotation failed:", err)
     return { error: "Failed to create quotation" }
+  }
+
+  // Picture snapshotting is best-effort and must never undo a Quotation that
+  // already committed successfully — a missing/unreadable image, a disk
+  // error, anything, just leaves pictureSnapshot unset for that item (the
+  // Excel generator falls back to the live SparePart picture from there).
+  try {
+    await snapshotQuotationItemPictures(quotation.id, partMap)
+  } catch (err) {
+    console.error(`Failed to snapshot pictures for quotation ${quotation.id}:`, err)
   }
 
   redirect(`/quotations/${quotation.id}`)
@@ -137,15 +201,19 @@ export async function updateQuotation(id: string, data: QuotationInput) {
   } = parsed.data
   const quotationNumber = normalizeBusinessNumber(parsed.data.quotationNumber)
 
+  let existing: { status: string; customerId: string; customerBranchId: string | null }
+  let partMap: Map<string, QuotationPart>
+  let newCustomerBranchId: string | null
   try {
-    const existing = await prisma.quotation.findFirst({
+    const found = await prisma.quotation.findFirst({
       where: { id, companyId },
       select: { status: true, customerId: true, customerBranchId: true },
     })
-    if (!existing) return { error: "Quotation not found" }
-    if (existing.status !== "DRAFT" && existing.status !== "SENT") {
+    if (!found) return { error: "Quotation not found" }
+    if (found.status !== "DRAFT" && found.status !== "SENT") {
       return { error: "Only draft or sent quotations can be edited" }
     }
+    existing = found
 
     const existingNumber = await prisma.quotation.findFirst({
       where: { quotationNumber, companyId, NOT: { id } },
@@ -155,9 +223,9 @@ export async function updateQuotation(id: string, data: QuotationInput) {
 
     const parts = await prisma.sparePart.findMany({
       where: { id: { in: items.map((i) => i.partId) }, companyId },
-      select: { id: true, name: true, brand: true, model: true, specification: true, category: true },
+      select: { id: true, name: true, brand: true, model: true, specification: true, category: true, unit: true, imageUrl: true },
     })
-    const partMap = new Map(parts.map((p) => [p.id, p]))
+    partMap = new Map(parts.map((p) => [p.id, p]))
     if (parts.length !== new Set(items.map((i) => i.partId)).size) {
       return { error: "One or more stock items are invalid" }
     }
@@ -167,7 +235,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       0
     )
     const totalCost = computeTotal(subtotal, vatPercent)
-    const newCustomerBranchId = customerBranchId || null
+    newCustomerBranchId = customerBranchId || null
 
     await prisma.$transaction(async (tx) => {
       await tx.quotationItem.deleteMany({ where: { quotationId: id } })
@@ -206,6 +274,7 @@ export async function updateQuotation(id: string, data: QuotationInput) {
               nameSnapshot: part.name,
               modelSnapshot: part.model,
               specificationSnapshot: part.specification,
+              unitSnapshot: part.unit,
             }
           }),
         })
@@ -234,8 +303,17 @@ export async function updateQuotation(id: string, data: QuotationInput) {
 
     revalidatePath(`/quotations/${id}`)
     revalidatePath("/quotations")
-  } catch {
+  } catch (err) {
+    console.error("updateQuotation failed:", err)
     return { error: "Failed to update quotation" }
+  }
+
+  // Best-effort — must never undo an update that already committed. See the
+  // matching comment in createQuotation.
+  try {
+    await snapshotQuotationItemPictures(id, partMap)
+  } catch (err) {
+    console.error(`Failed to snapshot pictures for quotation ${id}:`, err)
   }
 
   redirect(`/quotations/${id}`)

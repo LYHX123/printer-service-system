@@ -474,6 +474,8 @@ model QuotationItem {
   nameSnapshot          String?
   modelSnapshot         String?
   specificationSnapshot String?
+  unitSnapshot          String? // Stock item's Unit at quotation-save time
+  pictureSnapshot       String? // copy of the Stock item's picture at quotation-save time (own file, not a live link) — see saveQuotationItemPictureSnapshot in src/lib/uploads.ts
   createdAt             DateTime @default(now())
 
   quotation Quotation  @relation(fields: [quotationId], references: [id])
@@ -622,7 +624,7 @@ model SparePart {
   brand          String?
   supplier       String?
   compatibleWith String? // e.g. "HP LaserJet Pro, Canon iR"
-  unit           String // "pcs", "box", "roll", "set"
+  unit           String? // free text, e.g. "PCS", "BOX", "SET" — user-entered, trimmed+uppercased on save; nullable, no forced backfill for historical rows
   unitCost       Decimal      @default(0) @db.Decimal(10, 2)
   sellingPrice   Decimal      @default(0) @db.Decimal(10, 2)
   reorderLevel   Int          @default(0)

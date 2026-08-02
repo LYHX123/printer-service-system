@@ -12,7 +12,7 @@ import { AddMovementModal } from "./AddMovementModal"
 interface SparePartActionsProps {
   partId: string
   partName: string
-  unit: string
+  unit: string | null
   currentQuantity: number
   isActive: boolean
   canEdit: boolean

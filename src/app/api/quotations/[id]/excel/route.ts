@@ -3,8 +3,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { getQuotationForPdf } from "@/lib/data/quotations"
 import { canAccess } from "@/lib/permissions"
-import { generateExcel, TemplateEngineError } from "@/lib/templateEngine"
-import { buildQuotationExcelData } from "@/lib/templateData/quotation"
+import { generateQuotationExcel, QuotationExcelError } from "@/lib/quotationExcel"
 import type { Role } from "@/types"
 
 export async function GET(
@@ -28,9 +27,9 @@ export async function GET(
 
   let outputPath: string
   try {
-    outputPath = await generateExcel("quotation", buildQuotationExcelData(quotation))
+    outputPath = await generateQuotationExcel(quotation)
   } catch (error) {
-    if (error instanceof TemplateEngineError) {
+    if (error instanceof QuotationExcelError) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     throw error

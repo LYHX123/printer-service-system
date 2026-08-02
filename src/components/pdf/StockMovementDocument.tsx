@@ -180,7 +180,7 @@ export function StockMovementDocument({ movements, company }: StockMovementDocum
                 <Text style={styles.cellCategory}>{STOCK_TYPE_LABELS[getStockType(m.part.category)]}</Text>
                 <Text style={styles.cellItem}>{m.part.name} ({m.part.partNumber})</Text>
                 <Text style={styles.cellType}>{TRANSACTION_TYPE_LABELS[m.type]}</Text>
-                <Text style={styles.cellQuantity}>{m.quantity > 0 ? "+" : ""}{m.quantity} {m.part.unit}</Text>
+                <Text style={styles.cellQuantity}>{m.quantity > 0 ? "+" : ""}{m.quantity} {m.part.unit ?? ""}</Text>
                 <Text style={styles.cellReference}>{m.reference ?? "—"}</Text>
                 <Text style={styles.cellRemark}>{m.remark ?? "—"}</Text>
                 <Text style={styles.cellCreatedBy}>{m.performedBy.name}</Text>
