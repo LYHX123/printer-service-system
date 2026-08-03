@@ -8,12 +8,13 @@ import { CustomerWithProjectsSchema, CustomerSchema } from "@/lib/schemas"
 import { generateCustomerCode } from "@/lib/utils"
 import { canAccess } from "@/lib/permissions"
 import { logActivity } from "@/lib/audit"
+import { ensureCustomerFolder, DropboxError } from "@/lib/dropbox"
 import type { CustomerWithProjectsInput, CustomerInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
 export async function createCustomer(
   data: CustomerWithProjectsInput
-): Promise<{ error: string } | { success: true; id: string }> {
+): Promise<{ error: string } | { success: true; id: string; dropboxWarning?: string }> {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
@@ -30,6 +31,12 @@ export async function createCustomer(
   let customerId: string
   try {
     customerId = await prisma.$transaction(async (tx) => {
+      const duplicate = await tx.customer.findFirst({
+        where: { companyId, shortName: { equals: shortName, mode: "insensitive" } },
+        select: { id: true },
+      })
+      if (duplicate) throw new Error("DUPLICATE_SHORT_NAME")
+
       const count = await tx.customer.count({ where: { companyId } })
       const code = generateCustomerCode(count + 1)
 
@@ -38,7 +45,7 @@ export async function createCustomer(
           companyId,
           code,
           companyName,
-          shortName: shortName || null,
+          shortName,
           pinNumber: pinNumber || null,
           name: name || null,
           phone: phone || null,
@@ -65,7 +72,10 @@ export async function createCustomer(
 
       return customer.id
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "DUPLICATE_SHORT_NAME") {
+      return { error: `Short Name "${shortName}" is already used by another customer` }
+    }
     return { error: "Failed to create customer" }
   }
 
@@ -79,7 +89,21 @@ export async function createCustomer(
   })
 
   revalidatePath("/customers")
-  return { success: true as const, id: customerId }
+
+  // Best-effort: the customer record is already safely committed above, so a
+  // Dropbox hiccup here (API down, connection expired, ...) must never make
+  // customer creation itself fail. The folder is idempotently re-ensured on
+  // every later document upload anyway (see ensureCustomerFolder), so this
+  // is purely a "have it ready right away" convenience, not a requirement.
+  let dropboxWarning: string | undefined
+  try {
+    await ensureCustomerFolder(companyId, shortName)
+  } catch (error) {
+    dropboxWarning = error instanceof DropboxError ? error.message : "Failed to create Dropbox folder for this customer."
+    console.error("createCustomer: ensureCustomerFolder failed:", dropboxWarning)
+  }
+
+  return { success: true as const, id: customerId, ...(dropboxWarning ? { dropboxWarning } : {}) }
 }
 
 export async function updateCustomer(id: string, data: CustomerInput) {
@@ -99,11 +123,17 @@ export async function updateCustomer(id: string, data: CustomerInput) {
     const existing = await prisma.customer.findFirst({ where: { id, companyId } })
     if (!existing) return { error: "Customer not found" }
 
+    const duplicate = await prisma.customer.findFirst({
+      where: { companyId, id: { not: id }, shortName: { equals: shortName, mode: "insensitive" } },
+      select: { id: true },
+    })
+    if (duplicate) return { error: `Short Name "${shortName}" is already used by another customer` }
+
     await prisma.customer.update({
       where: { id },
       data: {
         companyName,
-        shortName: shortName || null,
+        shortName,
         pinNumber: pinNumber || null,
         name: name || null,
         phone: phone || null,

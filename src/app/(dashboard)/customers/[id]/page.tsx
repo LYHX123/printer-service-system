@@ -6,6 +6,7 @@ import { getCustomerDetail } from "@/lib/data/customers"
 import { getCustomerBranches } from "@/lib/data/customerBranches"
 import { getCustomerDocuments } from "@/lib/data/customerDocuments"
 import { canAccess, canUploadCustomerFile } from "@/lib/permissions"
+import { getCustomerFolderDisplayPath } from "@/lib/dropbox"
 import { PageHeader } from "@/components/ui/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -75,6 +76,12 @@ export default async function CustomerDetailPage({
               <p className="text-sm text-slate-900">{customer.shortName || "—"}</p>
             </div>
             <div>
+              <p className="text-xs font-medium text-slate-500">Dropbox Folder</p>
+              <p className="text-sm text-slate-900 font-mono">
+                {customer.shortName ? getCustomerFolderDisplayPath(customer.shortName) : "—"}
+              </p>
+            </div>
+            <div>
               <p className="text-xs font-medium text-slate-500">Main Address</p>
               <p className="text-sm text-slate-900">{customer.location || "—"}</p>
             </div>
@@ -108,7 +115,13 @@ export default async function CustomerDetailPage({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <CustomerDocuments customerId={id} documents={documents} projects={projects} canManage={canManageDocuments} />
+          <CustomerDocuments
+            customerId={id}
+            documents={documents}
+            projects={projects}
+            canManage={canManageDocuments}
+            customerShortName={customer.shortName}
+          />
         </div>
       </div>
     </div>

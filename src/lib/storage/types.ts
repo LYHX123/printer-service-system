@@ -1,5 +1,10 @@
 export interface SaveFileParams {
-  /** Where under the storage root to file this document, e.g. `customers/{customerId}/documents`. */
+  /**
+   * Where to file this document. LocalStorageProvider treats it as a
+   * disk-relative folder (e.g. `customers/{customerId}/documents`);
+   * DropboxStorageProvider treats it as the customer's Short Name and
+   * resolves the actual Dropbox folder from that (see DropboxStorageProvider).
+   */
   scopePath: string
   buffer: Buffer
   /** Original filename — used only to derive an extension, never trusted as the on-disk name. */

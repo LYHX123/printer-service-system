@@ -1,20 +1,22 @@
 import { LocalStorageProvider } from "./localStorageProvider"
+import { DropboxStorageProvider } from "./dropboxStorageProvider"
 import type { StorageProvider } from "./types"
 import type { DocumentStorageProvider } from "@/generated/prisma/client"
 
 const localProvider = new LocalStorageProvider()
 
 /**
- * Only LOCAL is implemented today. A future DROPBOX provider slots in here —
- * callers (Customer document routes/UI) never need to change, since they only
- * ever go through this factory + the StorageProvider interface.
+ * `companyId` is required for DROPBOX (every Dropbox call needs that
+ * company's access token) and ignored for LOCAL — existing LOCAL call sites
+ * never need to pass it.
  */
-export function getStorageProvider(provider: DocumentStorageProvider): StorageProvider {
+export function getStorageProvider(provider: DocumentStorageProvider, companyId?: string): StorageProvider {
   switch (provider) {
     case "LOCAL":
       return localProvider
     case "DROPBOX":
-      throw new Error("Dropbox storage provider is not implemented yet")
+      if (!companyId) throw new Error("companyId is required to use the Dropbox storage provider")
+      return new DropboxStorageProvider(companyId)
   }
 }
 

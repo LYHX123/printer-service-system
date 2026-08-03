@@ -4,6 +4,7 @@ import { DropboxNotConnectedError, DropboxApiError } from "./errors"
 import type { DropboxAccountInfo, DropboxRootInfo } from "./types"
 
 const API_ROOT = "https://api.dropboxapi.com/2"
+const CONTENT_API_ROOT = "https://content.dropboxapi.com/2"
 
 /**
  * Mints a fresh short-lived access token from the company's stored refresh
@@ -75,6 +76,53 @@ export async function dropboxApiFetch<T>(
   }
 
   return parsed as T
+}
+
+/**
+ * Uploads a file's raw bytes via Dropbox's content-endpoint (files/upload —
+ * a different host than the RPC endpoints above, and the request body is
+ * the raw file, not JSON). `mode: "overwrite"` — this call's only caller
+ * (uploadCustomerDocument) always writes to a fully deterministic path
+ * (Customer/{ShortName}/{originalFileName}), so a same-name re-upload is
+ * meant to replace the existing file, not error out or autorename.
+ */
+export async function dropboxContentUpload(
+  accessToken: string,
+  path: string,
+  content: Buffer,
+  pathRootNamespaceId?: string
+): Promise<void> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/octet-stream",
+    "Dropbox-API-Arg": JSON.stringify({ path, mode: "overwrite", autorename: false, mute: true }),
+  }
+  if (pathRootNamespaceId) {
+    headers["Dropbox-API-Path-Root"] = JSON.stringify({ ".tag": "root", root: pathRootNamespaceId })
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${CONTENT_API_ROOT}/files/upload`, {
+      method: "POST",
+      headers,
+      body: new Uint8Array(content),
+    })
+  } catch {
+    throw new DropboxApiError(`Could not reach Dropbox to upload "${path}".`)
+  }
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "")
+    let errorTag: string | undefined
+    try {
+      const parsed = JSON.parse(text) as { error_summary?: string }
+      errorTag = parsed.error_summary
+    } catch {
+      // non-JSON error body — leave errorTag undefined
+    }
+    throw new DropboxApiError(`Dropbox upload of "${path}" failed (HTTP ${response.status}).`, response.status, errorTag)
+  }
 }
 
 interface DropboxGetCurrentAccountResponse {

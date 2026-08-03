@@ -5,7 +5,13 @@ import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 
 export const CustomerSchema = z.object({
   companyName: z.string().min(1, "Company name is required").max(100),
-  shortName: z.string().max(50).optional().or(z.literal("")).transform((v) => v?.trim()),
+  shortName: z
+    .string()
+    .trim()
+    .min(1, "Short Name is required")
+    .max(50)
+    .refine((v) => !v.includes("/") && !v.includes("\\"), "Short Name cannot contain / or \\")
+    .refine((v) => !v.includes(".."), 'Short Name cannot contain ".."'),
   pinNumber: z.string().max(30).optional().or(z.literal("")),
   name: z.string().max(100).optional().or(z.literal("")),
   phone: z.string().max(30).optional().or(z.literal("")),

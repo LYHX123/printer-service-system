@@ -13,6 +13,12 @@ export {
   getInvoiceBasePath,
   getPhase1Folders,
 } from "./paths"
+export { assertSafeShortName, getCustomerFolderPath, getCustomerFolderDisplayPath, ensureCustomerFolder } from "./customerFolder"
+export {
+  uploadCustomerDocumentToDropbox,
+  deleteCustomerDocumentFromDropbox,
+  getCustomerDocumentTemporaryLink,
+} from "./customerDocuments"
 export {
   getDropboxConnectionStatus,
   getStoredRefreshToken,

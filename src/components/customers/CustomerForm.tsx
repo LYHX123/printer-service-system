@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_KYC_DOCUMENT_TYPES } from "@/lib/constants"
+import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_STANDARD_DOCUMENT_TYPES } from "@/lib/constants"
 import type { TranslationKey } from "@/lib/i18n/translations"
 
 interface CustomerFormProps {
@@ -21,10 +21,12 @@ interface CustomerFormProps {
   customerId?: string
 }
 
-const KYC_TYPE_LABEL_KEYS: Record<(typeof CUSTOMER_KYC_DOCUMENT_TYPES)[number], TranslationKey> = {
+const STANDARD_TYPE_LABEL_KEYS: Record<(typeof CUSTOMER_STANDARD_DOCUMENT_TYPES)[number], TranslationKey> = {
   REGISTRATION_CERTIFICATE: "registrationCertificate",
   PIN_CERTIFICATE: "pinCertificate",
   CR12: "cr12",
+  VAT_CERTIFICATE: "vatCertificate",
+  COMPANY_PROFILE: "companyProfile",
 }
 
 export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
@@ -47,9 +49,9 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
   // Staged, not-yet-uploaded files for the 3 KYC document slots — only relevant on
   // create, since the customer doesn't have an id to attach documents to until the
   // create action returns one.
-  const [stagedDocs, setStagedDocs] = useState<Partial<Record<(typeof CUSTOMER_KYC_DOCUMENT_TYPES)[number], File>>>({})
+  const [stagedDocs, setStagedDocs] = useState<Partial<Record<(typeof CUSTOMER_STANDARD_DOCUMENT_TYPES)[number], File>>>({})
 
-  function stageFile(type: (typeof CUSTOMER_KYC_DOCUMENT_TYPES)[number], file: File | undefined) {
+  function stageFile(type: (typeof CUSTOMER_STANDARD_DOCUMENT_TYPES)[number], file: File | undefined) {
     if (!file) return
     if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
       toast.error(t("documentTypeNotAllowed"))
@@ -63,7 +65,7 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
   }
 
   async function uploadStagedDocs(newCustomerId: string) {
-    const entries = Object.entries(stagedDocs) as [(typeof CUSTOMER_KYC_DOCUMENT_TYPES)[number], File][]
+    const entries = Object.entries(stagedDocs) as [(typeof CUSTOMER_STANDARD_DOCUMENT_TYPES)[number], File][]
     for (const [type, file] of entries) {
       const formData = new FormData()
       formData.set("file", file)
@@ -72,10 +74,10 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
         const res = await fetch(`/api/customers/${newCustomerId}/documents`, { method: "POST", body: formData })
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
-          toast.error(`${t(KYC_TYPE_LABEL_KEYS[type])}: ${body.error ?? t("documentUploadFailed")}`)
+          toast.error(`${t(STANDARD_TYPE_LABEL_KEYS[type])}: ${body.error ?? t("documentUploadFailed")}`)
         }
       } catch {
-        toast.error(`${t(KYC_TYPE_LABEL_KEYS[type])}: ${t("documentUploadFailed")}`)
+        toast.error(`${t(STANDARD_TYPE_LABEL_KEYS[type])}: ${t("documentUploadFailed")}`)
       }
     }
   }
@@ -91,6 +93,9 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
     if ("error" in result) {
       toast.error(result.error)
       return
+    }
+    if (result.dropboxWarning) {
+      toast.error(result.dropboxWarning)
     }
 
     // The customer record is safely created at this point regardless of what happens
@@ -111,7 +116,7 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
             <FormField label={t("companyName")} htmlFor="companyName" required error={errors.companyName?.message}>
               <Input id="companyName" placeholder="e.g. ABC Sdn Bhd" {...register("companyName")} error={errors.companyName?.message} />
             </FormField>
-            <FormField label={t("shortName")} htmlFor="shortName" error={errors.shortName?.message}>
+            <FormField label={t("shortName")} htmlFor="shortName" required error={errors.shortName?.message}>
               <Input id="shortName" placeholder="e.g. CSCEC" {...register("shortName")} error={errors.shortName?.message} />
             </FormField>
           </div>
@@ -228,12 +233,12 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
           <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
             <h2 className="text-sm font-semibold text-slate-900">{t("customerDocuments")}</h2>
             <div className="space-y-3">
-              {CUSTOMER_KYC_DOCUMENT_TYPES.map((type) => {
+              {CUSTOMER_STANDARD_DOCUMENT_TYPES.map((type) => {
                 const file = stagedDocs[type]
                 return (
                   <div key={type} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900">{t(KYC_TYPE_LABEL_KEYS[type])}</p>
+                      <p className="text-sm font-medium text-slate-900">{t(STANDARD_TYPE_LABEL_KEYS[type])}</p>
                       <p className="truncate text-xs text-slate-500">
                         {file ? file.name : t("documentNotUploaded")}
                       </p>

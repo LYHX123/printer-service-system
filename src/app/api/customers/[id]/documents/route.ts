@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { canAccess, canUploadCustomerFile } from "@/lib/permissions"
 import { getStorageProvider } from "@/lib/storage"
 import { logActivity } from "@/lib/audit"
-import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES } from "@/lib/constants"
+import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES, isStandardDocumentType, dropboxFileNameFor } from "@/lib/constants"
+import { getDropboxConnectionStatus, deleteCustomerDocumentFromDropbox, DropboxError } from "@/lib/dropbox"
 import type { Role } from "@/types"
 
 export async function POST(
@@ -26,7 +27,7 @@ export async function POST(
 
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, companyId },
-    select: { id: true },
+    select: { id: true, shortName: true },
   })
   if (!customer) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 })
@@ -41,12 +42,13 @@ export async function POST(
     return NextResponse.json({ error: "No file provided" }, { status: 400 })
   }
   if (
-    documentType !== null &&
-    documentType !== "" &&
+    typeof documentType !== "string" ||
+    !documentType ||
     !CUSTOMER_DOCUMENT_TYPES.includes(documentType as (typeof CUSTOMER_DOCUMENT_TYPES)[number])
   ) {
-    return NextResponse.json({ error: "Invalid document type" }, { status: 400 })
+    return NextResponse.json({ error: "Document type is required" }, { status: 400 })
   }
+  const resolvedDocumentType = documentType as (typeof CUSTOMER_DOCUMENT_TYPES)[number]
   if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
     return NextResponse.json(
       { error: "Only JPG, PNG, WEBP, PDF, and Word documents are allowed" },
@@ -69,46 +71,122 @@ export async function POST(
     resolvedProjectId = project.id
   }
 
+  // Customer Documents are Dropbox-backed going forward (Phase 2) — both
+  // preconditions are checked up front so a missing prerequisite comes back
+  // as a clear 400 rather than a confusing failure deeper in the upload.
+  const dropboxStatus = await getDropboxConnectionStatus(companyId)
+  if (!dropboxStatus.configured || !dropboxStatus.connected) {
+    return NextResponse.json(
+      { error: "Dropbox is not connected. Connect it in Settings before uploading customer documents." },
+      { status: 400 }
+    )
+  }
+  if (!customer.shortName?.trim()) {
+    return NextResponse.json(
+      { error: "This customer has no Short Name yet. Edit the customer to add one before uploading documents." },
+      { status: 400 }
+    )
+  }
+
+  const standard = isStandardDocumentType(resolvedDocumentType)
+  const dropboxFileName = dropboxFileNameFor(resolvedDocumentType, file.name)
+
+  // For a standard type, a Customer keeps at most one *current* file — look
+  // up that row BEFORE uploading so an extension change (e.g. a prior
+  // "PIN Certificate.pdf" replaced by a new "PIN Certificate.jpg") can be
+  // detected: the new file lands at a different Dropbox path, so the old
+  // one has to be cleaned up separately afterward instead of just being
+  // overwritten in place.
+  const priorStandardRow = standard
+    ? await prisma.customerDocument.findFirst({
+        where: { customerId, storageProvider: "DROPBOX", documentType: resolvedDocumentType },
+        select: { id: true, storageKey: true },
+      })
+    : null
+
   const buffer = Buffer.from(await file.arrayBuffer())
-  const provider = getStorageProvider("LOCAL")
-  const saved = await provider.save({
-    scopePath: `customers/${customerId}/documents`,
-    buffer,
-    originalFileName: file.name,
-  })
+  const provider = getStorageProvider("DROPBOX", companyId)
+
+  let saved: { storageKey: string; fileSize: number }
+  try {
+    saved = await provider.save({
+      scopePath: customer.shortName,
+      buffer,
+      originalFileName: dropboxFileName,
+    })
+  } catch (error) {
+    console.error("Customer document Dropbox upload failed:", error)
+    return NextResponse.json(
+      { error: error instanceof DropboxError ? error.message : "Failed to upload document to Dropbox" },
+      { status: 502 }
+    )
+  }
+
+  if (priorStandardRow && priorStandardRow.storageKey !== saved.storageKey) {
+    // Extension changed — the previous file is now an orphaned second "current"
+    // copy at a different path. Best-effort cleanup only: the new file is
+    // already safely uploaded and the DB record is updated regardless of
+    // whether this succeeds.
+    try {
+      await deleteCustomerDocumentFromDropbox(companyId, priorStandardRow.storageKey)
+    } catch (error) {
+      console.error("Failed to remove superseded Dropbox file:", priorStandardRow.storageKey, error)
+    }
+  }
 
   try {
-    const document = await prisma.customerDocument.create({
-      data: {
-        companyId,
-        customerId,
-        projectId: resolvedProjectId,
-        documentType: typeof documentType === "string" && documentType ? documentType : null,
-        originalFileName: file.name,
-        storageKey: saved.storageKey,
-        storageProvider: "LOCAL",
-        mimeType: file.type,
-        fileSize: saved.fileSize,
-        uploadedById: session.user.id as string,
-      },
-      include: { uploadedBy: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
-    })
+    // Non-standard types (OTHER, CONTRACT, ...) keep the original filename as
+    // the Dropbox filename, so a same-name re-upload lands at the same
+    // deterministic path — reconcile to that same DB row rather than
+    // inserting a second, now-stale record pointing at the same path.
+    const existingRow =
+      priorStandardRow ??
+      (standard
+        ? null
+        : await prisma.customerDocument.findFirst({
+            where: { customerId, storageProvider: "DROPBOX", storageKey: saved.storageKey },
+            select: { id: true },
+          }))
+
+    const documentData = {
+      projectId: resolvedProjectId,
+      documentType: resolvedDocumentType,
+      originalFileName: file.name,
+      storageKey: saved.storageKey,
+      mimeType: file.type,
+      fileSize: saved.fileSize,
+      uploadedById: session.user.id as string,
+    }
+
+    const document = existingRow
+      ? await prisma.customerDocument.update({
+          where: { id: existingRow.id },
+          data: documentData,
+          include: { uploadedBy: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
+        })
+      : await prisma.customerDocument.create({
+          data: {
+            companyId,
+            customerId,
+            storageProvider: "DROPBOX",
+            ...documentData,
+          },
+          include: { uploadedBy: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
+        })
 
     await logActivity({
       companyId,
       entityType: "CustomerDocument",
       entityId: document.id,
-      action: "UPLOADED",
+      action: existingRow ? "REPLACED" : "UPLOADED",
       performedById: session.user.id as string,
-      metadata: { customerId, fileName: file.name },
+      metadata: { customerId, fileName: file.name, dropboxFileName },
     })
 
     revalidatePath(`/customers/${customerId}`)
-    return NextResponse.json({ document: { ...document, url: provider.getUrl(document.storageKey) } })
+    return NextResponse.json({ document: { ...document, url: `/api/customers/${customerId}/documents/${document.id}` } })
   } catch (err) {
-    // DB write failed after a successful disk write — don't leave an orphan file.
-    await provider.delete(saved.storageKey).catch(() => {})
     console.error(err)
-    return NextResponse.json({ error: "Failed to save document" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to save document record" }, { status: 500 })
   }
 }

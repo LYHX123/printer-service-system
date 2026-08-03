@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES, CUSTOMER_KYC_DOCUMENT_TYPES } from "@/lib/constants"
+import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES, CUSTOMER_STANDARD_DOCUMENT_TYPES } from "@/lib/constants"
 import type { TranslationKey } from "@/lib/i18n/translations"
 import type { CustomerDocumentListItem } from "@/lib/data/customerDocuments"
 import type { CustomerBranchDetail } from "@/lib/data/customerBranches"
@@ -20,6 +20,8 @@ interface CustomerDocumentsProps {
   documents: CustomerDocumentListItem[]
   projects: CustomerBranchDetail[]
   canManage: boolean
+  /** Documents upload to Dropbox under this customer's Short Name — null/empty blocks uploads until it's set. */
+  customerShortName: string | null
 }
 
 const DOCUMENT_TYPE_KEYS: Record<(typeof CUSTOMER_DOCUMENT_TYPES)[number], TranslationKey> = {
@@ -30,13 +32,15 @@ const DOCUMENT_TYPE_KEYS: Record<(typeof CUSTOMER_DOCUMENT_TYPES)[number], Trans
   REGISTRATION_CERTIFICATE: "registrationCertificate",
   PIN_CERTIFICATE: "pinCertificate",
   CR12: "cr12",
+  VAT_CERTIFICATE: "vatCertificate",
+  COMPANY_PROFILE: "companyProfile",
 }
 
-// Generic "Other documents" upload only offers the original free-form types — the 3 KYC
-// types each get their own dedicated slot above (see KycDocumentSlot) so there's exactly
-// one upload path per KYC type, not two competing ones.
+// Generic "Other documents" upload only offers the original free-form types — the 5
+// standard types each get their own dedicated slot above (see StandardDocumentSlot) so
+// there's exactly one upload path per standard type, not two competing ones.
 const GENERIC_DOCUMENT_TYPES = CUSTOMER_DOCUMENT_TYPES.filter(
-  (type) => !(CUSTOMER_KYC_DOCUMENT_TYPES as readonly string[]).includes(type)
+  (type) => !(CUSTOMER_STANDARD_DOCUMENT_TYPES as readonly string[]).includes(type)
 )
 
 export function formatFileSize(bytes: number): string {
@@ -64,19 +68,21 @@ async function deleteCustomerDocument(customerId: string, documentId: string) {
   }
 }
 
-// ─── One fixed, named row per KYC document type (Registration Certificate / PIN
-// Certificate / CR12) — self-contained upload/replace/delete, per spec: each slot is
-// independently optional, keeps its original filename, and records who/when uploaded.
+// ─── One fixed, named row per standard document type (Registration Certificate / PIN
+// Certificate / CR12 / VAT Certificate / Company Profile) — self-contained upload/replace/
+// delete. Each slot is independently optional, keeps at most one *current* Dropbox file
+// (saved under a standardized name — see dropboxFileNameFor), and records who/when uploaded.
 
-interface KycDocumentSlotProps {
+interface StandardDocumentSlotProps {
   customerId: string
-  type: (typeof CUSTOMER_KYC_DOCUMENT_TYPES)[number]
+  type: (typeof CUSTOMER_STANDARD_DOCUMENT_TYPES)[number]
   doc: CustomerDocumentListItem | undefined
-  canManage: boolean
+  canUpload: boolean
+  canDelete: boolean
   onChanged: () => void
 }
 
-function KycDocumentSlot({ customerId, type, doc, canManage, onChanged }: KycDocumentSlotProps) {
+function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onChanged }: StandardDocumentSlotProps) {
   const toast = useToast()
   const { t } = useLanguage()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -152,17 +158,26 @@ function KycDocumentSlot({ customerId, type, doc, canManage, onChanged }: KycDoc
       <div className="flex min-w-0 items-center gap-3">
         <FileText className={`h-8 w-8 shrink-0 ${doc ? "text-slate-300" : "text-slate-200"}`} />
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-900">{t(DOCUMENT_TYPE_KEYS[type])}</p>
+          <p className="truncate text-sm font-medium text-slate-900">
+            {doc?.dropboxFileName ?? t(DOCUMENT_TYPE_KEYS[type])}
+          </p>
           {doc ? (
-            <p className="truncate text-xs text-slate-500">
-              {doc.originalFileName}
-              {" · "}
-              {format(new Date(doc.createdAt), "dd MMM yyyy")}
-              {" · "}
-              {doc.uploadedBy.name}
-              {" · "}
-              {formatFileSize(doc.fileSize)}
-            </p>
+            <>
+              <p className="truncate text-xs text-slate-500">
+                {doc.dropboxFileName && doc.dropboxFileName !== doc.originalFileName && (
+                  <>
+                    {t("originalLabel")}: {doc.originalFileName}
+                    {" · "}
+                  </>
+                )}
+                {format(new Date(doc.createdAt), "dd MMM yyyy")}
+                {" · "}
+                {doc.uploadedBy.name}
+                {" · "}
+                {formatFileSize(doc.fileSize)}
+              </p>
+              {doc.dropboxPath && <p className="truncate font-mono text-[11px] text-slate-400">{doc.dropboxPath}</p>}
+            </>
           ) : (
             <p className="text-xs italic text-slate-400">{t("documentNotUploaded")}</p>
           )}
@@ -177,7 +192,7 @@ function KycDocumentSlot({ customerId, type, doc, canManage, onChanged }: KycDoc
             </Button>
           </a>
         )}
-        {canManage && (
+        {canUpload && (
           <Button
             type="button"
             variant="outline"
@@ -189,7 +204,7 @@ function KycDocumentSlot({ customerId, type, doc, canManage, onChanged }: KycDoc
             {doc ? t("replace") : t("uploadFile")}
           </Button>
         )}
-        {canManage && doc && (
+        {canDelete && doc && (
           confirmingDelete ? (
             <div className="flex items-center gap-2 text-xs">
               <span className="text-slate-500">{t("confirmDeleteDocument")}</span>
@@ -218,12 +233,16 @@ function KycDocumentSlot({ customerId, type, doc, canManage, onChanged }: KycDoc
   )
 }
 
-export function CustomerDocuments({ customerId, documents, projects, canManage }: CustomerDocumentsProps) {
+export function CustomerDocuments({ customerId, documents, projects, canManage, customerShortName }: CustomerDocumentsProps) {
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  // Uploads go to Dropbox under this customer's Short Name — without one there's
+  // nowhere to put the file, so uploading (not viewing/deleting existing docs) is
+  // gated on it in addition to the usual permission check.
+  const canUpload = canManage && Boolean(customerShortName?.trim())
   const [documentType, setDocumentType] = useState<string>("OTHER")
   const [projectId, setProjectId] = useState<string>("")
   const [uploading, setUploading] = useState(false)
@@ -235,12 +254,12 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
   }
 
   // documents is already ordered createdAt desc, so the first match per type is the latest.
-  const kycDocs = CUSTOMER_KYC_DOCUMENT_TYPES.map((type) => ({
+  const standardDocs = CUSTOMER_STANDARD_DOCUMENT_TYPES.map((type) => ({
     type,
     doc: documents.find((d) => d.documentType === type),
   }))
   const genericDocs = documents.filter(
-    (d) => !(CUSTOMER_KYC_DOCUMENT_TYPES as readonly string[]).includes(d.documentType ?? "")
+    (d) => !(CUSTOMER_STANDARD_DOCUMENT_TYPES as readonly string[]).includes(d.documentType ?? "")
   )
 
   function openModal() {
@@ -299,16 +318,30 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-900">{t("customerDocuments")}</h2>
-        {canManage && (
+        {canUpload && (
           <Button type="button" variant="outline" size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openModal}>
             {t("uploadFile")}
           </Button>
         )}
       </div>
 
+      {canManage && !customerShortName?.trim() && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {t("customerShortNameRequiredForUpload")}
+        </p>
+      )}
+
       <div className="space-y-2">
-        {kycDocs.map(({ type, doc }) => (
-          <KycDocumentSlot key={type} customerId={customerId} type={type} doc={doc} canManage={canManage} onChanged={refresh} />
+        {standardDocs.map(({ type, doc }) => (
+          <StandardDocumentSlot
+            key={type}
+            customerId={customerId}
+            type={type}
+            doc={doc}
+            canUpload={canUpload}
+            canDelete={canManage}
+            onChanged={refresh}
+          />
         ))}
       </div>
 
@@ -323,8 +356,14 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
               <div className="flex min-w-0 items-center gap-3">
                 <FileText className="h-8 w-8 shrink-0 text-slate-300" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-900">{doc.originalFileName}</p>
+                  <p className="truncate text-sm font-medium text-slate-900">{doc.dropboxFileName ?? doc.originalFileName}</p>
                   <p className="text-xs text-slate-500">
+                    {doc.dropboxFileName && doc.dropboxFileName !== doc.originalFileName && (
+                      <>
+                        {t("originalLabel")}: {doc.originalFileName}
+                        {" · "}
+                      </>
+                    )}
                     {doc.documentType ? t(DOCUMENT_TYPE_KEYS[doc.documentType as (typeof CUSTOMER_DOCUMENT_TYPES)[number]] ?? "documentTypeOther") : t("generalDocument")}
                     {doc.project ? ` · ${doc.project.name}` : ` · ${t("generalDocument")}`}
                     {" · "}
@@ -334,6 +373,7 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
                     {" · "}
                     {formatFileSize(doc.fileSize)}
                   </p>
+                  {doc.dropboxPath && <p className="truncate font-mono text-[11px] text-slate-400">{doc.dropboxPath}</p>}
                 </div>
               </div>
 
@@ -403,7 +443,7 @@ export function CustomerDocuments({ customerId, documents, projects, canManage }
               className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
             />
           </FormField>
-          <FormField label={t("documentType")} htmlFor="documentType">
+          <FormField label={t("documentType")} htmlFor="documentType" required>
             <Select id="documentType" value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
               {GENERIC_DOCUMENT_TYPES.map((type) => (
                 <option key={type} value={type}>

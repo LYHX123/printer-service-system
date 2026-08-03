@@ -612,6 +612,12 @@ export type TranslationKey =
   | "registrationCertificate"
   | "pinCertificate"
   | "cr12"
+  | "vatCertificate"
+  | "companyProfile"
+  | "dropboxFileName"
+  | "dropboxPath"
+  | "originalLabel"
+  | "documentTypeRequired"
   | "documentNotUploaded"
   | "replace"
   | "documentUploaded"
@@ -624,6 +630,7 @@ export type TranslationKey =
   | "replaceDocumentPartial"
   | "otherDocuments"
   | "viewCustomer"
+  | "customerShortNameRequiredForUpload"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -1228,6 +1235,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     registrationCertificate: "Registration Certificate",
     pinCertificate: "PIN Certificate",
     cr12: "CR12",
+    vatCertificate: "VAT Certificate",
+    companyProfile: "Company Profile",
+    dropboxFileName: "Dropbox File Name",
+    dropboxPath: "Dropbox Path",
+    originalLabel: "Original",
+    documentTypeRequired: "Document type is required",
     documentNotUploaded: "Not uploaded",
     replace: "Replace",
     documentUploaded: "Document uploaded",
@@ -1240,6 +1253,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     replaceDocumentPartial: "New file uploaded, but the old one could not be removed",
     otherDocuments: "Other Documents",
     viewCustomer: "View Customer",
+    customerShortNameRequiredForUpload: "This customer has no Short Name yet. Edit the customer to add one before uploading documents.",
   },
   zh: {
     // Common
@@ -1843,6 +1857,12 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     registrationCertificate: "注册证书",
     pinCertificate: "PIN证书",
     cr12: "CR12文件",
+    vatCertificate: "增值税证书",
+    companyProfile: "公司简介",
+    dropboxFileName: "Dropbox 文件名",
+    dropboxPath: "Dropbox 路径",
+    originalLabel: "原始文件",
+    documentTypeRequired: "请选择文件类型",
     documentNotUploaded: "尚未上传",
     replace: "替换",
     documentUploaded: "文件已上传",
@@ -1855,5 +1875,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     replaceDocumentPartial: "新文件已上传，但旧文件删除失败",
     otherDocuments: "其他文件",
     viewCustomer: "查看客户",
+    customerShortNameRequiredForUpload: "该客户还没有简称（Short Name），请先编辑客户补充简称，再上传文件。",
   },
 }
