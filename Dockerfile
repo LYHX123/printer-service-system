@@ -47,7 +47,7 @@ RUN apt-get update \
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs
 
-# Standalone server output (includes a minimal node_modules)
+# Standalone server output (includes a minimal, traced node_modules)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
@@ -55,11 +55,35 @@ COPY --from=builder /app/public ./public
 # Generated Prisma client (custom output path, may not be fully traced)
 COPY --from=builder /app/src/generated/prisma ./src/generated/prisma
 
-# Prisma runtime packages, in case they aren't bundled by output tracing
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma schema + full migration history, and prisma.config.ts (which is what
+# actually supplies the datasource URL from DATABASE_URL — schema.prisma's
+# own datasource block has no `url`, by design, since this project reads it
+# via prisma.config.ts). Next's standalone output only traces modules the
+# server itself imports at runtime, so these plain data/config files are
+# never picked up automatically — without them, `prisma migrate deploy`
+# cannot find a schema or a database URL to run against.
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# Ensure the uploads directory exists and is writable by the app user
-RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads .next
+# Full node_modules, overlaid on top of the standalone output's pruned copy
+# above. The traced node_modules only contains what the running Next.js
+# server itself imports, which never includes the `prisma` CLI (it's a
+# dependency of the project, but nothing in the app's own request-handling
+# code ever `require`s it — it's invoked directly as a binary via `npx`).
+# Copied from the `deps` stage — the untouched `npm ci` install — so the
+# version here is guaranteed to be exactly the one pinned in
+# package-lock.json (matching the project's own `prisma` dependency), and
+# `npx prisma` resolves this local install first instead of ever reaching
+# out to the registry for a different one.
+COPY --from=deps /app/node_modules ./node_modules
+
+# Ensure the uploads directory exists and is writable by the app user.
+# node_modules/prisma is included here too: the Prisma CLI writes a small
+# engine-checksum/cache file under node_modules/@prisma/engines on first run
+# (even for read-only commands like `--version` or `migrate deploy`) — left
+# root-owned (the default for a Dockerfile COPY), it fails with "Can't write
+# to .../@prisma/engines" once running as the unprivileged nextjs user below.
+RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads ./node_modules ./prisma .next
 
 USER nextjs
 
