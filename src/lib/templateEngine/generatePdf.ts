@@ -27,17 +27,41 @@ const LIBREOFFICE_CANDIDATES =
       ]
     : ["soffice", "libreoffice"]
 
+// A PATH-based lookup has to actually launch the binary once to confirm it
+// works (see below) — LibreOffice's first launch on a given machine/profile
+// can take several seconds (observed ~6-7s on a fresh Windows profile), so
+// this needs real headroom rather than a tight timeout that would
+// misreport a perfectly good install as "unavailable".
+const PATH_CANDIDATE_PROBE_TIMEOUT_MS = 15000
+
 let cachedBinary: string | null | undefined
 
+/**
+ * Detection order:
+ *   1. LIBREOFFICE_BINARY_PATH env var, if set — an explicit operator
+ *      override always wins, no probing needed (the path is trusted as-is;
+ *      if it's wrong, the actual conversion call below will fail loudly
+ *      rather than silently falling through to autodetection).
+ *   2. Bare "soffice"/"libreoffice" on PATH — probed with --version.
+ *   3. Well-known absolute install paths (Windows) — checked with a plain
+ *      file-existence check (access), not executed, since actually running
+ *      the binary just to detect it is the slow part above.
+ */
 async function findLibreOffice(): Promise<string | null> {
   if (cachedBinary !== undefined) return cachedBinary
+
+  const explicit = process.env.LIBREOFFICE_BINARY_PATH?.trim()
+  if (explicit) {
+    cachedBinary = explicit
+    return cachedBinary
+  }
 
   for (const candidate of LIBREOFFICE_CANDIDATES) {
     try {
       if (path.isAbsolute(candidate)) {
         await access(candidate)
       } else {
-        await execFileAsync(candidate, ["--version"], { timeout: 5000 })
+        await execFileAsync(candidate, ["--version"], { timeout: PATH_CANDIDATE_PROBE_TIMEOUT_MS })
       }
       cachedBinary = candidate
       return cachedBinary

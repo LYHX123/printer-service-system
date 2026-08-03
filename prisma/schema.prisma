@@ -198,6 +198,8 @@ model Company {
   tasks                 Task[]
   invoices              Invoice[]
   customerDocuments     CustomerDocument[]
+  quotationDocuments    QuotationDocument[]
+  quotationVersions     QuotationVersion[]
   auditLogs             AuditLog[]
   dropboxConnection     DropboxConnection?
 }
@@ -249,6 +251,7 @@ model User {
   auditLogs                 AuditLog[]
   createdReceiptAllocations ReceiptAllocation[]
   createdDropboxConnections DropboxConnection[]
+  createdQuotationVersions  QuotationVersion[]
 }
 
 model Customer {
@@ -453,6 +456,12 @@ model Quotation {
   id                  String          @id @default(uuid())
   quotationNumber     String          @unique // user-entered business number (e.g. QT00455); legacy rows keep their original auto-generated QTYYYYMM-NNN value
   quotationSortNumber Int? // trailing numeric portion of quotationNumber, for natural-number sort — see src/lib/numbering.ts
+  // Dropbox document version this quotation is currently on — 1 at creation,
+  // incremented by exactly 1 (atomically, in the same update as the business
+  // data change) every time Adjust Quotation saves. Never touched by a
+  // Dropbox sync retry — see resyncQuotationDropbox — so a repeat retry
+  // always targets the same version instead of silently advancing it.
+  currentVersion      Int             @default(1)
   companyId           String
   customerId       String
   customerBranchId String? // selected Project ("Head Office" when null)
@@ -481,6 +490,8 @@ model Quotation {
   convertedJob      ServiceJob?        @relation("QuotationConversion")
   communicationLogs CommunicationLog[]
   invoice           Invoice? // at most one — quotationId is @unique on Invoice
+  documents         QuotationDocument[]
+  versions          QuotationVersion[]
 }
 
 model QuotationItem {
@@ -504,6 +515,72 @@ model QuotationItem {
 
   quotation Quotation  @relation(fields: [quotationId], references: [id])
   part      SparePart? @relation(fields: [partId], references: [id])
+}
+
+enum QuotationFileType {
+  PDF
+  XLSX
+}
+
+// Quotation Dropbox — one row per (quotation, file type, version, isFinal).
+// V1/V2/V3... rows (isFinal = false) are never overwritten by a later
+// version — each Adjust Quotation save creates new rows at
+// Quotation.currentVersion (already incremented), archiving every prior
+// version's actual Dropbox file untouched. A repeat sync for the *same*
+// version (e.g. a Dropbox retry after a transient failure) still upserts
+// the same row, so retrying is idempotent and never advances the version.
+//
+// isFinal rows are the Approve-time snapshot ("QTxxxxx-SHORTNAME-FINAL.ext")
+// — a genuinely separate artifact from the numbered versions, not just
+// "one more version number" (see the Quotation Dropbox spec's explicit
+// warning against modeling FINAL as version=999). `version` on a FINAL row
+// records which version it was approved from, purely for reference.
+model QuotationDocument {
+  id              String                  @id @default(uuid())
+  companyId       String
+  quotationId     String
+  fileType        QuotationFileType
+  version         Int                     @default(1)
+  isFinal         Boolean                 @default(false)
+  storageKey      String
+  storageProvider DocumentStorageProvider @default(LOCAL)
+  mimeType        String
+  fileSize        Int
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+
+  @@unique([quotationId, fileType, version, isFinal])
+  @@index([quotationId])
+}
+
+// Immutable business-data snapshot for one Quotation version — what
+// QuotationDocument's V1/V2/V3 *files* were actually generated from, frozen
+// at that exact moment so a later Adjust (or a SparePart's name/price/brand
+// changing under it) never rewrites history. `snapshot` holds everything
+// the Detail page needs to render that version standalone: quotation totals
+// and dates, the customer's *display* fields (not just its id — the
+// customer record itself can change later), and each item's full
+// description (not just a partId) — see
+// src/lib/quotationExcel/versionSnapshot.ts for the exact shape and where
+// it's built. One row per version, created once and never updated.
+model QuotationVersion {
+  id          String   @id @default(uuid())
+  companyId   String
+  quotationId String
+  version     Int
+  snapshot    Json
+  createdAt   DateTime @default(now())
+  createdById String?
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+  createdBy User?     @relation(fields: [createdById], references: [id])
+
+  @@unique([quotationId, version])
+  @@index([quotationId])
 }
 
 // One Invoice per Quotation at most (quotationId is unique when present — enforced from

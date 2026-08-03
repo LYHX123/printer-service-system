@@ -29,6 +29,20 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+# LibreOffice needs a writable profile dir at startup ($HOME/.config); /tmp is
+# writable by any user in this base image, unlike the "nextjs" system user's
+# nonexistent home directory.
+ENV HOME=/tmp
+
+# Quotation Excel -> PDF conversion (see src/lib/templateEngine/generatePdf.ts)
+# shells out to a local headless LibreOffice at request time. libreoffice-calc
+# is the Calc/spreadsheet component only — it still provides the shared
+# `soffice` binary this app looks for, at a fraction of the size of the full
+# `libreoffice` meta-package (which also pulls in Impress/Draw/Base/Writer,
+# none of which this app ever uses).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libreoffice-calc \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs

@@ -225,8 +225,10 @@ export const QUOTATION_STATUS_LABELS: Record<QuotationStatus, string> = {
   EXPIRED: "Expired",
 }
 
+// Approve is a standalone business action, not gated on having gone through
+// Send to Customer first — DRAFT and SENT can both go straight to APPROVED.
 export const QUOTATION_STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
-  DRAFT: ["SENT"],
+  DRAFT: ["SENT", "APPROVED"],
   SENT: ["APPROVED", "REJECTED"],
   APPROVED: [],
   REJECTED: [],

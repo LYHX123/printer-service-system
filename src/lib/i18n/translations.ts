@@ -631,6 +631,21 @@ export type TranslationKey =
   | "otherDocuments"
   | "viewCustomer"
   | "customerShortNameRequiredForUpload"
+  | "dropboxFiles"
+  | "notYetSyncedToDropbox"
+  | "syncToDropbox"
+  | "dropboxSyncSuccess"
+  | "quotationShortNameRequiredForSync"
+  | "adjustQuotation"
+  | "retrySync"
+  | "dropboxSyncFailedBanner"
+  | "pdfConversionUnavailableBanner"
+  | "final"
+  | "current"
+  | "historical"
+  | "historicalDataUnavailable"
+  | "backToCurrentVersion"
+  | "confirmApprove"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -1254,6 +1269,21 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     otherDocuments: "Other Documents",
     viewCustomer: "View Customer",
     customerShortNameRequiredForUpload: "This customer has no Short Name yet. Edit the customer to add one before uploading documents.",
+    dropboxFiles: "Dropbox Files",
+    notYetSyncedToDropbox: "Not yet synced to Dropbox",
+    syncToDropbox: "Sync to Dropbox",
+    dropboxSyncSuccess: "Synced to Dropbox",
+    quotationShortNameRequiredForSync: "Customer Short Name is required before syncing quotation to Dropbox.",
+    adjustQuotation: "Adjust Quotation",
+    retrySync: "Retry Sync",
+    dropboxSyncFailedBanner: "Quotation saved, but Dropbox sync failed.",
+    pdfConversionUnavailableBanner: "PDF conversion is not available for this version yet.",
+    final: "FINAL",
+    current: "Current",
+    historical: "Historical",
+    historicalDataUnavailable: "Historical data snapshot unavailable for this version.",
+    backToCurrentVersion: "Back to Current Version",
+    confirmApprove: "Are you sure you want to approve this quotation?",
   },
   zh: {
     // Common
@@ -1876,5 +1906,20 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     otherDocuments: "其他文件",
     viewCustomer: "查看客户",
     customerShortNameRequiredForUpload: "该客户还没有简称（Short Name），请先编辑客户补充简称，再上传文件。",
+    dropboxFiles: "Dropbox 文件",
+    notYetSyncedToDropbox: "尚未同步到 Dropbox",
+    syncToDropbox: "同步到 Dropbox",
+    dropboxSyncSuccess: "已同步到 Dropbox",
+    quotationShortNameRequiredForSync: "该客户还没有简称（Short Name），请先补充后再同步报价单到 Dropbox。",
+    adjustQuotation: "调整报价单",
+    retrySync: "重试同步",
+    dropboxSyncFailedBanner: "报价单已保存，但同步到 Dropbox 失败。",
+    pdfConversionUnavailableBanner: "该版本的 PDF 转换暂不可用。",
+    final: "最终版",
+    current: "当前",
+    historical: "历史版本",
+    historicalDataUnavailable: "该版本的历史数据快照不可用。",
+    backToCurrentVersion: "返回当前版本",
+    confirmApprove: "确定要批准这份报价单吗？",
   },
 }

@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/modal"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { QUOTATION_STATUS_LABELS } from "@/types"
 
 type ModalTargetStatus = "SENT" | "APPROVED" | "REJECTED" | "EXPIRED"
@@ -36,6 +37,7 @@ export function QuotationStatusModal({
 }: QuotationStatusModalProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t } = useLanguage()
 
   const {
     register,
@@ -68,7 +70,7 @@ export function QuotationStatusModal({
       isOpen={isOpen}
       onClose={handleClose}
       title={ACTION_LABEL[targetStatus]}
-      description={`Change quotation status to "${QUOTATION_STATUS_LABELS[targetStatus]}".`}
+      description={targetStatus === "APPROVED" ? t("confirmApprove") : `Change quotation status to "${QUOTATION_STATUS_LABELS[targetStatus]}".`}
       footer={
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={handleClose}>
