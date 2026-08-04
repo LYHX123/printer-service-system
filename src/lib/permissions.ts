@@ -512,3 +512,20 @@ export function canManageTaskStep(
   if (task.status !== "ACTIVE") return false
   return step.createdById === userId || task.createdById === userId
 }
+
+/**
+ * Add/remove participants mid-task. Mirrors canManageTaskStep's tier exactly
+ * (same "task edit" authority, just without a step to also check authorship
+ * of): Admin/Manager always; otherwise only the task's own creator, and only
+ * while it's still ACTIVE. A plain participant who isn't the creator can see
+ * the participant list but not change it.
+ */
+export function canManageTaskParticipants(
+  role: Role,
+  userId: string,
+  task: { status: string; createdById: string }
+): boolean {
+  if (role === "ADMIN" || role === "MANAGER") return true
+  if (task.status !== "ACTIVE") return false
+  return task.createdById === userId
+}

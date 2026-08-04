@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { CreateTaskSchema, AddTaskStepSchema } from "@/lib/schemas"
+import { CreateTaskSchema, AddTaskStepSchema, AddTaskParticipantsSchema } from "@/lib/schemas"
 import {
   canAccess,
   canCreateTask,
@@ -11,12 +11,13 @@ import {
   canCompleteTask,
   canReopenTask,
   canManageTaskStep,
+  canManageTaskParticipants,
   isTaskParticipant,
 } from "@/lib/permissions"
 import { getTaskStepForAuth } from "@/lib/data/tasks"
 import { deleteTaskStepImage } from "@/lib/uploads"
 import { logActivity } from "@/lib/audit"
-import type { CreateTaskInput, AddTaskStepInput } from "@/lib/schemas"
+import type { CreateTaskInput, AddTaskStepInput, AddTaskParticipantsInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
 function revalidate() {
@@ -278,5 +279,132 @@ export async function deleteTask(taskId: string) {
     return { success: true as const }
   } catch {
     return { error: "Failed to delete task" }
+  }
+}
+
+/**
+ * Adds one or more participants to an in-progress task. Never touches
+ * Task.createdById, task status, due dates, existing steps/progress, or any
+ * other participant already on the task — this only ever inserts new
+ * TaskParticipant rows. The whole batch is rejected (nothing partially
+ * applied) if any requested user doesn't resolve to an active user in the
+ * same company, since the only legitimate caller is the Add Participant
+ * modal, which only ever offers such users in the first place — anything
+ * else means the request was tampered with.
+ */
+export async function addTaskParticipants(taskId: string, data: AddTaskParticipantsInput) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  const role = session.user.role as Role
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
+
+  const companyId = session.user.companyId as string
+  const userId = session.user.id as string
+
+  const parsed = AddTaskParticipantsSchema.safeParse(data)
+  if (!parsed.success) return { error: "Invalid form data" }
+  const requestedIds = [...new Set(parsed.data.userIds)]
+
+  try {
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, companyId },
+      include: { participants: { select: { userId: true } } },
+    })
+    if (!task) return { error: "Task not found" }
+
+    if (!canManageTaskParticipants(role, userId, { status: task.status, createdById: task.createdById })) {
+      return { error: "Forbidden" }
+    }
+
+    const existingIds = new Set(task.participants.map((p) => p.userId))
+    const newIds = requestedIds.filter((id) => !existingIds.has(id))
+    if (newIds.length === 0) {
+      return { error: "Selected user(s) are already participants" }
+    }
+
+    // Same-company + active check, in the same query that will also be used
+    // to name each newly-added participant in the audit log — a cross-company
+    // or inactive user id simply won't come back here, and is rejected below.
+    const validUsers = await prisma.user.findMany({
+      where: { id: { in: newIds }, companyId, isActive: true },
+      select: { id: true, name: true },
+    })
+    if (validUsers.length !== newIds.length) {
+      return { error: "One or more selected users are invalid" }
+    }
+
+    await prisma.taskParticipant.createMany({
+      data: validUsers.map((u) => ({ taskId, userId: u.id })),
+      skipDuplicates: true,
+    })
+
+    for (const u of validUsers) {
+      await logActivity({
+        companyId,
+        entityType: "Task",
+        entityId: taskId,
+        action: "PARTICIPANT_ADDED",
+        performedById: userId,
+        metadata: { participantUserId: u.id, participantName: u.name },
+      })
+    }
+
+    revalidate()
+    return { success: true as const }
+  } catch {
+    return { error: "Failed to add participant(s)" }
+  }
+}
+
+/**
+ * Removes one participant from an in-progress task — only the Task↔User
+ * participation row, never the User, the Task, its steps/progress, status,
+ * or any other participant. Blocked if this would leave the task with zero
+ * participants, matching the existing rule enforced at creation time
+ * (CreateTaskSchema requires at least one participantId) rather than
+ * silently introducing a new "0 participants allowed" state.
+ */
+export async function removeTaskParticipant(taskId: string, participantUserId: string) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  const role = session.user.role as Role
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
+
+  const companyId = session.user.companyId as string
+  const userId = session.user.id as string
+
+  try {
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, companyId },
+      include: { participants: { select: { id: true, userId: true, user: { select: { name: true } } } } },
+    })
+    if (!task) return { error: "Task not found" }
+
+    if (!canManageTaskParticipants(role, userId, { status: task.status, createdById: task.createdById })) {
+      return { error: "Forbidden" }
+    }
+
+    const participant = task.participants.find((p) => p.userId === participantUserId)
+    if (!participant) return { error: "Participant not found" }
+
+    if (task.participants.length <= 1) {
+      return { error: "A task must have at least one participant" }
+    }
+
+    await prisma.taskParticipant.delete({ where: { id: participant.id } })
+
+    await logActivity({
+      companyId,
+      entityType: "Task",
+      entityId: taskId,
+      action: "PARTICIPANT_REMOVED",
+      performedById: userId,
+      metadata: { participantUserId, participantName: participant.user.name },
+    })
+
+    revalidate()
+    return { success: true as const }
+  } catch {
+    return { error: "Failed to remove participant" }
   }
 }

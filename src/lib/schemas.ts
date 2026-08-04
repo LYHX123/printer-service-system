@@ -457,3 +457,9 @@ export const AddTaskStepSchema = z.object({
 })
 
 export type AddTaskStepInput = z.infer<typeof AddTaskStepSchema>
+
+export const AddTaskParticipantsSchema = z.object({
+  userIds: z.array(z.string()).min(1, "Select at least one user"),
+})
+
+export type AddTaskParticipantsInput = z.infer<typeof AddTaskParticipantsSchema>

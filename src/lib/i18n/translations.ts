@@ -465,6 +465,14 @@ export type TranslationKey =
   | "taskTitleRequired"
   | "taskStepTitleRequired"
   | "taskParticipantRequired"
+  | "addParticipant"
+  | "addParticipantModalDesc"
+  | "removeParticipant"
+  | "confirmRemoveParticipantQuestion"
+  | "participantAddedSuccess"
+  | "participantRemovedSuccess"
+  | "allUsersAlreadyParticipants"
+  | "taskNoParticipantsYet"
   // Task step images
   | "taskUploadImages"
   | "taskImagesLabel"
@@ -544,6 +552,7 @@ export type TranslationKey =
   | "lowStockAlertsLabel"
   | "overdueTaskAlertsLabel"
   | "noAlertsLabel"
+  | "noDashboardInformationForPermissions"
   // Dashboard homepage
   | "welcomeBack"
   | "dashboardIntro"
@@ -947,6 +956,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskTitleRequired: "Task title is required",
     taskStepTitleRequired: "Step title is required",
     taskParticipantRequired: "Select at least one participant",
+    addParticipant: "Add Participant",
+    addParticipantModalDesc: "Select one or more staff to add to this task.",
+    removeParticipant: "Remove",
+    confirmRemoveParticipantQuestion: "Remove this participant from the task?",
+    participantAddedSuccess: "Participant added",
+    participantRemovedSuccess: "Participant removed",
+    allUsersAlreadyParticipants: "Everyone is already a participant",
+    taskNoParticipantsYet: "No participants yet",
     // Task step images
     taskUploadImages: "Upload Images",
     taskImagesLabel: "Images",
@@ -1025,6 +1042,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     lowStockAlertsLabel: "Low Stock Alerts",
     overdueTaskAlertsLabel: "Overdue Task Alerts",
     noAlertsLabel: "No alerts",
+    noDashboardInformationForPermissions: "No dashboard information available for your permissions.",
     // Ledger
     ledger: "Ledger",
     ledgerDesc: "Track company income, expenses, and sales invoices.",
@@ -1593,6 +1611,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskTitleRequired: "请输入任务标题",
     taskStepTitleRequired: "请输入步骤标题",
     taskParticipantRequired: "请至少选择一个参与人",
+    addParticipant: "添加参与人",
+    addParticipantModalDesc: "选择一位或多位员工加入此任务。",
+    removeParticipant: "移除",
+    confirmRemoveParticipantQuestion: "确定要将此参与人从任务中移除吗？",
+    participantAddedSuccess: "参与人已添加",
+    participantRemovedSuccess: "参与人已移除",
+    allUsersAlreadyParticipants: "所有用户均已是参与人",
+    taskNoParticipantsYet: "暂无参与人",
     // Task step images
     taskUploadImages: "上传图片",
     taskImagesLabel: "图片",
@@ -1671,6 +1697,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     lowStockAlertsLabel: "低库存提醒",
     overdueTaskAlertsLabel: "任务超期提醒",
     noAlertsLabel: "暂无提醒",
+    noDashboardInformationForPermissions: "您当前的权限下暂无可显示的仪表盘信息。",
     // Ledger
     ledger: "台账",
     ledgerDesc: "追踪公司收支与销售发票。",

@@ -29,8 +29,24 @@ export default async function DashboardPage() {
   const canViewInvoice = hasAnyPermission(role, modulePermissions, "invoice.")
   const canViewStock = hasAnyPermission(role, modulePermissions, "stock.")
   const canViewTasks = hasAnyPermission(role, modulePermissions, "tasks.")
-  const canViewLedger = hasAnyPermission(role, modulePermissions, "ledger.")
-  const canViewShopAccount = hasAnyPermission(role, modulePermissions, "ledger.shop.")
+  // Bare "ledger." would also match "ledger.shop.*" (Shop Account is its own
+  // sibling sub-module under the same namespace, not a subset of Ledger) —
+  // a Shop-Account-only user would incorrectly get the whole Financial
+  // Overview. Mirrors the Sidebar's own "/ledger" nav item, which already
+  // has to solve this exact same collision (see Sidebar.tsx's permPrefix
+  // "ledger.general.|ledger.sales."): only the general + sales books count
+  // as "Ledger/Financial" access for Dashboard purposes.
+  const canViewLedger =
+    hasAnyPermission(role, modulePermissions, "ledger.general.") ||
+    hasAnyPermission(role, modulePermissions, "ledger.sales.")
+  const canViewShopAccountRaw = hasAnyPermission(role, modulePermissions, "ledger.shop.")
+  // Shop Account and Ledger are independent modules (per Sidebar: separate nav
+  // items, separate permPrefix). A Shop-Account-only user can still use the
+  // Shop Account module itself, but nothing shop-financial is allowed onto
+  // the Dashboard's company-wide Financial Overview without also holding
+  // real Ledger/Financial access — so this flag (which drives both the Shop
+  // Expense metric card and the Recent Shop Entries list) requires both.
+  const canViewShopAccount = canViewLedger && canViewShopAccountRaw
 
   const [
     customerCount,

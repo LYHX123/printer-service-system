@@ -92,9 +92,15 @@ export function DashboardHome({
 
   const hasBusinessGroup = perm.customers || perm.quotations || perm.invoice || perm.tasks
   const hasStockGroup = perm.stock
-  const hasFinancialGroup = perm.ledger || perm.shopAccount
+  // perm.shopAccount is already perm.ledger && <real shop permission> (see
+  // dashboard/page.tsx) — Financial Overview as a whole always requires real
+  // Ledger/Financial access, never Shop Account alone, so this is just
+  // perm.ledger (kept explicit rather than `perm.ledger || perm.shopAccount`
+  // so it can't be misread as "either one is enough to show this section").
+  const hasFinancialGroup = perm.ledger
   const hasAlerts = perm.stock || perm.tasks
   const hasRecentGroup = perm.quotations || perm.invoice || perm.shopAccount
+  const hasAnyModuleAccess = hasBusinessGroup || hasStockGroup || hasFinancialGroup || hasAlerts || hasRecentGroup
 
   // Low stock first, then overdue tasks (already most-overdue-first from the data layer);
   // capped so the dashboard never grows tall from a long alert list — the rest is one
@@ -113,6 +119,12 @@ export function DashboardHome({
         </h1>
         <p className="mt-0.5 text-[15px] text-slate-500">{t("dashboardIntro")}</p>
       </div>
+
+      {!hasAnyModuleAccess && (
+        <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-400">
+          {t("noDashboardInformationForPermissions")}
+        </p>
+      )}
 
       {/* Group 1: Business overview */}
       {hasBusinessGroup && (

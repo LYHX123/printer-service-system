@@ -3,23 +3,25 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { format } from "date-fns"
-import { Plus, CheckCircle2, RotateCcw, Trash2, Pencil, Users, Clock, ChevronRight, ChevronLeft } from "lucide-react"
+import { Plus, CheckCircle2, RotateCcw, Trash2, Pencil, Users, Clock, ChevronRight, ChevronLeft, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { completeTask, reopenTask, deleteTask, deleteTaskStep } from "@/lib/actions/tasks"
+import { completeTask, reopenTask, deleteTask, deleteTaskStep, removeTaskParticipant } from "@/lib/actions/tasks"
 import {
   canCreateTask,
   canAddTaskStep,
   canCompleteTask,
   canReopenTask,
   canManageTaskStep,
+  canManageTaskParticipants,
 } from "@/lib/permissions"
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal"
 import { AddStepModal } from "@/components/tasks/AddStepModal"
 import { EditStepModal } from "@/components/tasks/EditStepModal"
+import { AddParticipantModal } from "@/components/tasks/AddParticipantModal"
 import { TaskStepImages } from "@/components/tasks/TaskStepImages"
 import type { TaskWithDetails, TaskStepItem } from "@/lib/data/tasks"
 import type { Role } from "@/types"
@@ -180,9 +182,11 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
   )
   const [createOpen, setCreateOpen] = useState(false)
   const [addStepOpen, setAddStepOpen] = useState(false)
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false)
   const [editingStep, setEditingStep] = useState<TaskStepItem | null>(null)
   const [isActing, setIsActing] = useState(false)
   const [deletingStepId, setDeletingStepId] = useState<string | null>(null)
+  const [removingParticipantId, setRemovingParticipantId] = useState<string | null>(null)
 
   const listRef = useRef<HTMLElement>(null)
   const detailRef = useRef<HTMLElement>(null)
@@ -279,6 +283,17 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
     router.refresh()
   }
 
+  async function handleRemoveParticipant(participantUserId: string) {
+    if (!selectedTask) return
+    if (!window.confirm(t("confirmRemoveParticipantQuestion"))) return
+    setRemovingParticipantId(participantUserId)
+    const result = await removeTaskParticipant(selectedTask.id, participantUserId)
+    setRemovingParticipantId(null)
+    if (result?.error) { toast.error(result.error); return }
+    toast.success(t("participantRemovedSuccess"))
+    router.refresh()
+  }
+
   const userCanAddStep = selectedTask
     ? canAddTaskStep(currentUserId, {
         status: selectedTask.status,
@@ -297,6 +312,16 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
 
   const userCanReopen = canReopenTask(currentUserRole)
   const userCanDelete = userCanCreate
+
+  const userCanManageParticipants = selectedTask
+    ? canManageTaskParticipants(currentUserRole, currentUserId, {
+        status: selectedTask.status,
+        createdById: selectedTask.createdById,
+      })
+    : false
+  const participantCandidateUsers = selectedTask
+    ? users.filter((u) => !selectedTask.participants.some((p) => p.userId === u.id))
+    : []
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-start">
@@ -468,6 +493,52 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
               </div>
             </div>
 
+            <div className="border-b border-slate-200 bg-white px-6 py-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {t("taskParticipantsLabel")}
+                </h3>
+                {userCanManageParticipants && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={<Plus className="h-3.5 w-3.5" />}
+                    onClick={() => setAddParticipantOpen(true)}
+                  >
+                    {t("addParticipant")}
+                  </Button>
+                )}
+              </div>
+              {selectedTask.participants.length === 0 ? (
+                <p className="text-sm text-slate-400 italic">{t("taskNoParticipantsYet")}</p>
+              ) : (
+                <div className="overflow-hidden rounded-lg border border-slate-200 divide-y divide-slate-100">
+                  {selectedTask.participants.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                      <span className="text-slate-700">{p.user.name}</span>
+                      {userCanManageParticipants && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveParticipant(p.userId)}
+                          disabled={removingParticipantId === p.userId}
+                          className="text-xs font-medium text-red-500 hover:text-red-700 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          {removingParticipantId === p.userId ? (
+                            "…"
+                          ) : (
+                            <span className="inline-flex items-center gap-1">
+                              <X className="h-3 w-3" />
+                              {t("removeParticipant")}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="px-6 py-6">
               {selectedTask.steps.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -534,6 +605,14 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
           onClose={() => setAddStepOpen(false)}
           taskId={selectedTask.id}
           nextStepNumber={selectedTask.steps.length + 1}
+        />
+      )}
+      {selectedTask && (
+        <AddParticipantModal
+          isOpen={addParticipantOpen}
+          onClose={() => setAddParticipantOpen(false)}
+          taskId={selectedTask.id}
+          candidateUsers={participantCandidateUsers}
         />
       )}
     </div>

@@ -119,16 +119,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.username = user.username ?? ""
         token.position = user.position ?? null
       } else if (token.id) {
-        // Subsequent requests — refresh mutable profile fields from DB
-        // so edits to name/username/position are reflected without re-login
+        // Subsequent requests — refresh mutable profile fields from DB so
+        // edits to name/username/position/role/modulePermissions are
+        // reflected without re-login. role + modulePermissions specifically
+        // matter for Dashboard/Sidebar/route-guard filtering: without this,
+        // a permission change an Admin makes would only take effect the next
+        // time the affected user logs back in, not on their next refresh.
         const fresh = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { name: true, username: true, position: true },
+          select: { name: true, username: true, position: true, role: true, modulePermissions: true },
         })
         if (fresh) {
           token.name = fresh.name
           token.username = fresh.username ?? ""
           token.position = fresh.position ?? null
+          token.role = fresh.role
+          token.modulePermissions = fresh.modulePermissions ?? []
         }
       }
       return token
