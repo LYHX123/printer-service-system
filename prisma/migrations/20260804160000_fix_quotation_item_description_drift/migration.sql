@@ -1,0 +1,20 @@
+-- Fixes a pre-existing schema drift on "QuotationItem", not a new change.
+--
+-- "QuotationItem" itself was originally created out-of-band (via `prisma db
+-- push`, never a tracked migration — see the comment at the top of
+-- 20260625080000_add_part_id_to_quotation_item, which documents this same
+-- gap for the `partId` column). Every migration that has ever touched this
+-- table since then (20260625080000, 20260731220000, 20260802150000) only
+-- ever ALTERs it, assuming the table — and, apparently, most of its
+-- original columns — already exist. Local dev's copy of this table has
+-- always had "description" (it was there from whatever the original
+-- out-of-band `db push` created), so this gap was invisible locally.
+-- Production's copy of this table is missing it, causing
+-- `prisma.quotation.create()` to fail with P2022.
+--
+-- This adds exactly that one column, nullable, matching the current schema
+-- exactly (`description String?` — no default, no NOT NULL): purely
+-- additive, guarded with IF NOT EXISTS so it is a no-op wherever the column
+-- already exists (local dev, and any other environment that isn't missing
+-- it). Never touches any other column, index, constraint, or row.
+ALTER TABLE "QuotationItem" ADD COLUMN IF NOT EXISTS "description" TEXT;
