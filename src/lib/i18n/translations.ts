@@ -609,6 +609,13 @@ export type TranslationKey =
   | "businessOverviewSection"
   | "stockOverviewSection"
   | "financialOverviewSection"
+  | "taskOverviewSection"
+  | "newCustomersThisMonthLabel"
+  | "quotationsThisMonthLabel"
+  | "approvedQuotationsThisMonthLabel"
+  | "invoicesThisMonthLabel"
+  | "invoiceValueThisMonthLabel"
+  | "netThisMonthLabel"
   | "recentActivitySection"
   | "noRecentRecords"
   | "viewAllLink"
@@ -1296,6 +1303,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     recentTasksLabel: "Recent Tasks",
     recentShopEntriesLabel: "Recent Shop Account Entries",
     businessOverviewSection: "Business Overview",
+    taskOverviewSection: "Task Overview",
+    newCustomersThisMonthLabel: "New Customers This Month",
+    quotationsThisMonthLabel: "Quotations This Month",
+    approvedQuotationsThisMonthLabel: "Approved Quotations This Month",
+    invoicesThisMonthLabel: "Invoices This Month",
+    invoiceValueThisMonthLabel: "Invoice Value This Month",
+    netThisMonthLabel: "Net This Month",
     stockOverviewSection: "Stock Overview",
     financialOverviewSection: "Financial Overview",
     recentActivitySection: "Recent Activity",
@@ -1981,6 +1995,13 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     recentTasksLabel: "最近任务",
     recentShopEntriesLabel: "最近店铺账目",
     businessOverviewSection: "业务概览",
+    taskOverviewSection: "任务概览",
+    newCustomersThisMonthLabel: "本月新增客户",
+    quotationsThisMonthLabel: "本月报价单",
+    approvedQuotationsThisMonthLabel: "本月已批准报价单",
+    invoicesThisMonthLabel: "本月发票",
+    invoiceValueThisMonthLabel: "本月发票金额",
+    netThisMonthLabel: "本月净额",
     stockOverviewSection: "库存概览",
     financialOverviewSection: "财务概览",
     recentActivitySection: "最近动态",

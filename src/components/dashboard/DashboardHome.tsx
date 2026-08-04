@@ -15,15 +15,22 @@ import {
   TrendingDown,
   Store,
   Clock,
+  BookOpen,
+  Package,
 } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { MetricCard } from "@/components/ui/metric-card"
-import { QuotationStatusBadge } from "@/components/ui/badge"
 import { formatCurrency, cn } from "@/lib/utils"
 import type { LowStockAlert } from "@/lib/stock-types"
 import type { OverdueTaskAlert } from "@/lib/data/tasks"
-import type { RecentQuotation, RecentInvoice } from "@/lib/data/dashboard"
-import type { ShopAccountEntryWithRelations } from "@/lib/data/shopAccount"
+import type {
+  CustomerDashboardMetrics,
+  QuotationDashboardMetrics,
+  InvoiceDashboardMetrics,
+  DashboardActivityItem,
+  DashboardActivityKind,
+} from "@/lib/data/dashboard"
+import type { TranslationKey } from "@/lib/i18n/translations"
 
 interface DashboardHomeProps {
   firstName: string
@@ -36,10 +43,11 @@ interface DashboardHomeProps {
     ledger: boolean
     shopAccount: boolean
   }
-  customerCount: number | null
-  activeQuotationCount: number | null
-  invoiceCount: number | null
+  customerMetrics: CustomerDashboardMetrics | null
+  quotationMetrics: QuotationDashboardMetrics | null
+  invoiceMetrics: InvoiceDashboardMetrics | null
   activeTaskCount: number | null
+  overdueTaskCount: number | null
   stockTotals: { EQUIPMENT: number; CONSUMPTION: number; PARTS: number } | null
   lowStockCount: number | null
   lowStockAlerts: LowStockAlert[]
@@ -48,34 +56,66 @@ interface DashboardHomeProps {
   currentMonthIncome: number | null
   currentMonthExpense: number | null
   currentMonthShopExpense: number | null
-  recentQuotations: RecentQuotation[]
-  recentInvoices: RecentInvoice[]
-  recentShopEntries: ShopAccountEntryWithRelations[]
+  recentActivity: DashboardActivityItem[]
 }
 
 /** Max combined alerts shown on the dashboard — low stock first, then overdue tasks (most overdue first); the rest are reachable via "View all". */
 const MAX_DASHBOARD_ALERTS = 5
 
-// Long formatted-currency values (e.g. "KES 1,588,920.03") shouldn't wrap to a second
-// line and break card-height consistency — shrink smoothly with viewport width instead.
-const FINANCIAL_VALUE_CLASS = "whitespace-nowrap leading-tight text-[clamp(1.25rem,1.8vw,1.875rem)]"
+// One shared, fixed grid for every metric section (Business/Financial/Stock/Task) — never
+// auto-fit/stretch, never dynamic per card count. Mobile 1 column, tablet 2, desktop 4 —
+// a section with fewer cards than a full row (Task Overview's 2, a permission-limited
+// user's 2-card Business Overview, ...) simply leaves the remaining grid cells empty
+// rather than stretching its cards wider, so every section's card width lines up exactly
+// with every other section's, at every breakpoint.
+const CARD_GRID_CLASS = "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+// Fixed card height so a 2-line label never grows a card taller than its neighbors —
+// combined with MetricCard's `pinValueBottom` (label+icon on top, value pinned to the
+// bottom via `mt-auto`) and `labelWrap`'s own reserved label height, every value sits at
+// the same Y position across a row regardless of 1- vs 2-line labels. `overflow-hidden` is
+// a safety net so a long currency value can never visually spill past its own card's
+// rounded border into a neighboring card, on top of the page-level `overflow-x-hidden`
+// DashboardShell's <main> already has.
+const DASHBOARD_CARD_CLASS = "p-4 min-h-[120px] overflow-hidden"
+const DASHBOARD_ICON_SIZE_CLASS = "h-11 w-11"
+// Every plain-count card (Customers, Quotations, Stock quantities, Tasks, ...) uses this
+// same size — never varies per card.
+const COUNT_VALUE_CLASS = "text-2xl"
+// Every currency card (Unpaid Balance, Income, Expense, Net, Shop Expense, Invoice Value)
+// uses this exact same class — a single shared constant is what actually guarantees they
+// can never drift to different sizes from each other. Kept as one shared responsive clamp
+// (not a fixed size) — the fixed 4-column grid still narrows each card at the xl breakpoint's
+// lower edge (~1280px), where the widest realistic value ("KES 1,588,920.03") needs to stay
+// legible without wrapping; the clamp keeps every currency card identically sized to each
+// other at any given viewport width while still fitting the narrowest column safely.
+const FINANCIAL_VALUE_CLASS = "whitespace-nowrap leading-tight text-[clamp(0.875rem,1vw,1.25rem)]"
 
 function SectionHeading({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="mb-3 flex items-center justify-between">
+    <div className="mb-2.5 flex items-center justify-between">
       <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</h2>
       {action}
     </div>
   )
 }
 
+const ACTIVITY_KIND_CONFIG: Record<DashboardActivityKind, { icon: React.ComponentType<{ className?: string }>; labelKey: TranslationKey; color: string }> = {
+  quotation: { icon: FileText, labelKey: "quotations", color: "text-indigo-600" },
+  invoice: { icon: Receipt, labelKey: "invoice", color: "text-purple-600" },
+  task: { icon: CheckSquare, labelKey: "tasks", color: "text-teal-600" },
+  ledger: { icon: BookOpen, labelKey: "ledger", color: "text-green-700" },
+  shopAccount: { icon: Store, labelKey: "shopAccount", color: "text-pink-600" },
+  stock: { icon: Package, labelKey: "inventory", color: "text-slate-600" },
+}
+
 export function DashboardHome({
   firstName,
   permissions: perm,
-  customerCount,
-  activeQuotationCount,
-  invoiceCount,
+  customerMetrics,
+  quotationMetrics,
+  invoiceMetrics,
   activeTaskCount,
+  overdueTaskCount,
   stockTotals,
   lowStockCount,
   lowStockAlerts,
@@ -84,14 +124,13 @@ export function DashboardHome({
   currentMonthIncome,
   currentMonthExpense,
   currentMonthShopExpense,
-  recentQuotations,
-  recentInvoices,
-  recentShopEntries,
+  recentActivity,
 }: DashboardHomeProps) {
   const { t } = useLanguage()
 
-  const hasBusinessGroup = perm.customers || perm.quotations || perm.invoice || perm.tasks
+  const hasBusinessGroup = perm.customers || perm.quotations || perm.invoice
   const hasStockGroup = perm.stock
+  const hasTaskGroup = perm.tasks
   // perm.shopAccount is already perm.ledger && <real shop permission> (see
   // dashboard/page.tsx) — Financial Overview as a whole always requires real
   // Ledger/Financial access, never Shop Account alone, so this is just
@@ -99,8 +138,8 @@ export function DashboardHome({
   // so it can't be misread as "either one is enough to show this section").
   const hasFinancialGroup = perm.ledger
   const hasAlerts = perm.stock || perm.tasks
-  const hasRecentGroup = perm.quotations || perm.invoice || perm.shopAccount
-  const hasAnyModuleAccess = hasBusinessGroup || hasStockGroup || hasFinancialGroup || hasAlerts || hasRecentGroup
+  const hasRecentGroup = recentActivity.length > 0
+  const hasAnyModuleAccess = hasBusinessGroup || hasStockGroup || hasTaskGroup || hasFinancialGroup || hasAlerts || hasRecentGroup
 
   // Low stock first, then overdue tasks (already most-overdue-first from the data layer);
   // capped so the dashboard never grows tall from a long alert list — the rest is one
@@ -111,13 +150,15 @@ export function DashboardHome({
   ].slice(0, MAX_DASHBOARD_ALERTS)
   const alertsViewAllHref = perm.tasks ? "/tasks" : "/stock"
 
+  const netThisMonth = (currentMonthIncome ?? 0) - (currentMonthExpense ?? 0)
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-[28px] font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           {t("welcomeBack").replace("{name}", firstName)}
         </h1>
-        <p className="mt-0.5 text-[15px] text-slate-500">{t("dashboardIntro")}</p>
+        <p className="mt-0.5 text-sm text-slate-500">{t("dashboardIntro")}</p>
       </div>
 
       {!hasAnyModuleAccess && (
@@ -130,56 +171,88 @@ export function DashboardHome({
       {hasBusinessGroup && (
         <section>
           <SectionHeading>{t("businessOverviewSection")}</SectionHeading>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={CARD_GRID_CLASS}>
             {perm.customers && (
-              <MetricCard label={t("customers")} value={customerCount ?? 0} icon={<Users className="h-5 w-5 text-blue-600" />} href="/customers" />
+              <>
+                <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("customers")} value={customerMetrics?.total ?? 0} icon={<Users className="h-5 w-5 text-blue-600" />} href="/customers" />
+                <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("newCustomersThisMonthLabel")} value={customerMetrics?.newThisMonth ?? 0} icon={<Users className="h-5 w-5 text-blue-500" />} href="/customers" />
+              </>
             )}
             {perm.quotations && (
-              <MetricCard label={t("activeQuotationsLabel")} value={activeQuotationCount ?? 0} icon={<FileText className="h-5 w-5 text-indigo-600" />} iconBg="bg-indigo-50" href="/quotations" />
+              <>
+                <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("quotationsThisMonthLabel")} value={quotationMetrics?.countThisMonth ?? 0} icon={<FileText className="h-5 w-5 text-indigo-600" />} iconBg="bg-indigo-50" href="/quotations" />
+                <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("approvedQuotationsThisMonthLabel")} value={quotationMetrics?.approvedThisMonth ?? 0} icon={<FileText className="h-5 w-5 text-indigo-600" />} iconBg="bg-indigo-50" href="/quotations" />
+              </>
             )}
             {perm.invoice && (
-              <MetricCard label={t("invoicesLabel")} value={invoiceCount ?? 0} icon={<Receipt className="h-5 w-5 text-purple-600" />} iconBg="bg-purple-50" href="/invoice" />
-            )}
-            {perm.tasks && (
-              <MetricCard label={t("activeTasksLabel")} value={activeTaskCount ?? 0} icon={<CheckSquare className="h-5 w-5 text-teal-600" />} iconBg="bg-teal-50" href="/tasks" />
+              <>
+                <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("invoicesThisMonthLabel")} value={invoiceMetrics?.countThisMonth ?? 0} icon={<Receipt className="h-5 w-5 text-purple-600" />} iconBg="bg-purple-50" href="/invoice" />
+                <MetricCard
+                  className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom
+                  labelWrap
+                  label={t("invoiceValueThisMonthLabel")}
+                  value={formatCurrency(invoiceMetrics?.valueThisMonth ?? 0)}
+                  valueClassName={FINANCIAL_VALUE_CLASS}
+                  icon={<Receipt className="h-5 w-5 text-purple-600" />}
+                  iconBg="bg-purple-50"
+                  href="/invoice"
+                />
+              </>
             )}
           </div>
         </section>
       )}
 
-      {/* Group 2: Stock overview */}
-      {hasStockGroup && (
-        <section>
-          <SectionHeading>{t("stockOverviewSection")}</SectionHeading>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label={t("equipmentQuantityLabel")} value={stockTotals?.EQUIPMENT ?? 0} icon={<Laptop className="h-5 w-5 text-blue-600" />} href="/stock?type=EQUIPMENT" />
-            <MetricCard label={t("consumptionQuantityLabel")} value={stockTotals?.CONSUMPTION ?? 0} icon={<Droplet className="h-5 w-5 text-cyan-600" />} iconBg="bg-cyan-50" href="/stock?type=CONSUMPTION" />
-            <MetricCard label={t("partsQuantityLabel")} value={stockTotals?.PARTS ?? 0} icon={<Wrench className="h-5 w-5 text-slate-600" />} iconBg="bg-slate-100" href="/stock?type=PARTS" />
-            <MetricCard label={t("lowStockItemsLabel")} value={lowStockCount ?? 0} icon={<AlertTriangle className="h-5 w-5 text-amber-600" />} iconBg="bg-amber-50" href="/stock" />
-          </div>
-        </section>
-      )}
-
-      {/* Group 3: Financial overview */}
+      {/* Group 2: Financial overview */}
       {hasFinancialGroup && (
         <section>
           <SectionHeading>{t("financialOverviewSection")}</SectionHeading>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {perm.ledger && (
-              <>
-                <MetricCard label={t("unpaidSalesBalanceLabel")} value={formatCurrency(unpaidSalesBalance ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<Wallet className="h-5 w-5 text-red-600" />} iconBg="bg-red-50" href="/ledger/sales" />
-                <MetricCard label={t("currentMonthIncomeLabel")} value={formatCurrency(currentMonthIncome ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<TrendingUp className="h-5 w-5 text-green-600" />} iconBg="bg-green-50" href="/ledger/income-expense" />
-                <MetricCard label={t("currentMonthExpenseLabel")} value={formatCurrency(currentMonthExpense ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<TrendingDown className="h-5 w-5 text-orange-600" />} iconBg="bg-orange-50" href="/ledger/income-expense" />
-              </>
-            )}
+          <div className={CARD_GRID_CLASS}>
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom labelWrap label={t("unpaidSalesBalanceLabel")} value={formatCurrency(unpaidSalesBalance ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<Wallet className="h-5 w-5 text-red-600" />} iconBg="bg-red-50" href="/ledger/sales" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom labelWrap label={t("currentMonthIncomeLabel")} value={formatCurrency(currentMonthIncome ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<TrendingUp className="h-5 w-5 text-green-600" />} iconBg="bg-green-50" href="/ledger/income-expense" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom labelWrap label={t("currentMonthExpenseLabel")} value={formatCurrency(currentMonthExpense ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<TrendingDown className="h-5 w-5 text-orange-600" />} iconBg="bg-orange-50" href="/ledger/income-expense" />
+            <MetricCard
+              className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom
+              labelWrap
+              label={t("netThisMonthLabel")}
+              value={formatCurrency(netThisMonth)}
+              valueClassName={cn(FINANCIAL_VALUE_CLASS, netThisMonth < 0 ? "text-red-600" : undefined)}
+              icon={netThisMonth < 0 ? <TrendingDown className="h-5 w-5 text-red-600" /> : <TrendingUp className="h-5 w-5 text-emerald-600" />}
+              iconBg={netThisMonth < 0 ? "bg-red-50" : "bg-emerald-50"}
+              href="/ledger/income-expense"
+            />
             {perm.shopAccount && (
-              <MetricCard label={t("currentMonthShopExpenseLabel")} value={formatCurrency(currentMonthShopExpense ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<Store className="h-5 w-5 text-pink-600" />} iconBg="bg-pink-50" href="/ledger/shop" />
+              <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom labelWrap label={t("currentMonthShopExpenseLabel")} value={formatCurrency(currentMonthShopExpense ?? 0)} valueClassName={FINANCIAL_VALUE_CLASS} icon={<Store className="h-5 w-5 text-pink-600" />} iconBg="bg-pink-50" href="/ledger/shop" />
             )}
           </div>
         </section>
       )}
 
-      {/* Group 4: Alerts — capped to MAX_DASHBOARD_ALERTS, low stock first then most-overdue-first tasks */}
+      {/* Group 3: Stock overview */}
+      {hasStockGroup && (
+        <section>
+          <SectionHeading>{t("stockOverviewSection")}</SectionHeading>
+          <div className={CARD_GRID_CLASS}>
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("equipmentQuantityLabel")} value={stockTotals?.EQUIPMENT ?? 0} icon={<Laptop className="h-5 w-5 text-blue-600" />} href="/stock?type=EQUIPMENT" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("consumptionQuantityLabel")} value={stockTotals?.CONSUMPTION ?? 0} icon={<Droplet className="h-5 w-5 text-cyan-600" />} iconBg="bg-cyan-50" href="/stock?type=CONSUMPTION" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("partsQuantityLabel")} value={stockTotals?.PARTS ?? 0} icon={<Wrench className="h-5 w-5 text-slate-600" />} iconBg="bg-slate-100" href="/stock?type=PARTS" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("lowStockItemsLabel")} value={lowStockCount ?? 0} icon={<AlertTriangle className="h-5 w-5 text-amber-600" />} iconBg="bg-amber-50" href="/stock" />
+          </div>
+        </section>
+      )}
+
+      {/* Group 4: Task overview */}
+      {hasTaskGroup && (
+        <section>
+          <SectionHeading>{t("taskOverviewSection")}</SectionHeading>
+          <div className={CARD_GRID_CLASS}>
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("activeTasksLabel")} value={activeTaskCount ?? 0} icon={<CheckSquare className="h-5 w-5 text-teal-600" />} iconBg="bg-teal-50" href="/tasks" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("overdueTasksLabel")} value={overdueTaskCount ?? 0} icon={<Clock className="h-5 w-5 text-red-600" />} iconBg="bg-red-50" href="/tasks" />
+          </div>
+        </section>
+      )}
+
+      {/* Group 5: Alerts — capped to MAX_DASHBOARD_ALERTS, low stock first then most-overdue-first tasks */}
       {hasAlerts && (
         <section>
           <SectionHeading
@@ -233,101 +306,45 @@ export function DashboardHome({
         </section>
       )}
 
-      {/* Group 5: Recent activity — Quotations + Sales side by side, Shop Account full width below */}
+      {/* Group 6: Recent activity — one merged, permission-gated, time-sorted feed (never per-module 0/empty placeholders) */}
       {hasRecentGroup && (
         <section>
           <SectionHeading>{t("recentActivitySection")}</SectionHeading>
-          <div className="space-y-4">
-            {(perm.quotations || perm.invoice) && (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {perm.quotations && (
-                  <RecentListCard title={t("recentQuotationsLabel")} viewAllHref="/quotations" emptyLabel={t("noRecentRecords")}>
-                    {recentQuotations.map((q) => (
-                      <Link key={q.id} href={`/quotations/${q.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-900">{q.quotationNumber}</p>
-                          <p className="truncate text-xs text-slate-400">{q.customer.companyName}</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span className="text-xs font-medium text-slate-600">{formatCurrency(q.totalCost)}</span>
-                          <QuotationStatusBadge status={q.status} />
-                        </div>
-                      </Link>
-                    ))}
-                  </RecentListCard>
-                )}
-
-                {perm.invoice && (
-                  <RecentListCard title={t("recentSalesLabel")} viewAllHref="/invoice" emptyLabel={t("noRecentRecords")}>
-                    {recentInvoices.map((inv) => (
-                      <Link key={inv.id} href={`/quotations/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-900">{inv.invoiceNumber}</p>
-                          <p className="truncate text-xs text-slate-400">{inv.customer.companyName}</p>
-                        </div>
-                        <span className="shrink-0 text-xs font-medium text-slate-600">{formatCurrency(inv.totalAmount)}</span>
-                      </Link>
-                    ))}
-                  </RecentListCard>
-                )}
-              </div>
-            )}
-
-            {perm.shopAccount && (
-              <RecentListCard title={t("recentShopEntriesLabel")} viewAllHref="/ledger/shop" emptyLabel={t("noRecentRecords")} minHeight>
-                {recentShopEntries.map((entry) => (
-                  <Link key={entry.id} href="/ledger/shop" className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors">
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden divide-y divide-slate-50">
+            {recentActivity.map((item) => {
+              const config = ACTIVITY_KIND_CONFIG[item.kind]
+              const Icon = config.icon
+              return (
+                <Link
+                  key={`${item.kind}-${item.id}`}
+                  href={item.href}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <Icon className={cn("h-4 w-4 shrink-0", config.color)} />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{entry.description}</p>
-                      <p className="truncate text-xs text-slate-400">{entry.category.name}</p>
+                      <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+                      <p className="truncate text-xs text-slate-400">
+                        {t(config.labelKey)} · {item.subtitle}
+                      </p>
                     </div>
-                    <span className={`shrink-0 text-xs font-medium ${entry.type === "INCOME" ? "text-green-700" : "text-red-700"}`}>
-                      {entry.type === "INCOME" ? "+" : "-"}{formatCurrency(entry.amount)}
+                  </div>
+                  {item.amount !== null && (
+                    <span
+                      className={cn(
+                        "shrink-0 text-xs font-medium",
+                        item.amountSign === "+" ? "text-green-700" : item.amountSign === "-" ? "text-red-700" : "text-slate-600"
+                      )}
+                    >
+                      {item.amountSign ?? ""}
+                      {item.amountIsCurrency ? formatCurrency(item.amount) : item.amount}
                     </span>
-                  </Link>
-                ))}
-              </RecentListCard>
-            )}
+                  )}
+                </Link>
+              )
+            })}
           </div>
         </section>
-      )}
-    </div>
-  )
-}
-
-function RecentListCard({
-  title,
-  viewAllHref,
-  emptyLabel,
-  /** Gives the empty state a deliberate, modest min-height (~120px) instead of
-   * collapsing to a thin strip — used for cards that render full-width (e.g.
-   * Shop Account), where a bare one-line empty state looks unbalanced. */
-  minHeight = false,
-  children,
-}: {
-  title: string
-  viewAllHref: string
-  emptyLabel: string
-  minHeight?: boolean
-  children: React.ReactNode
-}) {
-  const { t } = useLanguage()
-  const isEmpty = Array.isArray(children) ? children.length === 0 : !children
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-        <Link href={viewAllHref} className="text-xs text-blue-600 hover:underline">
-          {t("viewAllLink")}
-        </Link>
-      </div>
-      {isEmpty ? (
-        <div className={cn("flex items-center justify-center px-4 py-6", minHeight && "min-h-[120px]")}>
-          <p className="text-center text-sm text-slate-400">{emptyLabel}</p>
-        </div>
-      ) : (
-        <div className="divide-y divide-slate-50">{children}</div>
       )}
     </div>
   )
