@@ -637,6 +637,10 @@ export type TranslationKey =
   | "dropboxFiles"
   | "notYetSyncedToDropbox"
   | "syncToDropbox"
+  | "etrTaxInvoice"
+  | "etrTypeNotAllowed"
+  | "confirmDeleteEtr"
+  | "etrUploadFailed"
   | "dropboxSyncSuccess"
   | "quotationShortNameRequiredForSync"
   | "adjustQuotation"
@@ -1280,6 +1284,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     dropboxFiles: "Dropbox Files",
     notYetSyncedToDropbox: "Not yet synced to Dropbox",
     syncToDropbox: "Sync to Dropbox",
+    etrTaxInvoice: "ETR Tax Invoice",
+    etrTypeNotAllowed: "Only PDF, JPG, and PNG files are allowed",
+    confirmDeleteEtr: "Delete this ETR? This cannot be undone.",
+    etrUploadFailed: "ETR upload failed",
     dropboxSyncSuccess: "Synced to Dropbox",
     quotationShortNameRequiredForSync: "Customer Short Name is required before syncing quotation to Dropbox.",
     adjustQuotation: "Adjust Quotation",
@@ -1922,6 +1930,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     dropboxFiles: "Dropbox 文件",
     notYetSyncedToDropbox: "尚未同步到 Dropbox",
     syncToDropbox: "同步到 Dropbox",
+    etrTaxInvoice: "ETR 完税凭证",
+    etrTypeNotAllowed: "仅支持 PDF、JPG 和 PNG 文件",
+    confirmDeleteEtr: "删除此 ETR 文件？此操作无法撤销。",
+    etrUploadFailed: "ETR 上传失败",
     dropboxSyncSuccess: "已同步到 Dropbox",
     quotationShortNameRequiredForSync: "该客户还没有简称（Short Name），请先补充后再同步报价单到 Dropbox。",
     adjustQuotation: "调整报价单",

@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { InvoiceStatusBadge, SalesPaymentStatusBadge } from "@/components/ui/badge"
 import { InvoiceActions } from "@/components/quotations/InvoiceActions"
+import { InvoiceEtrCard } from "@/components/quotations/InvoiceEtrCard"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
@@ -38,6 +39,7 @@ export default async function InvoiceDetailPage({
   const dropboxDocuments = await getInvoiceDropboxDocuments(id, companyId)
   const pdfDoc = dropboxDocuments.find((d) => d.fileType === "PDF")
   const xlsxDoc = dropboxDocuments.find((d) => d.fileType === "XLSX")
+  const etrDoc = dropboxDocuments.find((d) => d.fileType === "ETR")
   const pdfDownloadUrl = `/api/quotations/invoices/${id}/documents/pdf`
   const excelDownloadUrl = `/api/quotations/invoices/${id}/documents/xlsx`
   const needsDropboxSync = !pdfDoc || !xlsxDoc
@@ -143,7 +145,7 @@ export default async function InvoiceDetailPage({
               <Cloud className="h-4 w-4 text-slate-400" />
               <T k="dropboxFiles" />
             </h3>
-            {dropboxDocuments.length === 0 ? (
+            {!pdfDoc && !xlsxDoc ? (
               <p className="text-sm text-slate-400 italic"><T k="notYetSyncedToDropbox" /></p>
             ) : (
               <>
@@ -153,7 +155,7 @@ export default async function InvoiceDetailPage({
                   </p>
                 )}
                 <div className="space-y-2 text-sm">
-                  {dropboxDocuments.map((doc) => (
+                  {[pdfDoc, xlsxDoc].filter((d): d is NonNullable<typeof d> => Boolean(d)).map((doc) => (
                     <div key={doc.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
                       <p className="text-[11px] font-medium text-slate-500">{doc.fileType}</p>
                       <p className="truncate text-xs font-medium text-slate-900">{doc.dropboxFileName ?? "—"}</p>
@@ -164,6 +166,8 @@ export default async function InvoiceDetailPage({
               </>
             )}
           </div>
+
+          <InvoiceEtrCard invoiceId={id} doc={etrDoc} canManage={canEditInvoice(role, permissions)} />
 
           {/* Sales Ledger linkage */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">

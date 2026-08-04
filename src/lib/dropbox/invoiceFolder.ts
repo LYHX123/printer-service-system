@@ -62,6 +62,13 @@ export function buildInvoiceFileName(invoiceNumber: string, extension: string): 
   return `${safeNumber}${ext}`
 }
 
+/** "{InvoiceNo}-ETR.{ext}" — always this fixed basename, whatever extension the uploaded file actually has (never forced/converted to PDF). */
+export function buildInvoiceEtrFileName(invoiceNumber: string, extension: string): string {
+  const safeNumber = assertSafeInvoicePathSegment("Invoice No", invoiceNumber)
+  const ext = extension.startsWith(".") ? extension : `.${extension}`
+  return `${safeNumber}-ETR${ext}`
+}
+
 /**
  * Ensures the full Invoice/{Year}/{Month}/{Month Invoice,Month ETR} chain
  * exists, creating whatever's missing — including the top-level Invoice/

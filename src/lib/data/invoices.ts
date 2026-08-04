@@ -116,12 +116,14 @@ export async function getInvoiceForPdf(id: string, companyId: string): Promise<I
 
 export interface InvoiceDropboxDocumentItem {
   id: string
-  fileType: "PDF" | "XLSX"
+  fileType: "PDF" | "XLSX" | "ETR"
   storageProvider: "LOCAL" | "DROPBOX"
   /** Actual saved Dropbox filename (basename of storageKey) — null for LOCAL-provider rows. */
   dropboxFileName: string | null
   /** Relative display path, e.g. "Invoice/2026/August/August Invoice/INV00625.pdf" — null for LOCAL-provider rows. */
   dropboxPath: string | null
+  /** The uploader's original filename — only ever set for ETR (a user upload); always null for system-generated PDF/XLSX. */
+  originalFileName: string | null
   fileSize: number
   createdAt: Date
   updatedAt: Date
@@ -148,6 +150,7 @@ export async function getInvoiceDropboxDocuments(invoiceId: string, companyId: s
       fileType: true,
       storageKey: true,
       storageProvider: true,
+      originalFileName: true,
       fileSize: true,
       createdAt: true,
       updatedAt: true,

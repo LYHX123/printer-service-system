@@ -36,9 +36,14 @@ export {
   getMonthInvoicePath,
   getMonthEtrPath,
   buildInvoiceFileName,
+  buildInvoiceEtrFileName,
   ensureInvoiceMonthFolders,
 } from "./invoiceFolder"
-export { uploadInvoiceDocumentToDropbox, getInvoiceDocumentTemporaryLink } from "./invoiceDocuments"
+export {
+  uploadInvoiceDocumentToDropbox,
+  deleteInvoiceDocumentFromDropbox,
+  getInvoiceDocumentTemporaryLink,
+} from "./invoiceDocuments"
 export {
   getDropboxConnectionStatus,
   getStoredRefreshToken,

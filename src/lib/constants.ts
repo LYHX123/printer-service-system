@@ -14,6 +14,9 @@ export const ALLOWED_DOCUMENT_TYPES = [
 ]
 export const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024 // 10MB
 
+/** ETR/eTIMS tax receipt uploads — a scan or PDF, never Word/Excel. Reuses MAX_DOCUMENT_SIZE (10MB), the project's existing document upload limit. */
+export const ALLOWED_ETR_TYPES = ["application/pdf", "image/jpeg", "image/png"]
+
 export const CUSTOMER_DOCUMENT_TYPES = [
   "CONTRACT",
   "ID_DOCUMENT",

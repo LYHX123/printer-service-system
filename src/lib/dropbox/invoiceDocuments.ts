@@ -1,4 +1,5 @@
 import { getDropboxApiContext, dropboxApiFetch, dropboxContentUpload } from "./client"
+import { DropboxApiError } from "./errors"
 
 /**
  * Uploads an Invoice's generated PDF/Excel to Dropbox at
@@ -18,6 +19,26 @@ export async function uploadInvoiceDocumentToDropbox(
   const { accessToken, pathRootNamespaceId } = await getDropboxApiContext(companyId)
   await dropboxContentUpload(accessToken, path, content, pathRootNamespaceId ?? undefined)
   return { path }
+}
+
+/**
+ * Deletes an Invoice document file from Dropbox (used for ETR replace/
+ * delete — the PDF/XLSX sync path never deletes, only overwrites in place).
+ * If the file was already removed by hand in Dropbox (path_lookup/
+ * not_found), this is treated as success, matching
+ * deleteCustomerDocumentFromDropbox: a Dropbox hiccup or stale state must
+ * never block the caller's DB cleanup.
+ */
+export async function deleteInvoiceDocumentFromDropbox(companyId: string, path: string): Promise<void> {
+  const { accessToken, pathRootNamespaceId } = await getDropboxApiContext(companyId)
+  try {
+    await dropboxApiFetch(accessToken, "/files/delete_v2", { path }, pathRootNamespaceId ?? undefined)
+  } catch (error) {
+    if (error instanceof DropboxApiError && error.errorTag?.startsWith("path_lookup/not_found")) {
+      return
+    }
+    throw error
+  }
 }
 
 interface GetTemporaryLinkResponse {

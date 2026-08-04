@@ -5,7 +5,7 @@ import { canAccess } from "@/lib/permissions"
 import { getInvoiceDocumentTemporaryLink, DropboxError } from "@/lib/dropbox"
 import type { Role } from "@/types"
 
-const FILE_TYPE_MAP = { pdf: "PDF", xlsx: "XLSX" } as const
+const FILE_TYPE_MAP = { pdf: "PDF", xlsx: "XLSX", etr: "ETR" } as const
 
 /**
  * Single stable link for the header's "Download PDF/Excel" buttons: if this
@@ -46,10 +46,15 @@ export async function GET(
     select: { storageKey: true, storageProvider: true },
   })
 
-  const fallbackUrl = new URL(`/api/quotations/invoices/${invoiceId}/${fileTypeParam.toLowerCase()}`, _request.url)
+  // ETR is a pure user upload with nothing to regenerate — unlike PDF/XLSX
+  // there is no fallback route, so a missing/non-Dropbox record is a clean
+  // 404 rather than a redirect to a route that doesn't exist for this type.
+  const isEtr = fileType === "ETR"
+  const fallbackUrl = isEtr ? null : new URL(`/api/quotations/invoices/${invoiceId}/${fileTypeParam.toLowerCase()}`, _request.url)
 
   if (!document || document.storageProvider !== "DROPBOX") {
-    return NextResponse.redirect(fallbackUrl)
+    if (fallbackUrl) return NextResponse.redirect(fallbackUrl)
+    return NextResponse.json({ error: "ETR not found" }, { status: 404 })
   }
 
   try {
@@ -58,11 +63,14 @@ export async function GET(
   } catch (error) {
     console.error("Invoice document Dropbox temporary link failed:", error)
     const notFound = error instanceof DropboxError && /not_found/i.test(error.message)
-    if (notFound) {
+    if (notFound && fallbackUrl) {
       // Dropbox file is gone but a local regeneration still works fine — never
       // dead-end the user's download because of stale Dropbox state.
       return NextResponse.redirect(fallbackUrl)
     }
-    return NextResponse.json({ error: "Failed to fetch document from Dropbox" }, { status: 502 })
+    return NextResponse.json(
+      { error: notFound ? "ETR not found in Dropbox" : "Failed to fetch document from Dropbox" },
+      { status: notFound ? 404 : 502 }
+    )
   }
 }
