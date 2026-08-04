@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { CustomerWithProjectsSchema, CustomerSchema } from "@/lib/schemas"
 import { generateCustomerCode } from "@/lib/utils"
 import { canAccess } from "@/lib/permissions"
-import { logActivity } from "@/lib/audit"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import { ensureCustomerFolder, DropboxError } from "@/lib/dropbox"
 import type { CustomerWithProjectsInput, CustomerInput } from "@/lib/schemas"
 import type { Role } from "@/types"
@@ -168,12 +168,22 @@ export async function setCustomerActive(id: string, isActive: boolean) {
   const permissions = (session.user.modulePermissions as string[]) ?? []
   if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   try {
     const existing = await prisma.customer.findFirst({ where: { id, companyId } })
     if (!existing) return { error: "Customer not found" }
 
     await prisma.customer.update({ where: { id }, data: { isActive } })
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.CUSTOMER,
+      entityId: id,
+      action: isActive ? AUDIT_ACTIONS.REACTIVATED : AUDIT_ACTIONS.DEACTIVATED,
+      performedById: userId,
+      metadata: { companyName: existing.companyName },
+    })
 
     revalidatePath("/customers")
     return { success: true }

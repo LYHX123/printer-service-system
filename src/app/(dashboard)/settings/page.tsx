@@ -1,4 +1,6 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
+import { ScrollText, ChevronRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCompanySettings } from "@/lib/data/settings"
 import { canManageSettings } from "@/lib/permissions"
@@ -54,6 +56,26 @@ export default async function SettingsPage({
         logoUrl={company.logoUrl}
       />
       <DropboxIntegrationCard status={dropboxStatus} initialToast={dropboxToast} />
+      {/* Audit Log is strictly Admin-only — same rule as System Initialization
+          below. The page itself (/settings/audit-log) re-checks role === "ADMIN"
+          server-side and never trusts this render gate as the real boundary. */}
+      {role === "ADMIN" && (
+        <Link
+          href="/settings/audit-log"
+          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100">
+              <ScrollText className="h-4 w-4 text-slate-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900"><T k="auditLog" /></p>
+              <p className="text-xs text-slate-500"><T k="auditLogCardDesc" /></p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-slate-400" />
+        </Link>
+      )}
       {/* System Initialization is strictly Admin-only — never shown to a
           non-admin even if they hold settings.edit, since it's a distinct,
           higher-stakes action than ordinary company-settings editing. The

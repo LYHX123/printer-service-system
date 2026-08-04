@@ -7,6 +7,7 @@ import { ShopAccountEntrySchema } from "@/lib/schemas"
 import { canCreateLedgerEntryPerm, canEditLedgerEntryPerm, canDeleteLedgerEntryPerm } from "@/lib/permissions"
 import { findOrCreateShopAccountCategory } from "@/lib/data/shopAccount"
 import { deleteShopAccountAttachment as deleteAttachmentFile } from "@/lib/uploads"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { ShopAccountEntryInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -50,6 +51,16 @@ export async function createShopAccountEntry(
     })
 
     revalidatePath("/ledger/shop")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SHOP_ACCOUNT_ENTRY,
+      entityId: created.id,
+      action: AUDIT_ACTIONS.CREATED,
+      performedById: userId,
+      metadata: { type, description, amount },
+    })
+
     return { success: true as const, id: created.id }
   } catch {
     return { error: "Failed to save record" }
@@ -63,6 +74,7 @@ export async function updateShopAccountEntry(id: string, data: ShopAccountEntryI
     return { error: "Forbidden" }
   }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   const parsed = ShopAccountEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
@@ -92,6 +104,16 @@ export async function updateShopAccountEntry(id: string, data: ShopAccountEntryI
     })
 
     revalidatePath("/ledger/shop")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SHOP_ACCOUNT_ENTRY,
+      entityId: id,
+      action: AUDIT_ACTIONS.UPDATED,
+      performedById: userId,
+      metadata: { type, description, amount },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to update record" }
@@ -105,6 +127,7 @@ export async function deleteShopAccountEntry(id: string) {
     return { error: "Forbidden" }
   }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   try {
     const existing = await prisma.shopAccountEntry.findFirst({ where: { id, companyId } })
@@ -116,6 +139,16 @@ export async function deleteShopAccountEntry(id: string) {
 
     await prisma.shopAccountEntry.delete({ where: { id } })
     revalidatePath("/ledger/shop")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SHOP_ACCOUNT_ENTRY,
+      entityId: id,
+      action: AUDIT_ACTIONS.DELETED,
+      performedById: userId,
+      metadata: { type: existing.type, description: existing.description, amount: Number(existing.amount) },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to delete record" }

@@ -44,6 +44,7 @@ import type {
   InvoiceStatus,
   ShopAccountCategory,
   ShopAccountEntry,
+  AuditLog,
 } from "@/generated/prisma/client"
 
 export type {
@@ -92,6 +93,7 @@ export type {
   InvoiceStatus,
   ShopAccountCategory,
   ShopAccountEntry,
+  AuditLog,
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────

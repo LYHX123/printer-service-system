@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canManageUsers, ADMIN_SELF_PROTECTED_PERMISSIONS } from "@/lib/permissions"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import {
   CreateUserSchema,
   UpdateUserRoleSchema,
@@ -31,6 +32,8 @@ export async function createUser(data: CreateUserInput) {
   if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
+  const performedById = session.user.id as string
+
   const parsed = CreateUserSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
 
@@ -46,9 +49,10 @@ export async function createUser(data: CreateUserInput) {
     if (existingByEmail) return { error: "A user with this email already exists" }
   }
 
+  let createdId: string
   try {
     const passwordHash = await bcrypt.hash(password, 10)
-    await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         companyId,
         name,
@@ -62,10 +66,22 @@ export async function createUser(data: CreateUserInput) {
       },
       select: { id: true },
     })
+    createdId = created.id
     revalidatePath("/users")
   } catch {
     return { error: "Failed to create user" }
   }
+
+  // Never log the password itself — only who/what/when, matching the rest
+  // of this file's password-reset handling in updateUserProfile below.
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.USER,
+    entityId: createdId,
+    action: AUDIT_ACTIONS.CREATED,
+    performedById,
+    metadata: { name, role },
+  })
 
   redirect("/users")
 }
@@ -84,11 +100,21 @@ export async function updateUserRole(id: string, data: UpdateUserRoleInput) {
   }
 
   try {
-    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true, name: true, role: true } })
     if (!existing) return { error: "User not found" }
 
     await prisma.user.update({ where: { id }, data: { role: parsed.data.role } })
     revalidatePath("/users")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.USER,
+      entityId: id,
+      action: AUDIT_ACTIONS.ROLE_CHANGED,
+      performedById: session.user.id as string,
+      metadata: { name: existing.name, from: existing.role, to: parsed.data.role },
+    })
+
     return { success: true }
   } catch {
     return { error: "Failed to update role" }
@@ -104,11 +130,21 @@ export async function setUserActive(id: string, isActive: boolean) {
   if (id === session.user.id) return { error: "You cannot disable your own account" }
 
   try {
-    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true, name: true } })
     if (!existing) return { error: "User not found" }
 
     await prisma.user.update({ where: { id }, data: { isActive } })
     revalidatePath("/users")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.USER,
+      entityId: id,
+      action: isActive ? AUDIT_ACTIONS.REACTIVATED : AUDIT_ACTIONS.DEACTIVATED,
+      performedById: session.user.id as string,
+      metadata: { name: existing.name },
+    })
+
     return { success: true }
   } catch {
     return { error: "Failed to update user status" }
@@ -135,11 +171,26 @@ export async function updateUserPermissions(id: string, data: UpdateUserPermissi
   }
 
   try {
-    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true, name: true, modulePermissions: true } })
     if (!existing) return { error: "User not found" }
 
     await prisma.user.update({ where: { id }, data: { modulePermissions: permissions } })
     revalidatePath("/users")
+
+    const before = new Set(existing.modulePermissions)
+    const after = new Set(permissions)
+    const addedPermissions = permissions.filter((p) => !before.has(p))
+    const removedPermissions = existing.modulePermissions.filter((p) => !after.has(p))
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.USER,
+      entityId: id,
+      action: AUDIT_ACTIONS.PERMISSIONS_UPDATED,
+      performedById: currentUserId,
+      metadata: { name: existing.name, addedPermissions, removedPermissions },
+    })
+
     return { success: true }
   } catch {
     return { error: "Failed to update permissions" }
@@ -186,7 +237,7 @@ export async function updateUserProfile(id: string, data: UpdateUserProfileInput
   if (existingByName) return { error: "A user with this name already exists" }
 
   try {
-    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true } })
+    const existing = await prisma.user.findFirst({ where: { id, companyId }, select: { id: true, name: true } })
     if (!existing) return { error: "User not found" }
 
     const updateData: Record<string, unknown> = {
@@ -196,12 +247,34 @@ export async function updateUserProfile(id: string, data: UpdateUserProfileInput
       position: trim(position),
     }
 
-    if (newPassword && newPassword.trim().length >= 8) {
-      updateData.passwordHash = await bcrypt.hash(newPassword.trim(), 10)
+    const isPasswordReset = Boolean(newPassword && newPassword.trim().length >= 8)
+    if (isPasswordReset) {
+      updateData.passwordHash = await bcrypt.hash(newPassword!.trim(), 10)
     }
 
     await prisma.user.update({ where: { id }, data: updateData })
     revalidatePath("/users")
+
+    // Never log the password itself, old or new — only that a reset happened.
+    if (isPasswordReset) {
+      await logActivity({
+        companyId,
+        entityType: AUDIT_ENTITY_TYPES.USER,
+        entityId: id,
+        action: AUDIT_ACTIONS.PASSWORD_RESET,
+        performedById: session.user.id as string,
+        metadata: { name },
+      })
+    }
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.USER,
+      entityId: id,
+      action: AUDIT_ACTIONS.UPDATED,
+      performedById: session.user.id as string,
+      metadata: { name },
+    })
+
     return { success: true }
   } catch {
     return { error: "Failed to update profile" }

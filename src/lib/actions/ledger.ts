@@ -9,6 +9,7 @@ import { canCreateLedgerEntryPerm, canEditLedgerEntryPerm, canDeleteLedgerEntryP
 import { findOrCreateLedgerCategory } from "@/lib/data/ledger"
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
 import { parseSalesReference } from "@/lib/ledger-reference"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { LedgerEntryInput, SalesLedgerEntryInput, ReceiptAllocationInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -116,13 +117,23 @@ export async function createLedgerEntry(data: LedgerEntryInput) {
         }
       }
 
-      return { success: true as const }
+      return { success: true as const, entryId: entry.id }
     })
 
     if ("error" in result) return result
 
     revalidatePath("/ledger/income-expense")
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.LEDGER_ENTRY,
+      entityId: result.entryId,
+      action: AUDIT_ACTIONS.CREATED,
+      performedById: userId,
+      metadata: { type, amount, allocationCount: allocations.length },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to save record" }
@@ -206,6 +217,16 @@ export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
 
     revalidatePath("/ledger/income-expense")
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.LEDGER_ENTRY,
+      entityId: id,
+      action: AUDIT_ACTIONS.UPDATED,
+      performedById: userId,
+      metadata: { type, amount, allocationCount: allocations.length },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to update record" }
@@ -217,6 +238,7 @@ export async function deleteLedgerEntry(id: string) {
   if (!session?.user) return { error: "Unauthorized" }
   if (!canDeleteLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "general")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   try {
     const existing = await prisma.ledgerEntry.findFirst({ where: { id, companyId } })
@@ -238,6 +260,16 @@ export async function deleteLedgerEntry(id: string) {
 
     revalidatePath("/ledger/income-expense")
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.LEDGER_ENTRY,
+      entityId: id,
+      action: AUDIT_ACTIONS.DELETED,
+      performedById: userId,
+      metadata: { type: existing.type, amount: Number(existing.amount) },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to delete record" }
@@ -261,7 +293,7 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
   const { referenceYear, referenceSequence } = parseSalesReference(orderNo, entryDate)
 
   try {
-    await prisma.salesLedgerEntry.create({
+    const created = await prisma.salesLedgerEntry.create({
       data: {
         companyId,
         date: entryDate,
@@ -277,9 +309,20 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
         createdById: userId,
         customerId: customerId || null,
       },
+      select: { id: true },
     })
 
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SALES_LEDGER_ENTRY,
+      entityId: created.id,
+      action: AUDIT_ACTIONS.CREATED,
+      performedById: userId,
+      metadata: { customerName, orderNo: orderNo || null, invoiceAmount },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to save record" }
@@ -291,6 +334,7 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
   if (!session?.user) return { error: "Unauthorized" }
   if (!canEditLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "sales")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   const parsed = SalesLedgerEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
@@ -331,6 +375,16 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
     })
 
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SALES_LEDGER_ENTRY,
+      entityId: id,
+      action: AUDIT_ACTIONS.UPDATED,
+      performedById: userId,
+      metadata: { customerName, orderNo: orderNo || null, invoiceAmount },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to update record" }
@@ -342,6 +396,7 @@ export async function setSalesLedgerEntryArchived(id: string, isArchived: boolea
   if (!session?.user) return { error: "Unauthorized" }
   if (!canEditLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "sales")) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   try {
     const existing = await prisma.salesLedgerEntry.findFirst({ where: { id, companyId } })
@@ -349,6 +404,16 @@ export async function setSalesLedgerEntryArchived(id: string, isArchived: boolea
 
     await prisma.salesLedgerEntry.update({ where: { id }, data: { isArchived } })
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SALES_LEDGER_ENTRY,
+      entityId: id,
+      action: isArchived ? AUDIT_ACTIONS.ARCHIVED : AUDIT_ACTIONS.REACTIVATED,
+      performedById: userId,
+      metadata: { customerName: existing.customerName },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to update record" }

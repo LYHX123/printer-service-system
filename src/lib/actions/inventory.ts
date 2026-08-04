@@ -8,6 +8,7 @@ import { SparePartSchema, StockMovementSchema } from "@/lib/schemas"
 import { generatePartNumber } from "@/lib/utils"
 import { canManageInventory } from "@/lib/permissions"
 import { getStockType } from "@/lib/stock-types"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { SparePartInput, StockMovementInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -92,6 +93,15 @@ export async function createSparePart(
     return { error: "Failed to create spare part" }
   }
 
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.STOCK,
+    entityId: part.id,
+    action: AUDIT_ACTIONS.CREATED,
+    performedById: userId,
+    metadata: { name, category, quantity },
+  })
+
   return { success: true as const, id: part.id }
 }
 
@@ -167,6 +177,15 @@ export async function updateSparePart(id: string, data: SparePartInput) {
     return { error: "Failed to update spare part" }
   }
 
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.STOCK,
+    entityId: id,
+    action: AUDIT_ACTIONS.UPDATED,
+    performedById: userId,
+    metadata: { name, category, quantity },
+  })
+
   redirect(`/stock?type=${getStockType(category)}`)
 }
 
@@ -175,12 +194,22 @@ export async function setSparePartActive(id: string, isActive: boolean) {
   if (!session?.user) return { error: "Unauthorized" }
   if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   try {
     const existing = await prisma.sparePart.findFirst({ where: { id, companyId } })
     if (!existing) return { error: "Part not found" }
 
     await prisma.sparePart.update({ where: { id }, data: { isActive } })
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.STOCK,
+      entityId: id,
+      action: isActive ? AUDIT_ACTIONS.REACTIVATED : AUDIT_ACTIONS.DEACTIVATED,
+      performedById: userId,
+      metadata: { name: existing.name },
+    })
 
     revalidatePath(`/stock/${id}/edit`)
     revalidatePath("/stock")
@@ -267,6 +296,16 @@ export async function recordStockMovement(partId: string, data: StockMovementInp
     revalidatePath("/stock")
     revalidatePath("/stock/movements")
     revalidatePath(`/stock/${partId}/edit`)
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.STOCK,
+      entityId: partId,
+      action: AUDIT_ACTIONS.ADJUSTED,
+      performedById: userId,
+      metadata: { name: existing.name, movementType: type, quantity, reference: reference || null },
+    })
+
     return { success: true }
   } catch {
     return { error: "Failed to record stock movement" }

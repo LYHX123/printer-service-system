@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canAccess, canEditInvoice } from "@/lib/permissions"
 import { ALLOWED_ETR_TYPES, MAX_DOCUMENT_SIZE } from "@/lib/constants"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import {
   getDropboxConnectionStatus,
   ensureInvoiceMonthFolders,
@@ -57,7 +58,8 @@ async function checkPermission() {
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth_ = await checkPermission()
   if ("error" in auth_) return auth_.error
-  const { companyId } = auth_
+  const { session, companyId } = auth_
+  const userId = session.user.id as string
   const { id: invoiceId } = await params
 
   const invoice = await prisma.invoice.findFirst({
@@ -169,6 +171,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
   }
 
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.INVOICE_DOCUMENT,
+    entityId: document.id,
+    action: existing ? AUDIT_ACTIONS.REPLACED : AUDIT_ACTIONS.UPLOADED,
+    performedById: userId,
+    metadata: { invoiceId, invoiceNumber: invoice.invoiceNumber, fileName: file.name },
+  })
+
   revalidatePath(`/quotations/invoices/${invoiceId}`)
   return NextResponse.json({ document })
 }
@@ -183,7 +194,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth_ = await checkPermission()
   if ("error" in auth_) return auth_.error
-  const { companyId } = auth_
+  const { session, companyId } = auth_
+  const userId = session.user.id as string
   const { id: invoiceId } = await params
 
   const document = await prisma.invoiceDocument.findFirst({
@@ -206,6 +218,15 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   }
 
   await prisma.invoiceDocument.delete({ where: { id: document.id } })
+
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.INVOICE_DOCUMENT,
+    entityId: document.id,
+    action: AUDIT_ACTIONS.REMOVED,
+    performedById: userId,
+    metadata: { invoiceId, fileName: document.originalFileName },
+  })
 
   revalidatePath(`/quotations/invoices/${invoiceId}`)
   return NextResponse.json({ success: true })

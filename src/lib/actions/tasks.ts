@@ -16,7 +16,7 @@ import {
 } from "@/lib/permissions"
 import { getTaskStepForAuth } from "@/lib/data/tasks"
 import { deleteTaskStepImage } from "@/lib/uploads"
-import { logActivity } from "@/lib/audit"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { CreateTaskInput, AddTaskStepInput, AddTaskParticipantsInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -60,6 +60,16 @@ export async function createTask(data: CreateTaskInput) {
     })
 
     revalidate()
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.TASK,
+      entityId: task.id,
+      action: AUDIT_ACTIONS.CREATED,
+      performedById: userId,
+      metadata: { title, participantCount: participantIds.length },
+    })
+
     return { success: true as const, taskId: task.id, initialStepId: task.steps[0].id }
   } catch {
     return { error: "Failed to create task" }
@@ -101,6 +111,16 @@ export async function addTaskStep(taskId: string, data: AddTaskStepInput) {
     })
 
     revalidate()
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.TASK_STEP,
+      entityId: step.id,
+      action: AUDIT_ACTIONS.CREATED,
+      performedById: userId,
+      metadata: { taskId, title },
+    })
+
     return { success: true as const, stepId: step.id }
   } catch {
     return { error: "Failed to add step" }
@@ -223,6 +243,16 @@ export async function completeTask(taskId: string) {
     })
 
     revalidate()
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.TASK,
+      entityId: taskId,
+      action: AUDIT_ACTIONS.STATUS_CHANGED,
+      performedById: userId,
+      metadata: { title: task.title, toStatus: "COMPLETED" },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to complete task" }
@@ -236,6 +266,7 @@ export async function reopenTask(taskId: string) {
   if (!canAccess(role, "tasks", session.user.modulePermissions) || !canReopenTask(role)) return { error: "Forbidden" }
 
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   try {
     const task = await prisma.task.findFirst({ where: { id: taskId, companyId } })
@@ -247,6 +278,16 @@ export async function reopenTask(taskId: string) {
     })
 
     revalidate()
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.TASK,
+      entityId: taskId,
+      action: AUDIT_ACTIONS.STATUS_CHANGED,
+      performedById: userId,
+      metadata: { title: task.title, toStatus: "ACTIVE" },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to reopen task" }
@@ -276,6 +317,16 @@ export async function deleteTask(taskId: string) {
     await prisma.task.delete({ where: { id: taskId } })
 
     revalidate()
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.TASK,
+      entityId: taskId,
+      action: AUDIT_ACTIONS.DELETED,
+      performedById: userId,
+      metadata: { title: task.title },
+    })
+
     return { success: true as const }
   } catch {
     return { error: "Failed to delete task" }

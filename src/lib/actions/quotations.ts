@@ -185,6 +185,15 @@ export async function createQuotation(data: QuotationInput) {
     console.error(`Failed to create V1 snapshot for quotation ${quotation.id}:`, err)
   }
 
+  await logActivity({
+    companyId,
+    entityType: "Quotation",
+    entityId: quotation.id,
+    action: "CREATED",
+    performedById: userId,
+    metadata: { quotationNumber, itemCount: items.length },
+  })
+
   // Best-effort V1 Dropbox sync — the Quotation record above is already safely
   // committed regardless of what happens here (no Short Name yet, Dropbox
   // down, generation failure, ...). Never blocks/undoes quotation creation;
@@ -335,6 +344,15 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       })
     }
 
+    await logActivity({
+      companyId,
+      entityType: "Quotation",
+      entityId: id,
+      action: "ADJUSTED",
+      performedById: session.user.id as string,
+      metadata: { quotationNumber, fromVersion: newVersion - 1, toVersion: newVersion },
+    })
+
     revalidatePath(`/quotations/${id}`)
     revalidatePath("/quotations")
   } catch (err) {
@@ -412,9 +430,11 @@ export async function updateQuotationStatus(id: string, data: QuotationStatusInp
     // Approve-time FINAL snapshot — best-effort, same "never blocks/undoes
     // the status change" rule as everywhere else. Built from the quotation's
     // current version (currentVersion), never re-reading an older one.
+    let finalGenerated = false
     if (parsed.data.toStatus === "APPROVED") {
       try {
         const result = await syncQuotationFinalToDropbox(id, companyId, updated.currentVersion)
+        finalGenerated = result.synced.length > 0
         if (result.errors.length > 0) {
           console.error(`Quotation ${id} FINAL Dropbox sync had errors:`, result.errors)
         }
@@ -422,6 +442,18 @@ export async function updateQuotationStatus(id: string, data: QuotationStatusInp
         console.error(`Quotation ${id} FINAL Dropbox sync failed:`, err)
       }
     }
+
+    await logActivity({
+      companyId,
+      entityType: "Quotation",
+      entityId: id,
+      action: parsed.data.toStatus === "APPROVED" ? "APPROVED" : "STATUS_CHANGED",
+      performedById: session.user.id as string,
+      metadata:
+        parsed.data.toStatus === "APPROVED"
+          ? { approvedFromVersion: updated.currentVersion, finalGenerated }
+          : { from: existing.status, to: parsed.data.toStatus },
+    })
 
     return { success: true }
   } catch {
@@ -455,10 +487,11 @@ export async function resyncQuotationDropbox(
   const permissions = (session.user.modulePermissions as string[]) ?? []
   if (!canExportQuotation(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   const existing = await prisma.quotation.findFirst({
     where: { id, companyId },
-    select: { status: true, currentVersion: true },
+    select: { status: true, currentVersion: true, quotationNumber: true },
   })
   if (!existing) return { error: "Quotation not found" }
 
@@ -480,6 +513,16 @@ export async function resyncQuotationDropbox(
   if (result.synced.length === 0) return { error: result.errors[0] ?? "Failed to sync to Dropbox" }
 
   revalidatePath(`/quotations/${id}`)
+
+  await logActivity({
+    companyId,
+    entityType: "Quotation",
+    entityId: id,
+    action: "DROPBOX_RESYNCED",
+    performedById: userId,
+    metadata: { quotationNumber: existing.quotationNumber, synced: result.synced },
+  })
+
   return { success: true as const, synced: result.synced }
 }
 

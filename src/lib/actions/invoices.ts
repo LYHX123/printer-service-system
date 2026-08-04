@@ -18,6 +18,7 @@ import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
 import { getStockType } from "@/lib/stock-types"
 import { syncInvoiceToDropbox } from "@/lib/invoiceExcel/dropboxSync"
+import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { GenerateInvoiceInput, DirectInvoiceInput } from "@/lib/schemas"
 import type { Role } from "@/types"
 
@@ -137,6 +138,15 @@ export async function generateInvoice(quotationId: string, data: GenerateInvoice
     return { error: "Failed to generate invoice" }
   }
 
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.INVOICE,
+    entityId: invoiceId,
+    action: AUDIT_ACTIONS.CREATED,
+    performedById: userId,
+    metadata: { invoiceNumber, source: "FROM_QUOTATION", quotationId },
+  })
+
   await syncInvoiceToDropboxBestEffort(invoiceId, companyId)
 
   redirect(`/quotations/invoices/${invoiceId}`)
@@ -225,6 +235,15 @@ export async function createDirectInvoice(data: DirectInvoiceInput) {
     return { error: "Failed to create invoice" }
   }
 
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.INVOICE,
+    entityId: invoiceId,
+    action: AUDIT_ACTIONS.CREATED,
+    performedById: userId,
+    metadata: { invoiceNumber, source: "DIRECT" },
+  })
+
   await syncInvoiceToDropboxBestEffort(invoiceId, companyId)
 
   redirect(`/quotations/invoices/${invoiceId}`)
@@ -236,6 +255,7 @@ export async function updateInvoice(id: string, data: DirectInvoiceInput) {
   if (!session?.user) return { error: "Unauthorized" }
   if (!canEditInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   const parsed = DirectInvoiceSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
@@ -314,6 +334,15 @@ export async function updateInvoice(id: string, data: DirectInvoiceInput) {
     return { error: "Failed to update invoice" }
   }
 
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.INVOICE,
+    entityId: id,
+    action: AUDIT_ACTIONS.UPDATED,
+    performedById: userId,
+    metadata: { invoiceNumber },
+  })
+
   // Re-sync (in place, no versioning — see the InvoiceDocument schema
   // comment) so an already-synced Dropbox copy never goes stale after an
   // edit. Not a new "Invoice Adjust" feature — updateInvoice already existed
@@ -334,10 +363,11 @@ export async function deleteInvoice(id: string): Promise<{ error: string } | { s
   if (!session?.user) return { error: "Unauthorized" }
   if (!canDeleteInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
   const invoice = await prisma.invoice.findFirst({
     where: { id, companyId },
-    select: { status: true, salesLedgerEntry: { select: { id: true } } },
+    select: { status: true, invoiceNumber: true, salesLedgerEntry: { select: { id: true } } },
   })
   if (!invoice) return { error: "Invoice not found" }
   if (invoice.salesLedgerEntry) {
@@ -350,6 +380,16 @@ export async function deleteInvoice(id: string): Promise<{ error: string } | { s
   try {
     await prisma.invoice.delete({ where: { id } })
     revalidatePath("/quotations/invoices")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.INVOICE,
+      entityId: id,
+      action: AUDIT_ACTIONS.DELETED,
+      performedById: userId,
+      metadata: { invoiceNumber: invoice.invoiceNumber },
+    })
+
     return { success: true }
   } catch (err) {
     console.error("deleteInvoice failed:", err)
@@ -406,6 +446,16 @@ export async function createSalesLedgerFromInvoice(
 
     revalidatePath(`/quotations/invoices/${invoiceId}`)
     revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SALES_LEDGER_ENTRY,
+      entityId: entry.id,
+      action: AUDIT_ACTIONS.CREATED,
+      performedById: userId,
+      metadata: { invoiceId, invoiceNumber: invoice.invoiceNumber },
+    })
+
     return { success: true, id: entry.id }
   } catch (err) {
     console.error("createSalesLedgerFromInvoice failed:", err)
@@ -505,6 +555,16 @@ export async function confirmInvoice(
     revalidatePath(`/quotations/invoices/${invoiceId}`)
     revalidatePath("/quotations/invoices")
     revalidatePath("/stock")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.INVOICE,
+      entityId: invoiceId,
+      action: AUDIT_ACTIONS.CONFIRMED,
+      performedById: userId,
+      metadata: { invoiceNumber: invoice.invoiceNumber },
+    })
+
     return { success: true }
   } catch (err) {
     console.error("confirmInvoice failed:", err)
@@ -577,6 +637,16 @@ export async function cancelInvoice(invoiceId: string): Promise<{ error: string 
     revalidatePath(`/quotations/invoices/${invoiceId}`)
     revalidatePath("/quotations/invoices")
     revalidatePath("/stock")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.INVOICE,
+      entityId: invoiceId,
+      action: AUDIT_ACTIONS.CANCELLED,
+      performedById: userId,
+      metadata: { invoiceNumber: invoice.invoiceNumber },
+    })
+
     return { success: true }
   } catch (err) {
     console.error("cancelInvoice failed:", err)
@@ -599,8 +669,9 @@ export async function resyncInvoiceDropbox(
   if (!session?.user) return { error: "Unauthorized" }
   if (!canEditInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
+  const userId = session.user.id as string
 
-  const existing = await prisma.invoice.findFirst({ where: { id, companyId }, select: { id: true } })
+  const existing = await prisma.invoice.findFirst({ where: { id, companyId }, select: { id: true, invoiceNumber: true } })
   if (!existing) return { error: "Invoice not found" }
 
   const result = await syncInvoiceToDropbox(id, companyId)
@@ -612,5 +683,15 @@ export async function resyncInvoiceDropbox(
   if (result.synced.length === 0) return { error: result.errors[0] ?? "Failed to sync to Dropbox" }
 
   revalidatePath(`/quotations/invoices/${id}`)
+
+  await logActivity({
+    companyId,
+    entityType: AUDIT_ENTITY_TYPES.INVOICE,
+    entityId: id,
+    action: AUDIT_ACTIONS.DROPBOX_RESYNCED,
+    performedById: userId,
+    metadata: { invoiceNumber: existing.invoiceNumber, synced: result.synced },
+  })
+
   return { success: true as const, synced: result.synced }
 }

@@ -391,6 +391,27 @@ export type TranslationKey =
   | "failedToUploadLogo"
   | "logoFormatHint"
   | "fullCompanyAddress"
+  // Audit Log
+  | "auditLog"
+  | "auditLogDesc"
+  | "auditLogCardDesc"
+  | "auditLogSearchPlaceholder"
+  | "auditLogAllUsers"
+  | "auditLogAllModules"
+  | "auditLogAllActions"
+  | "auditLogColumnTime"
+  | "auditLogColumnUser"
+  | "auditLogColumnModule"
+  | "auditLogColumnAction"
+  | "auditLogColumnSummary"
+  | "auditLogDetailTitle"
+  | "auditLogNoDetails"
+  | "auditLogEmptyTitle"
+  | "auditLogEmptyDesc"
+  | "auditLogPageInfo"
+  | "auditLogTotalResults"
+  | "auditLogPrevious"
+  | "auditLogNext"
   // Dropbox Integration
   | "dropboxIntegration"
   | "dropboxIntegrationDesc"
@@ -1225,6 +1246,27 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     failedToUploadLogo: "Failed to upload logo",
     logoFormatHint: "PNG, JPG or WEBP. Max 5MB.",
     fullCompanyAddress: "Full company address",
+    // Audit Log
+    auditLog: "Audit Log",
+    auditLogDesc: "A record of who did what and when, across every module.",
+    auditLogCardDesc: "View a filterable history of system activity — Admin only.",
+    auditLogSearchPlaceholder: "Search by action, module, or user...",
+    auditLogAllUsers: "All Users",
+    auditLogAllModules: "All Modules",
+    auditLogAllActions: "All Actions",
+    auditLogColumnTime: "Time",
+    auditLogColumnUser: "User",
+    auditLogColumnModule: "Module",
+    auditLogColumnAction: "Action",
+    auditLogColumnSummary: "Summary",
+    auditLogDetailTitle: "Activity Details",
+    auditLogNoDetails: "No additional details recorded for this entry.",
+    auditLogEmptyTitle: "No activity found",
+    auditLogEmptyDesc: "No audit log entries match the current filters.",
+    auditLogPageInfo: "Page {page} of {totalPages}",
+    auditLogTotalResults: "{count} results",
+    auditLogPrevious: "Previous",
+    auditLogNext: "Next",
     // Dropbox Integration
     dropboxIntegration: "Dropbox Integration",
     dropboxIntegrationDesc: "Connect Dropbox to store Customer, Quotation, and Invoice files.",
@@ -1925,6 +1967,27 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     failedToUploadLogo: "徽标上传失败",
     logoFormatHint: "PNG、JPG 或 WEBP 格式，最大 5MB。",
     fullCompanyAddress: "公司完整地址",
+    // Audit Log
+    auditLog: "系统日志",
+    auditLogDesc: "记录各模块中谁在何时执行了何种操作。",
+    auditLogCardDesc: "查看可筛选的系统活动历史记录——仅限管理员。",
+    auditLogSearchPlaceholder: "按操作、模块或用户搜索…",
+    auditLogAllUsers: "所有用户",
+    auditLogAllModules: "所有模块",
+    auditLogAllActions: "所有操作",
+    auditLogColumnTime: "时间",
+    auditLogColumnUser: "用户",
+    auditLogColumnModule: "模块",
+    auditLogColumnAction: "操作",
+    auditLogColumnSummary: "摘要",
+    auditLogDetailTitle: "活动详情",
+    auditLogNoDetails: "此记录没有额外的详细信息。",
+    auditLogEmptyTitle: "未找到相关活动",
+    auditLogEmptyDesc: "没有符合当前筛选条件的日志记录。",
+    auditLogPageInfo: "第 {page} 页，共 {totalPages} 页",
+    auditLogTotalResults: "共 {count} 条结果",
+    auditLogPrevious: "上一页",
+    auditLogNext: "下一页",
     // Dropbox Integration
     dropboxIntegration: "Dropbox 集成",
     dropboxIntegrationDesc: "连接 Dropbox 以存储 Customer、Quotation 和 Invoice 文件。",
