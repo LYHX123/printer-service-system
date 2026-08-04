@@ -77,13 +77,25 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 # out to the registry for a different one.
 COPY --from=deps /app/node_modules ./node_modules
 
-# Ensure the uploads directory exists and is writable by the app user.
+# Ensure every directory the app writes to at runtime exists and is owned by
+# the unprivileged nextjs user it actually runs as (see USER below):
+#   - public/uploads: Customer/Job/etc. file uploads (LocalStorageProvider)
+#   - storage/generated/{quotation,invoice}: Excel/PDF generation scratch
+#     output (src/lib/quotationExcel/generate.ts, src/lib/invoiceExcel/generate.ts)
+#     — this one bit production: these dirs previously got here (if at all)
+#     as a side effect of Next's standalone output tracing, root-owned like
+#     everything else COPY brings in, so every quotation Excel/PDF write
+#     failed with EACCES — which silently broke *both* the automatic
+#     Dropbox sync on create/Adjust/Approve and the manual "Sync to
+#     Dropbox" retry (they share the same generation code, so there was
+#     never a permission-having path to retry into).
 # node_modules/prisma is included here too: the Prisma CLI writes a small
 # engine-checksum/cache file under node_modules/@prisma/engines on first run
 # (even for read-only commands like `--version` or `migrate deploy`) — left
 # root-owned (the default for a Dockerfile COPY), it fails with "Can't write
 # to .../@prisma/engines" once running as the unprivileged nextjs user below.
-RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads ./node_modules ./prisma .next
+RUN mkdir -p ./public/uploads ./storage/generated/quotation ./storage/generated/invoice \
+  && chown -R nextjs:nodejs ./public/uploads ./storage ./node_modules ./prisma .next
 
 USER nextjs
 

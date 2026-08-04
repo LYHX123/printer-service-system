@@ -469,6 +469,13 @@ export async function resyncQuotationDropbox(
         ? await syncQuotationFinalToDropbox(id, companyId, existing.currentVersion)
         : await syncQuotationVersionToDropbox(id, companyId, existing.currentVersion)
 
+  if (result.errors.length > 0) {
+    // syncOneFile/generateExcelBufferSafe already console.error the raw
+    // exception at the point it happened; this one line ties the whole
+    // manual-retry attempt together for whoever's reading server logs.
+    console.error(`Quotation ${id} manual Dropbox retry had errors:`, result.errors)
+  }
+
   if (result.skippedReason) return { error: result.skippedReason }
   if (result.synced.length === 0) return { error: result.errors[0] ?? "Failed to sync to Dropbox" }
 

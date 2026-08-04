@@ -45,6 +45,7 @@ async function generateExcelBufferSafe(quotation: QuotationPdfData, errors: stri
     const excelPath = await generateQuotationExcel(quotation)
     return await readFile(excelPath)
   } catch (error) {
+    console.error(`[quotation ${quotation.id}] Excel generation failed:`, error)
     errors.push(`Excel generation failed: ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
@@ -88,15 +89,35 @@ interface SyncOneFileParams {
   errors: string[]
 }
 
+/**
+ * Upload and DB-save are deliberately two separate try/catches — an upload
+ * failure (Dropbox unreachable, Path Root/namespace error, folder create
+ * failed, ...) and a save failure (DB unreachable, constraint violation,
+ * ...) are different failure classes, and section 2 of the runbook this
+ * function backs asks for that distinction to survive into the error
+ * message rather than being collapsed into one generic "sync failed". Both
+ * branches also `console.error` immediately, so the real exception always
+ * reaches server logs even if a caller only inspects `errors[0]` (or, in
+ * resyncQuotationDropbox's case, forwards it straight to the client toast).
+ */
 async function syncOneFile(params: SyncOneFileParams): Promise<boolean> {
   const { companyId, quotationId, shortName, quotationNumber, fileType, extension, buffer, mimeType, version, isFinal, errors } = params
+  const fileName = isFinal
+    ? buildQuotationFinalFileName(quotationNumber, shortName, extension)
+    : buildQuotationVersionFileName(quotationNumber, shortName, version, extension)
+  const label = isFinal ? `${fileType} FINAL` : `${fileType} v${version}`
+
+  let path: string
   try {
-    const fileName = isFinal
-      ? buildQuotationFinalFileName(quotationNumber, shortName, extension)
-      : buildQuotationVersionFileName(quotationNumber, shortName, version, extension)
+    ;({ path } = await uploadQuotationDocumentToDropbox(companyId, shortName, fileName, buffer))
+  } catch (error) {
+    const detail = error instanceof DropboxError ? error.message : error instanceof Error ? error.message : String(error)
+    console.error(`[quotation ${quotationId}] ${label} Dropbox upload failed:`, error)
+    errors.push(`${label} Dropbox upload failed: ${detail}`)
+    return false
+  }
 
-    const { path } = await uploadQuotationDocumentToDropbox(companyId, shortName, fileName, buffer)
-
+  try {
     await prisma.quotationDocument.upsert({
       where: { quotationId_fileType_version_isFinal: { quotationId, fileType, version, isFinal } },
       create: {
@@ -119,9 +140,14 @@ async function syncOneFile(params: SyncOneFileParams): Promise<boolean> {
     })
     return true
   } catch (error) {
-    errors.push(
-      `${fileType} Dropbox upload failed: ${error instanceof DropboxError ? error.message : error instanceof Error ? error.message : String(error)}`
-    )
+    // The file is already sitting in Dropbox at `path` at this point — only
+    // the local database record failed to save. Left as-is rather than
+    // attempting to delete the just-uploaded file: the next sync attempt
+    // (auto or Retry) re-uploads to the exact same deterministic path
+    // (overwrite) and will succeed in saving the record once the DB issue
+    // clears, so nothing is lost either way.
+    console.error(`[quotation ${quotationId}] ${label} QuotationDocument DB save failed (file uploaded to Dropbox at ${path}):`, error)
+    errors.push(`${label} saved to Dropbox but the database record failed to save: ${error instanceof Error ? error.message : String(error)}`)
     return false
   }
 }
