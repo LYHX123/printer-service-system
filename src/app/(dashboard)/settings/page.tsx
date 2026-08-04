@@ -6,6 +6,7 @@ import { getDropboxConnectionStatus } from "@/lib/dropbox"
 import { PageHeader } from "@/components/ui/page-header"
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm"
 import { DropboxIntegrationCard } from "@/components/settings/DropboxIntegrationCard"
+import { SystemInitializationPanel } from "@/components/settings/SystemInitializationPanel"
 import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
@@ -53,6 +54,12 @@ export default async function SettingsPage({
         logoUrl={company.logoUrl}
       />
       <DropboxIntegrationCard status={dropboxStatus} initialToast={dropboxToast} />
+      {/* System Initialization is strictly Admin-only — never shown to a
+          non-admin even if they hold settings.edit, since it's a distinct,
+          higher-stakes action than ordinary company-settings editing. The
+          server action (src/lib/actions/systemInit.ts) re-checks role
+          itself and never trusts this render gate as the real boundary. */}
+      {role === "ADMIN" && <SystemInitializationPanel isProduction={process.env.NODE_ENV === "production"} />}
     </div>
   )
 }

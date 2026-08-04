@@ -348,6 +348,36 @@ export type TranslationKey =
   // Settings
   | "companySettings"
   | "companySettingsDesc"
+  | "systemInitializationTitle"
+  | "systemInitializationDangerZone"
+  | "systemInitializationDangerZoneWarning"
+  | "systemInitializationButton"
+  | "systemInitSelectModulesTitle"
+  | "systemInitSelectAll"
+  | "systemInitNoModuleSelected"
+  | "systemInitContinue"
+  | "systemInitPreviewTitle"
+  | "systemInitSelectedModules"
+  | "systemInitAutomaticallyRequired"
+  | "systemInitEstimatedRecords"
+  | "systemInitResetNumbering"
+  | "systemInitResetNumberingHint"
+  | "systemInitConfirmationWarning"
+  | "systemInitTypeToConfirm"
+  | "systemInitProductionAck"
+  | "systemInitProductionBanner"
+  | "systemInitBack"
+  | "systemInitConfirmButton"
+  | "systemInitCompleted"
+  | "systemInitDeletedLabel"
+  | "systemInitPreservedLabel"
+  | "systemInitPreservedList"
+  | "systemInitClose"
+  | "systemInitPreviewLoading"
+  | "systemInitPreviewFailed"
+  | "systemInitExecuting"
+  | "systemInitDropboxNotice"
+  | "systemInitRecordsSuffix"
   | "phoneNumber"
   | "website"
   | "kraPin"
@@ -1127,6 +1157,38 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // Settings
     companySettings: "Company Settings",
     companySettingsDesc: "Manage your company profile, branding, and regional preferences.",
+    systemInitializationTitle: "System Initialization",
+    systemInitializationDangerZone: "Danger Zone",
+    systemInitializationDangerZoneWarning:
+      "Selectively delete business data before going live. This cannot be undone. Users, permissions, settings, Dropbox connection and Dropbox files are never affected.",
+    systemInitializationButton: "Initialize System",
+    systemInitSelectModulesTitle: "Select Modules to Initialize",
+    systemInitSelectAll: "Select All Business Data",
+    systemInitNoModuleSelected: "Please select at least one module to initialize.",
+    systemInitContinue: "Continue",
+    systemInitPreviewTitle: "Preview",
+    systemInitSelectedModules: "Selected Modules",
+    systemInitAutomaticallyRequired: "Automatically Required",
+    systemInitEstimatedRecords: "Estimated Records To Delete",
+    systemInitResetNumbering: "Reset Business Numbering",
+    systemInitResetNumberingHint: "Only resets numbering for the modules selected above. Unselected modules keep their numbering untouched.",
+    systemInitConfirmationWarning:
+      "You are about to permanently delete the selected business data. This operation cannot be undone. Dropbox files will NOT be deleted. Users, permissions, settings and the Dropbox connection will be preserved.",
+    systemInitTypeToConfirm: "Type INITIALIZE to confirm",
+    systemInitProductionAck: "I understand that the selected production data will be permanently deleted.",
+    systemInitProductionBanner: "PRODUCTION DATABASE",
+    systemInitBack: "Back",
+    systemInitConfirmButton: "Initialize",
+    systemInitCompleted: "Initialization Completed",
+    systemInitDeletedLabel: "Deleted",
+    systemInitPreservedLabel: "Preserved",
+    systemInitPreservedList: "Users, permissions, settings, Dropbox connection, and all Dropbox files",
+    systemInitClose: "Close",
+    systemInitPreviewLoading: "Building preview…",
+    systemInitPreviewFailed: "Failed to build preview. Please try again.",
+    systemInitExecuting: "Initializing…",
+    systemInitDropboxNotice: "Dropbox files (Customer/Quotation/Invoice folders, V1-FINAL files, ETR) are never touched by this tool.",
+    systemInitRecordsSuffix: "records",
     phoneNumber: "Phone Number",
     website: "Website",
     kraPin: "KRA PIN",
@@ -1782,6 +1844,36 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // Settings
     companySettings: "公司设置",
     companySettingsDesc: "管理您的公司资料、品牌和区域设置。",
+    systemInitializationTitle: "系统初始化",
+    systemInitializationDangerZone: "危险操作区",
+    systemInitializationDangerZoneWarning: "在正式上线前选择性清除业务数据。此操作无法撤销。用户、权限、设置、Dropbox 连接及 Dropbox 文件永远不受影响。",
+    systemInitializationButton: "初始化系统",
+    systemInitSelectModulesTitle: "选择要初始化的模块",
+    systemInitSelectAll: "全选所有业务数据",
+    systemInitNoModuleSelected: "请至少选择一个要初始化的模块。",
+    systemInitContinue: "继续",
+    systemInitPreviewTitle: "预览",
+    systemInitSelectedModules: "已选择的模块",
+    systemInitAutomaticallyRequired: "自动附加的必需模块",
+    systemInitEstimatedRecords: "预计删除的记录数",
+    systemInitResetNumbering: "重置业务编号",
+    systemInitResetNumberingHint: "仅重置以上已选模块对应的编号，未选择的模块编号不受影响。",
+    systemInitConfirmationWarning: "您即将永久删除已选择的业务数据。此操作无法撤销。Dropbox 文件不会被删除。用户、权限、设置及 Dropbox 连接将被保留。",
+    systemInitTypeToConfirm: "请输入 INITIALIZE 以确认",
+    systemInitProductionAck: "我理解所选的生产环境数据将被永久删除。",
+    systemInitProductionBanner: "生产数据库",
+    systemInitBack: "上一步",
+    systemInitConfirmButton: "初始化",
+    systemInitCompleted: "初始化已完成",
+    systemInitDeletedLabel: "已删除",
+    systemInitPreservedLabel: "已保留",
+    systemInitPreservedList: "用户、权限、设置、Dropbox 连接及全部 Dropbox 文件",
+    systemInitClose: "关闭",
+    systemInitPreviewLoading: "正在生成预览…",
+    systemInitPreviewFailed: "生成预览失败，请重试。",
+    systemInitExecuting: "正在初始化…",
+    systemInitDropboxNotice: "本工具不会触碰 Dropbox 文件（Customer/Quotation/Invoice 文件夹、V1-FINAL 文件、ETR 均不受影响）。",
+    systemInitRecordsSuffix: "条记录",
     phoneNumber: "电话号码",
     website: "网站",
     kraPin: "KRA PIN",
