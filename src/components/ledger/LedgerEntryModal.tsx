@@ -53,6 +53,12 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
   const toast = useToast()
   const { t } = useLanguage()
   const isEditing = Boolean(entry)
+  // Type is only ever pre-selected via Add Income/Add Expense (the sole entry
+  // point for create mode — see LedgerAddButtons), so locking it whenever
+  // we're not editing is exactly "lock it for new entries created that way."
+  // Editing an existing entry never sets this, so its Type field stays exactly
+  // as before (interactive, showing the entry's real stored type).
+  const isTypeLocked = !isEditing
 
   const [customerDisplayName, setCustomerDisplayName] = useState(entry?.customer?.companyName ?? "")
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(entry?.customerId ?? "")
@@ -200,22 +206,37 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
     >
       <form id="ledger-entry-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <FormField label={t("type")} htmlFor="entryType" required error={errors.type?.message}>
-          <Select
-            id="entryType"
-            {...register("type")}
-            onChange={(e) => {
-              setValue("type", e.target.value as LedgerEntryType)
-              setValue("categoryId", "")
-              if (e.target.value !== "INCOME") {
-                setSelectedCustomerId("")
-                setCustomerDisplayName("")
-                setAllocationInputs({})
-              }
-            }}
-          >
-            <option value="INCOME">{t("income")}</option>
-            <option value="EXPENSE">{t("expense")}</option>
-          </Select>
+          {isTypeLocked ? (
+            <>
+              {/* Locked to whichever button (Add Income/Add Expense) opened this
+                  modal. The visible select below is decorative/disabled only —
+                  it's intentionally NOT registered, so a disabled control can
+                  never cause `type` to go missing from the submission. The real
+                  submitted value comes from this always-registered hidden input. */}
+              <input type="hidden" {...register("type")} />
+              <Select id="entryType" value={selectedType} disabled onChange={() => {}}>
+                <option value="INCOME">{t("income")}</option>
+                <option value="EXPENSE">{t("expense")}</option>
+              </Select>
+            </>
+          ) : (
+            <Select
+              id="entryType"
+              {...register("type")}
+              onChange={(e) => {
+                setValue("type", e.target.value as LedgerEntryType)
+                setValue("categoryId", "")
+                if (e.target.value !== "INCOME") {
+                  setSelectedCustomerId("")
+                  setCustomerDisplayName("")
+                  setAllocationInputs({})
+                }
+              }}
+            >
+              <option value="INCOME">{t("income")}</option>
+              <option value="EXPENSE">{t("expense")}</option>
+            </Select>
+          )}
         </FormField>
 
         <FormField label={t("category")} htmlFor="entryCategory" required error={errors.categoryId?.message}>
