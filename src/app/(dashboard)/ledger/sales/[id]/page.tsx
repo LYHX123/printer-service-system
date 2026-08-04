@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ChevronLeft, Clock, User, Receipt } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canViewInvoice } from "@/lib/permissions"
 import { getSalesLedgerEntry } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { SalesPaymentStatusBadge } from "@/components/ui/badge"
@@ -18,12 +18,19 @@ export default async function SalesLedgerDetailPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "ledger", session!.user.modulePermissions)) redirect("/dashboard")
+  const role = session!.user.role as Role
+  const permissions = session!.user.modulePermissions as string[]
+  if (!canAccess(role, "ledger", permissions)) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 
   const entry = await getSalesLedgerEntry(id, companyId)
   if (!entry) notFound()
+
+  // Phase 2 — Business Traceability: same rule as the Sales Ledger list —
+  // plain text (never hidden) instead of a link when the viewer can't see
+  // Invoice Detail.
+  const canLinkToInvoice = canViewInvoice(role, permissions)
 
   return (
     <div>
@@ -60,9 +67,13 @@ export default async function SalesLedgerDetailPage({
                 <div className="flex justify-between">
                   <dt className="text-slate-500"><T k="source" /></dt>
                   <dd>
-                    <Link href={`/quotations/invoices/${entry.invoice.id}`} className="text-blue-600 hover:underline">
-                      {entry.invoice.invoiceNumber}
-                    </Link>
+                    {canLinkToInvoice ? (
+                      <Link href={`/quotations/invoices/${entry.invoice.id}`} className="text-blue-600 hover:underline">
+                        {entry.invoice.invoiceNumber}
+                      </Link>
+                    ) : (
+                      <span className="text-slate-700">{entry.invoice.invoiceNumber}</span>
+                    )}
                   </dd>
                 </div>
               )}

@@ -10,6 +10,8 @@ import {
   canConfirmInvoice,
   canCancelInvoice,
   canCreateSalesRecord,
+  canViewQuotations,
+  canViewLedgerBook,
 } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
@@ -48,6 +50,20 @@ export default async function InvoiceDetailPage({
   const vatPercent = Number(invoice.vatPercent)
   const vatAmount = Number(invoice.vatAmount)
   const totalAmount = Number(invoice.totalAmount)
+
+  // Phase 2 — Business Traceability: same principle as Quotation Detail's
+  // Related Invoice card, mirrored here — hide the whole cross-module card
+  // rather than show it in a degraded form when the viewer lacks that
+  // module's own permission. Sales Ledger data specifically uses the exact
+  // same "general OR sales" combination Dashboard's Financial Overview
+  // already established as "real Ledger/Financial access" (never
+  // ledger.shop.* alone) — see dashboard/page.tsx's canViewLedger.
+  const canViewQuotationModule = canViewQuotations(role, permissions)
+  const canViewSalesLedgerData = canViewLedgerBook(role, permissions, "general") || canViewLedgerBook(role, permissions, "sales")
+  // Reliable only when the Approve-time Dropbox FINAL sync actually
+  // succeeded and wrote this row (see InvoiceSourceQuotation in
+  // src/lib/data/invoices.ts) — never guessed from Quotation.currentVersion.
+  const approvedFromVersion = invoice.quotation?.documents[0]?.version ?? null
 
   return (
     <div>
@@ -117,18 +133,6 @@ export default async function InvoiceDetailPage({
             <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="details" /></h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-slate-500"><T k="source" /></dt>
-                <dd>
-                  {invoice.quotation ? (
-                    <Link href={`/quotations/${invoice.quotation.id}`} className="text-blue-600 hover:underline">
-                      {invoice.quotation.quotationNumber}
-                    </Link>
-                  ) : (
-                    <span className="text-slate-700"><T k="directInvoice" /></span>
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between">
                 <dt className="text-slate-500"><T k="createdBy" /></dt>
                 <dd className="text-slate-700">{invoice.createdBy.name}</dd>
               </div>
@@ -138,6 +142,54 @@ export default async function InvoiceDetailPage({
               </div>
             </dl>
           </div>
+
+          {/* Source Quotation — hidden entirely for a user without Quotation
+              module access, never a degraded view. Direct Invoices (no
+              quotationId at all) show a clear "no source" state rather than
+              erroring or fabricating one. */}
+          {canViewQuotationModule && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-slate-400" />
+                <T k="sourceQuotationLabel" />
+              </h3>
+              {invoice.quotation ? (
+                <>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="quotationNumber" /></dt>
+                      <dd>
+                        <Link href={`/quotations/${invoice.quotation.id}`} className="font-mono text-xs font-semibold text-blue-600 hover:underline">
+                          {invoice.quotation.quotationNumber}
+                        </Link>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="date" /></dt>
+                      <dd className="text-slate-700">{format(new Date(invoice.quotation.createdAt), "dd MMM yyyy")}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="quotationTotalLabel" /></dt>
+                      <dd className="text-slate-700">{formatCurrency(Number(invoice.quotation.totalCost))}</dd>
+                    </div>
+                    {approvedFromVersion !== null && (
+                      <div className="flex justify-between">
+                        <dt className="text-slate-500"><T k="approvedVersionLabel" /></dt>
+                        <dd className="text-slate-700">V{approvedFromVersion}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  <Link href={`/quotations/${invoice.quotation.id}`} className="mt-3 block">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <T k="viewQuotation" />
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 italic"><T k="directInvoice" /></p>
+              )}
+            </div>
+          )}
 
           {/* Dropbox sync state for the official PDF/Excel */}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -169,31 +221,49 @@ export default async function InvoiceDetailPage({
 
           <InvoiceEtrCard invoiceId={id} doc={etrDoc} canManage={canEditInvoice(role, permissions)} />
 
-          {/* Sales Ledger linkage */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-slate-400" />
-              <T k="salesLedgerLinkage" />
-            </h3>
-            {invoice.salesLedgerEntry ? (
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-slate-500"><T k="paidAmount" /></dt>
-                  <dd className="text-slate-700">{formatCurrency(Number(invoice.salesLedgerEntry.amountReceived))}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-slate-500"><T k="balance" /></dt>
-                  <dd className="text-slate-700">{formatCurrency(Number(invoice.salesLedgerEntry.balance))}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-slate-500"><T k="paymentStatus" /></dt>
-                  <dd><SalesPaymentStatusBadge status={invoice.salesLedgerEntry.paymentStatus} /></dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="text-sm text-slate-400 italic"><T k="notLinkedToSalesLedger" /></p>
-            )}
-          </div>
+          {/* Ledger / Sales Records — same "hide entirely, never degrade"
+              rule; the balance/paid/status fields shown here are read
+              directly from SalesLedgerEntry's own persisted, already-computed
+              columns (recomputeSalesLedgerEntry in src/lib/actions/ledger.ts
+              is the single source of truth these are kept in sync with —
+              this page never recalculates a balance itself). */}
+          {canViewSalesLedgerData && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-slate-400" />
+                <T k="salesLedgerLinkage" />
+              </h3>
+              {invoice.salesLedgerEntry ? (
+                <>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="date" /></dt>
+                      <dd className="text-slate-700">{format(new Date(invoice.salesLedgerEntry.date), "dd MMM yyyy")}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="paidAmount" /></dt>
+                      <dd className="text-slate-700">{formatCurrency(Number(invoice.salesLedgerEntry.amountReceived))}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="balance" /></dt>
+                      <dd className="text-slate-700">{formatCurrency(Number(invoice.salesLedgerEntry.balance))}</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-slate-500"><T k="paymentStatus" /></dt>
+                      <dd><SalesPaymentStatusBadge status={invoice.salesLedgerEntry.paymentStatus} /></dd>
+                    </div>
+                  </dl>
+                  <Link href={`/ledger/sales/${invoice.salesLedgerEntry.id}`} className="mt-3 block">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <T k="viewSalesRecord" />
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 italic"><T k="notLinkedToSalesLedger" /></p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main content */}

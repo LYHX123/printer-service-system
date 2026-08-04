@@ -537,6 +537,14 @@ export type TranslationKey =
   | "directInvoice"
   | "fromQuotation"
   | "createInvoice"
+  | "relatedInvoiceLabel"
+  | "relatedInvoiceHint"
+  | "invoiceNoLabel"
+  | "noInvoiceGeneratedYet"
+  | "sourceQuotationLabel"
+  | "quotationTotalLabel"
+  | "approvedVersionLabel"
+  | "viewQuotation"
   | "paidAmount"
   | "applyToSalesRecords"
   | "allocateAmount"
@@ -1031,6 +1039,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     invoiceItems: "Invoice Items",
     receivedBy: "Received By",
     viewInvoice: "View Invoice",
+    relatedInvoiceLabel: "Related Invoice",
+    relatedInvoiceHint: "Generated from this quotation",
+    invoiceNoLabel: "Invoice No",
+    noInvoiceGeneratedYet: "No invoice generated yet.",
+    sourceQuotationLabel: "Source Quotation",
+    quotationTotalLabel: "Quotation Total",
+    approvedVersionLabel: "Approved Version",
+    viewQuotation: "View Quotation",
     directInvoice: "Direct Invoice",
     fromQuotation: "From Quotation",
     createInvoice: "Create Invoice",
@@ -1725,6 +1741,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     invoiceItems: "发票项目",
     receivedBy: "签收人",
     viewInvoice: "查看发票",
+    relatedInvoiceLabel: "关联发票",
+    relatedInvoiceHint: "由该报价单生成",
+    invoiceNoLabel: "发票编号",
+    noInvoiceGeneratedYet: "尚未生成发票。",
+    sourceQuotationLabel: "来源报价单",
+    quotationTotalLabel: "报价总额",
+    approvedVersionLabel: "已批准版本",
+    viewQuotation: "查看报价单",
     directInvoice: "直接开票",
     fromQuotation: "来自报价单",
     createInvoice: "新建发票",

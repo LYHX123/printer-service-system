@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { ChevronLeft, FileText, Wallet, Scale, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canViewInvoice } from "@/lib/permissions"
 import { getSalesLedgerEntries } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
@@ -26,8 +26,15 @@ export default async function SalesLedgerPage({
   searchParams: Promise<{ from?: string; to?: string; customer?: string; paymentStatus?: string; status?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "ledger", session!.user.modulePermissions)) redirect("/dashboard")
+  const role = session!.user.role as Role
+  const permissions = session!.user.modulePermissions as string[]
+  if (!canAccess(role, "ledger", permissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
+  // Phase 2 — Business Traceability: a row's Invoice No is only ever a
+  // clickable link into Invoice Detail for a viewer who can actually see
+  // that module — otherwise it's shown as plain text (never hidden — the
+  // number itself isn't sensitive, only the target page's contents are).
+  const canLinkToInvoice = canViewInvoice(role, permissions)
 
   const { from, to, customer, paymentStatus, status } = await searchParams
   const validPaymentStatus = PAYMENT_STATUSES.includes(paymentStatus as SalesPaymentStatus)
@@ -138,6 +145,22 @@ export default async function SalesLedgerPage({
                 {row.orderNo ?? row.id.slice(0, 8)}
               </Link>
             ),
+          },
+          {
+            key: "invoiceNo",
+            label: <T k="invoiceNoLabel" />,
+            render: (row) =>
+              row.invoice ? (
+                canLinkToInvoice ? (
+                  <Link href={`/quotations/invoices/${row.invoice.id}`} className="font-mono text-xs text-blue-600 hover:underline">
+                    {row.invoice.invoiceNumber}
+                  </Link>
+                ) : (
+                  <span className="font-mono text-xs text-slate-500">{row.invoice.invoiceNumber}</span>
+                )
+              ) : (
+                <span className="text-xs text-slate-300">—</span>
+              ),
           },
           {
             key: "invoiceAmount",

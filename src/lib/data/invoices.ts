@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { getRootPath } from "@/lib/dropbox"
-import type { Invoice, InvoiceItem, Customer, Quotation, User, Company, SparePart, SalesLedgerEntry } from "@/types"
+import type { Invoice, InvoiceItem, Customer, Quotation, QuotationDocument, User, Company, SparePart, SalesLedgerEntry } from "@/types"
 
 const INVOICE_ITEM_PART_SELECT = {
   id: true,
@@ -68,13 +68,30 @@ export async function getInvoices(
   return invoices.map((inv) => ({ ...inv, totalAmount: Number(inv.totalAmount) })) as unknown as InvoiceListItem[]
 }
 
+/**
+ * Source Quotation traceability (Phase 2 — Business Traceability). `documents`
+ * is filtered to the single isFinal=true row (if any) purely to read its
+ * `version` — the one reliable record of "which version was actually
+ * approved" (see syncQuotationFinalToDropbox's `approvedFromVersion` param
+ * in src/lib/quotationExcel/dropboxSync.ts, called with the quotation's
+ * currentVersion at the exact moment Approve happens). It's a best-effort
+ * Dropbox sync row, though, so it may simply not exist yet (sync failed,
+ * pending, or historical data from before this existed) — callers must
+ * treat an empty `documents` array as "approved version unknown", never
+ * fall back to guessing from currentVersion (which can have moved on since
+ * approval via further Adjusts).
+ */
+export type InvoiceSourceQuotation = Pick<Quotation, "id" | "quotationNumber" | "createdAt" | "totalCost"> & {
+  documents: Pick<QuotationDocument, "version">[]
+}
+
 export type InvoiceDetail = Invoice & {
   customer: Pick<Customer, "id" | "companyName" | "name" | "pinNumber">
-  quotation: Pick<Quotation, "id" | "quotationNumber"> | null
+  quotation: InvoiceSourceQuotation | null
   createdBy: Pick<User, "id" | "name">
   company: Pick<Company, "id" | "name" | "address" | "kraPin" | "currency">
   items: InvoiceItemWithPart[]
-  salesLedgerEntry: Pick<SalesLedgerEntry, "id" | "amountReceived" | "balance" | "paymentStatus"> | null
+  salesLedgerEntry: Pick<SalesLedgerEntry, "id" | "date" | "amountReceived" | "balance" | "paymentStatus"> | null
 }
 
 export async function getInvoice(id: string, companyId: string): Promise<InvoiceDetail | null> {
@@ -82,11 +99,19 @@ export async function getInvoice(id: string, companyId: string): Promise<Invoice
     where: { id, companyId },
     include: {
       customer: { select: { id: true, companyName: true, name: true, pinNumber: true } },
-      quotation: { select: { id: true, quotationNumber: true } },
+      quotation: {
+        select: {
+          id: true,
+          quotationNumber: true,
+          createdAt: true,
+          totalCost: true,
+          documents: { where: { isFinal: true }, select: { version: true }, take: 1 },
+        },
+      },
       createdBy: { select: { id: true, name: true } },
       company: { select: { id: true, name: true, address: true, kraPin: true, currency: true } },
       items: { include: { part: { select: INVOICE_ITEM_PART_SELECT } } },
-      salesLedgerEntry: { select: { id: true, amountReceived: true, balance: true, paymentStatus: true } },
+      salesLedgerEntry: { select: { id: true, date: true, amountReceived: true, balance: true, paymentStatus: true } },
     },
   }) as Promise<InvoiceDetail | null>
 }

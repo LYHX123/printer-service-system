@@ -7,9 +7,10 @@ import {
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation, getQuotationDropboxDocuments, getQuotationVersionSnapshot } from "@/lib/data/quotations"
-import { canAccess, canConvertQuotationToInvoice, canExportQuotation } from "@/lib/permissions"
+import { canAccess, canConvertQuotationToInvoice, canExportQuotation, canViewInvoice } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
-import { QuotationStatusBadge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { QuotationStatusBadge, InvoiceStatusBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
 import { QuotationVersionSelector } from "@/components/quotations/QuotationVersionSelector"
 import { formatCurrency } from "@/lib/utils"
@@ -76,7 +77,8 @@ export default async function QuotationDetailPage({
 }) {
   const session = await auth()
   const role = session!.user.role as import("@/types").Role
-  if (!canAccess(role, "quotations", session!.user.modulePermissions)) redirect("/dashboard")
+  const permissions = session!.user.modulePermissions as string[]
+  if (!canAccess(role, "quotations", permissions)) redirect("/dashboard")
   const { id } = await params
   const sp = await searchParams
   const companyId = session!.user.companyId as string
@@ -164,6 +166,12 @@ export default async function QuotationDetailPage({
 
   const vatAmount = (display.subtotal * display.vatPercent) / 100
 
+  // Phase 2 — Business Traceability: never expose Invoice business data
+  // (number, amount, status) to a user who can't view the Invoice module
+  // itself, even though they can see this Quotation — the whole "Related
+  // Invoice" card is skipped entirely rather than shown in a degraded form.
+  const canViewInvoiceModule = canViewInvoice(role, permissions)
+
   return (
     <div>
       <Link
@@ -215,11 +223,11 @@ export default async function QuotationDetailPage({
             status={quotation.status}
             role={role}
             existingInvoice={quotation.invoice ? { id: quotation.invoice.id, invoiceNumber: quotation.invoice.invoiceNumber } : null}
-            canConvertToInvoice={canConvertQuotationToInvoice(role, session!.user.modulePermissions)}
+            canConvertToInvoice={canConvertQuotationToInvoice(role, permissions)}
             customerPin={quotation.customer.pinNumber ?? ""}
             defaultVatPercent={Number(quotation.vatPercent)}
             needsDropboxSync={needsDropboxSync}
-            canSyncDropbox={canExportQuotation(role, session!.user.modulePermissions)}
+            canSyncDropbox={canExportQuotation(role, permissions)}
             viewMode={viewMode}
             syncTargetVersion={viewMode === "current" ? quotation.currentVersion : undefined}
             pdfDownloadUrl={pdfDownloadUrl}
@@ -376,22 +384,54 @@ export default async function QuotationDetailPage({
             )}
           </div>
 
-          {/* Invoice generated from this quotation (at most one) */}
-          {quotation.invoice && (
+          {/* Related Invoice — belongs to the whole Quotation business record
+              (quotation.invoice, the live relation), never to whichever
+              V1/V2/FINAL snapshot is currently being viewed. Hidden entirely
+              for a user without Invoice module access — never a degraded
+              "invoice exists but no details" view. */}
+          {canViewInvoiceModule && (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-slate-400" />
-                <T k="invoices" />
+                <T k="relatedInvoiceLabel" />
               </h3>
-              <div className="flex items-center justify-between text-sm">
-                <Link
-                  href={`/quotations/invoices/${quotation.invoice.id}`}
-                  className="font-mono text-xs font-semibold text-blue-600 hover:underline"
-                >
-                  {quotation.invoice.invoiceNumber}
-                </Link>
-                <span className="text-xs text-slate-500">{format(new Date(quotation.invoice.date), "dd MMM yyyy")}</span>
-              </div>
+              {quotation.invoice ? (
+                <>
+                  <p className="mb-3 text-xs text-slate-400"><T k="relatedInvoiceHint" /></p>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="invoiceNoLabel" /></dt>
+                      <dd>
+                        <Link
+                          href={`/quotations/invoices/${quotation.invoice.id}`}
+                          className="font-mono text-xs font-semibold text-blue-600 hover:underline"
+                        >
+                          {quotation.invoice.invoiceNumber}
+                        </Link>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="date" /></dt>
+                      <dd className="text-slate-700">{format(new Date(quotation.invoice.date), "dd MMM yyyy")}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-500"><T k="total" /></dt>
+                      <dd className="text-slate-700">{formatCurrency(Number(quotation.invoice.totalAmount))}</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-slate-500"><T k="status" /></dt>
+                      <dd><InvoiceStatusBadge status={quotation.invoice.status} /></dd>
+                    </div>
+                  </dl>
+                  <Link href={`/quotations/invoices/${quotation.invoice.id}`} className="mt-3 block">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <T k="viewInvoice" />
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 italic"><T k="noInvoiceGeneratedYet" /></p>
+              )}
             </div>
           )}
         </div>

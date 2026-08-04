@@ -159,6 +159,8 @@ export type SalesLedgerListItem = Omit<SalesLedgerEntry, "invoiceAmount" | "amou
   customerId: string | null
   invoiceId: string | null
   createdBy: { id: string; name: string }
+  /** The linked Invoice's own business number — Phase 2 traceability. Loaded via the same query (no per-row follow-up), null for legacy/manual entries with no linked Invoice. */
+  invoice: { id: string; invoiceNumber: string } | null
   _count: { allocations: number }
 }
 
@@ -186,6 +188,7 @@ export async function getSalesLedgerEntries(
     },
     include: {
       createdBy: { select: { id: true, name: true } },
+      invoice: { select: { id: true, invoiceNumber: true } },
       _count: { select: { allocations: true } },
     },
     // Strictly by the linked Invoice's natural business number first (spec: Invoice Number
