@@ -17,8 +17,28 @@ import { GenerateInvoiceSchema, DirectInvoiceSchema } from "@/lib/schemas"
 import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { computeSalesLedgerStatus } from "@/lib/ledger-utils"
 import { getStockType } from "@/lib/stock-types"
+import { syncInvoiceToDropbox } from "@/lib/invoiceExcel/dropboxSync"
 import type { GenerateInvoiceInput, DirectInvoiceInput } from "@/lib/schemas"
 import type { Role } from "@/types"
+
+/**
+ * Best-effort Dropbox sync, shared by every place that creates or edits an
+ * Invoice's content — the Invoice record itself is already safely committed
+ * by the time this runs, so a Dropbox hiccup (not connected, LibreOffice
+ * unavailable, upload failed, ...) is only ever logged, never surfaced as a
+ * failure of the calling action. See resyncInvoiceDropbox for the manual
+ * retry story (same underlying function).
+ */
+async function syncInvoiceToDropboxBestEffort(invoiceId: string, companyId: string): Promise<void> {
+  try {
+    const result = await syncInvoiceToDropbox(invoiceId, companyId)
+    if (result.errors.length > 0) {
+      console.error(`Invoice ${invoiceId} Dropbox sync had errors:`, result.errors)
+    }
+  } catch (err) {
+    console.error(`Invoice ${invoiceId} Dropbox sync failed:`, err)
+  }
+}
 
 export type StockShortfall = {
   partId: string
@@ -117,6 +137,8 @@ export async function generateInvoice(quotationId: string, data: GenerateInvoice
     return { error: "Failed to generate invoice" }
   }
 
+  await syncInvoiceToDropboxBestEffort(invoiceId, companyId)
+
   redirect(`/quotations/invoices/${invoiceId}`)
 }
 
@@ -202,6 +224,8 @@ export async function createDirectInvoice(data: DirectInvoiceInput) {
     console.error("createDirectInvoice failed:", err)
     return { error: "Failed to create invoice" }
   }
+
+  await syncInvoiceToDropboxBestEffort(invoiceId, companyId)
 
   redirect(`/quotations/invoices/${invoiceId}`)
 }
@@ -289,6 +313,12 @@ export async function updateInvoice(id: string, data: DirectInvoiceInput) {
     console.error("updateInvoice failed:", err)
     return { error: "Failed to update invoice" }
   }
+
+  // Re-sync (in place, no versioning — see the InvoiceDocument schema
+  // comment) so an already-synced Dropbox copy never goes stale after an
+  // edit. Not a new "Invoice Adjust" feature — updateInvoice already existed
+  // and already only ever runs while the invoice is still DRAFT.
+  await syncInvoiceToDropboxBestEffort(id, companyId)
 
   redirect(`/quotations/invoices/${id}`)
 }
@@ -552,4 +582,35 @@ export async function cancelInvoice(invoiceId: string): Promise<{ error: string 
     console.error("cancelInvoice failed:", err)
     return { error: "Failed to cancel invoice" }
   }
+}
+
+/**
+ * Manual retry for the best-effort sync that generateInvoice/
+ * createDirectInvoice/updateInvoice already attempt automatically — for
+ * when that attempt failed (Dropbox briefly unreachable, LibreOffice
+ * unavailable, ...) or was skipped (Dropbox not connected at all yet).
+ * Always re-targets the invoice's current file (no versioning to advance —
+ * see the InvoiceDocument schema comment), so retrying is idempotent.
+ */
+export async function resyncInvoiceDropbox(
+  id: string
+): Promise<{ error: string } | { success: true; synced: ("PDF" | "XLSX")[] }> {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canEditInvoice(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+
+  const existing = await prisma.invoice.findFirst({ where: { id, companyId }, select: { id: true } })
+  if (!existing) return { error: "Invoice not found" }
+
+  const result = await syncInvoiceToDropbox(id, companyId)
+  if (result.errors.length > 0) {
+    console.error(`Invoice ${id} manual Dropbox retry had errors:`, result.errors)
+  }
+
+  if (result.skippedReason) return { error: result.skippedReason }
+  if (result.synced.length === 0) return { error: result.errors[0] ?? "Failed to sync to Dropbox" }
+
+  revalidatePath(`/quotations/invoices/${id}`)
+  return { success: true as const, synced: result.synced }
 }

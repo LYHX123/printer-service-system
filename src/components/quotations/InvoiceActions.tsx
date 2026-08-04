@@ -3,12 +3,12 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2, CheckCircle, XCircle, Wallet, ArrowRight } from "lucide-react"
+import { Pencil, Trash2, CheckCircle, XCircle, Wallet, ArrowRight, CloudUpload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { confirmInvoice, cancelInvoice, deleteInvoice, createSalesLedgerFromInvoice } from "@/lib/actions/invoices"
+import { confirmInvoice, cancelInvoice, deleteInvoice, createSalesLedgerFromInvoice, resyncInvoiceDropbox } from "@/lib/actions/invoices"
 import type { StockShortfall } from "@/lib/actions/invoices"
 import type { InvoiceStatus } from "@/types"
 
@@ -21,6 +21,8 @@ interface InvoiceActionsProps {
   canConfirm: boolean
   canCancel: boolean
   canCreateSalesRecordPerm: boolean
+  /** True when this invoice's XLSX and/or PDF is missing from Dropbox — shows the "Sync to Dropbox" retry button. */
+  needsDropboxSync: boolean
 }
 
 type ConfirmTarget = "confirm" | "cancel" | "delete" | null
@@ -34,6 +36,7 @@ export function InvoiceActions({
   canConfirm,
   canCancel,
   canCreateSalesRecordPerm,
+  needsDropboxSync,
 }: InvoiceActionsProps) {
   const router = useRouter()
   const toast = useToast()
@@ -42,6 +45,22 @@ export function InvoiceActions({
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null)
   const [shortfalls, setShortfalls] = useState<StockShortfall[] | null>(null)
   const [salesRecordPending, setSalesRecordPending] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  async function handleSync() {
+    setIsSyncing(true)
+    try {
+      const result = await resyncInvoiceDropbox(invoiceId)
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(t("dropboxSyncSuccess"))
+      router.refresh()
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   function handleConfirm() {
     startTransition(async () => {
@@ -103,6 +122,11 @@ export function InvoiceActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
+        {canEdit && needsDropboxSync && (
+          <Button size="sm" variant="outline" icon={<CloudUpload className="h-3.5 w-3.5" />} loading={isSyncing} onClick={handleSync}>
+            {t("syncToDropbox")}
+          </Button>
+        )}
         {status === "DRAFT" && canConfirm && (
           <Button size="sm" icon={<CheckCircle className="h-3.5 w-3.5" />} onClick={() => setConfirmTarget("confirm")}>
             {t("confirm")}

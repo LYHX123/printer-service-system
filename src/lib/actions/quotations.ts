@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canCreateQuotation, canExportQuotation } from "@/lib/permissions"
+import { canCreateQuotation, canExportQuotation, canDeleteQuotationPerm } from "@/lib/permissions"
 import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
 import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { getStockType } from "@/lib/stock-types"
@@ -481,4 +481,64 @@ export async function resyncQuotationDropbox(
 
   revalidatePath(`/quotations/${id}`)
   return { success: true as const, synced: result.synced }
+}
+
+/**
+ * Deletes a Quotation and its own database records only — QuotationItem,
+ * QuotationVersion (business-data snapshots), and QuotationDocument
+ * (Dropbox sync records). Never touches the actual files in Dropbox: V1,
+ * V2, FINAL etc. are business archives and stay exactly where they are,
+ * under Quotation/{ShortName}, for as long as that customer's Dropbox
+ * folder exists — this only ever removes this app's own database rows.
+ *
+ * Blocked outright if an Invoice already exists for this quotation (DB has
+ * Invoice.quotationId ON DELETE SET NULL, which would let the delete
+ * through and just silently disconnect the invoice — deliberately not what
+ * happens here; the invoice's provenance is a business record, not
+ * something to quietly orphan). ServiceJob.quotationId and
+ * CommunicationLog.quotationId are both ON DELETE SET NULL and need no
+ * explicit handling — Postgres does that automatically.
+ */
+export async function deleteQuotation(id: string): Promise<{ error: string } | { success: true }> {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  const role = session.user.role as Role
+  const permissions = (session.user.modulePermissions as string[]) ?? []
+  if (!canDeleteQuotationPerm(role, permissions)) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+
+  const quotation = await prisma.quotation.findFirst({
+    where: { id, companyId },
+    select: { id: true, quotationNumber: true, invoice: { select: { id: true } } },
+  })
+  if (!quotation) return { error: "Quotation not found" }
+  if (quotation.invoice) {
+    return { error: "This quotation cannot be deleted because an invoice has already been generated." }
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // RESTRICT foreign keys — must go first, in this order, or the final
+      // quotation.delete() would fail with a constraint violation.
+      await tx.quotationDocument.deleteMany({ where: { quotationId: id } })
+      await tx.quotationVersion.deleteMany({ where: { quotationId: id } })
+      await tx.quotationItem.deleteMany({ where: { quotationId: id } })
+      await tx.quotation.delete({ where: { id } })
+    })
+
+    await logActivity({
+      companyId,
+      entityType: "Quotation",
+      entityId: id,
+      action: "DELETED",
+      performedById: session.user.id as string,
+      metadata: { quotationNumber: quotation.quotationNumber },
+    })
+
+    revalidatePath("/quotations")
+    return { success: true as const }
+  } catch (err) {
+    console.error(`deleteQuotation ${id} failed:`, err)
+    return { error: "Failed to delete quotation" }
+  }
 }

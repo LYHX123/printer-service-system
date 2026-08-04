@@ -2,10 +2,16 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { Trash2 } from "lucide-react"
 import { QuotationStatusBadge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Modal } from "@/components/ui/modal"
+import { useToast } from "@/components/ui/toast"
 import { formatCurrency } from "@/lib/utils"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { deleteQuotation } from "@/lib/actions/quotations"
 import { QUOTATION_STATUS_LABELS } from "@/types"
 import type { QuotationStatus } from "@/types"
 import type { QuotationListItem } from "@/lib/data/quotations"
@@ -13,14 +19,36 @@ import { ColumnFilterDropdown } from "./ColumnFilterDropdown"
 
 interface QuotationsTableProps {
   quotations: QuotationListItem[]
+  canDelete: boolean
 }
 
-export function QuotationsTable({ quotations }: QuotationsTableProps) {
+export function QuotationsTable({ quotations, canDelete }: QuotationsTableProps) {
+  const router = useRouter()
+  const toast = useToast()
   const { t } = useLanguage()
   const [numberFilter, setNumberFilter] = useState("")
   const [customerFilter, setCustomerFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [monthFilter, setMonthFilter] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; quotationNumber: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      const result = await deleteQuotation(deleteTarget.id)
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(t("quotationDeleted"))
+      setDeleteTarget(null)
+      router.refresh()
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const numberOptions = useMemo(
     () =>
@@ -142,12 +170,24 @@ export function QuotationsTable({ quotations }: QuotationsTableProps) {
                     {format(new Date(q.createdAt), "dd MMM yyyy")}
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/quotations/${q.id}`}
-                      className="text-xs text-blue-600 hover:underline whitespace-nowrap"
-                    >
-                      {t("view")} →
-                    </Link>
+                    <div className="flex items-center justify-end gap-3 whitespace-nowrap">
+                      <Link
+                        href={`/quotations/${q.id}`}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        {t("view")} →
+                      </Link>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          aria-label={t("delete")}
+                          className="text-slate-400 hover:text-red-600 transition-colors"
+                          onClick={() => setDeleteTarget({ id: q.id, quotationNumber: q.quotationNumber })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -155,6 +195,25 @@ export function QuotationsTable({ quotations }: QuotationsTableProps) {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title={t("deleteQuotationConfirmTitle")}
+        description={deleteTarget ? `${deleteTarget.quotationNumber} — ${t("deleteQuotationConfirmDesc")}` : ""}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
+              {t("cancel")}
+            </Button>
+            <Button type="button" variant="destructive" loading={isDeleting} onClick={handleDelete}>
+              {t("delete")}
+            </Button>
+          </div>
+        }
+      >
+        <div />
+      </Modal>
     </div>
   )
 }

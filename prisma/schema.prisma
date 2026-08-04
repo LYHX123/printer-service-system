@@ -200,6 +200,7 @@ model Company {
   customerDocuments     CustomerDocument[]
   quotationDocuments    QuotationDocument[]
   quotationVersions     QuotationVersion[]
+  invoiceDocuments      InvoiceDocument[]
   auditLogs             AuditLog[]
   dropboxConnection     DropboxConnection?
 }
@@ -626,6 +627,37 @@ model Invoice {
   createdBy        User              @relation(fields: [createdById], references: [id])
   items            InvoiceItem[]
   salesLedgerEntry SalesLedgerEntry?
+  documents        InvoiceDocument[]
+}
+
+enum InvoiceFileType {
+  PDF
+  XLSX
+}
+
+// Invoice Dropbox Phase 1 — one row per (invoice, file type). No versioning
+// (unlike QuotationDocument): an Invoice's official file is always exactly
+// "{InvoiceNumber}.{ext}", and a re-sync (auto after an edit, or manual
+// retry) just overwrites the same Dropbox path and updates this same row —
+// invoiceNumber is already globally unique (@unique above), so there is
+// never a need for a Customer Short Name or a version number in the path.
+model InvoiceDocument {
+  id              String                  @id @default(uuid())
+  companyId       String
+  invoiceId       String
+  fileType        InvoiceFileType
+  storageKey      String
+  storageProvider DocumentStorageProvider @default(LOCAL)
+  mimeType        String
+  fileSize        Int
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@unique([invoiceId, fileType])
+  @@index([invoiceId])
 }
 
 model InvoiceItem {

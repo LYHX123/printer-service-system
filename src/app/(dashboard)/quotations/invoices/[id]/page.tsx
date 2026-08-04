@@ -1,8 +1,8 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { ChevronLeft, User, Download, FileSpreadsheet, FileText, Package, Wallet } from "lucide-react"
+import { ChevronLeft, User, Download, FileSpreadsheet, FileText, Package, Wallet, Cloud } from "lucide-react"
 import { auth } from "@/lib/auth"
-import { getInvoice } from "@/lib/data/invoices"
+import { getInvoice, getInvoiceDropboxDocuments } from "@/lib/data/invoices"
 import {
   canAccess,
   canEditInvoice,
@@ -35,6 +35,13 @@ export default async function InvoiceDetailPage({
   const invoice = await getInvoice(id, companyId)
   if (!invoice) notFound()
 
+  const dropboxDocuments = await getInvoiceDropboxDocuments(id, companyId)
+  const pdfDoc = dropboxDocuments.find((d) => d.fileType === "PDF")
+  const xlsxDoc = dropboxDocuments.find((d) => d.fileType === "XLSX")
+  const pdfDownloadUrl = `/api/quotations/invoices/${id}/documents/pdf`
+  const excelDownloadUrl = `/api/quotations/invoices/${id}/documents/xlsx`
+  const needsDropboxSync = !pdfDoc || !xlsxDoc
+
   const subtotal = Number(invoice.subtotal)
   const vatPercent = Number(invoice.vatPercent)
   const vatAmount = Number(invoice.vatAmount)
@@ -64,12 +71,12 @@ export default async function InvoiceDetailPage({
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <a href={`/api/quotations/invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
+            <a href={pdfDownloadUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm" icon={<Download className="h-3.5 w-3.5" />}>
                 <T k="downloadPdf" />
               </Button>
             </a>
-            <a href={`/api/quotations/invoices/${invoice.id}/excel`}>
+            <a href={excelDownloadUrl}>
               <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}>
                 <T k="downloadExcel" />
               </Button>
@@ -83,6 +90,7 @@ export default async function InvoiceDetailPage({
               canConfirm={canConfirmInvoice(role, permissions)}
               canCancel={canCancelInvoice(role, permissions)}
               canCreateSalesRecordPerm={canCreateSalesRecord(role, permissions)}
+              needsDropboxSync={needsDropboxSync}
             />
           </div>
         }
@@ -127,6 +135,34 @@ export default async function InvoiceDetailPage({
                 <dd className="text-slate-700">{format(new Date(invoice.date), "dd MMM yyyy")}</dd>
               </div>
             </dl>
+          </div>
+
+          {/* Dropbox sync state for the official PDF/Excel */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Cloud className="h-4 w-4 text-slate-400" />
+              <T k="dropboxFiles" />
+            </h3>
+            {dropboxDocuments.length === 0 ? (
+              <p className="text-sm text-slate-400 italic"><T k="notYetSyncedToDropbox" /></p>
+            ) : (
+              <>
+                {needsDropboxSync && (
+                  <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    {xlsxDoc ? <T k="invoicePdfConversionUnavailableBanner" /> : <T k="invoiceDropboxSyncFailedBanner" />}
+                  </p>
+                )}
+                <div className="space-y-2 text-sm">
+                  {dropboxDocuments.map((doc) => (
+                    <div key={doc.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                      <p className="text-[11px] font-medium text-slate-500">{doc.fileType}</p>
+                      <p className="truncate text-xs font-medium text-slate-900">{doc.dropboxFileName ?? "—"}</p>
+                      <p className="truncate font-mono text-[10px] text-slate-400">{doc.dropboxPath ?? "—"}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Sales Ledger linkage */}

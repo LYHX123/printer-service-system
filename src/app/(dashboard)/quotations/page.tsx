@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { FileText, Plus, Receipt } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotations } from "@/lib/data/quotations"
-import { canAccess, canCreateQuotation } from "@/lib/permissions"
+import { canAccess, canCreateQuotation, canDeleteQuotationPerm } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -96,7 +96,10 @@ export default async function QuotationsPage({
           />
         </div>
       ) : (
-        <QuotationsTable quotations={quotations} />
+        <QuotationsTable
+          quotations={quotations}
+          canDelete={canDeleteQuotationPerm(role, session!.user.modulePermissions)}
+        />
       )}
     </div>
   )

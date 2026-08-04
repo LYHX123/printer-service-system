@@ -519,6 +519,9 @@ export type TranslationKey =
   | "confirmInvoiceConfirm"
   | "cancelInvoiceConfirm"
   | "deleteInvoiceConfirm"
+  | "deleteQuotationConfirmTitle"
+  | "deleteQuotationConfirmDesc"
+  | "quotationDeleted"
   | "invoiceDeleted"
   | "invoiceConfirmed"
   | "invoiceCancelled"
@@ -640,6 +643,8 @@ export type TranslationKey =
   | "retrySync"
   | "dropboxSyncFailedBanner"
   | "pdfConversionUnavailableBanner"
+  | "invoiceDropboxSyncFailedBanner"
+  | "invoicePdfConversionUnavailableBanner"
   | "final"
   | "current"
   | "historical"
@@ -992,6 +997,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     cancelInvoiceConfirm: "Cancel this invoice? Any deducted stock will be restored.",
     deleteInvoiceConfirm: "Delete this invoice? This cannot be undone.",
     invoiceDeleted: "Invoice deleted",
+    deleteQuotationConfirmTitle: "Are you sure you want to delete this quotation?",
+    deleteQuotationConfirmDesc: "This action will remove the quotation from the system.",
+    quotationDeleted: "Quotation deleted",
     invoiceConfirmed: "Invoice confirmed",
     invoiceCancelled: "Invoice cancelled",
     salesRecordCreated: "Sales record created",
@@ -1278,6 +1286,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     retrySync: "Retry Sync",
     dropboxSyncFailedBanner: "Quotation saved, but Dropbox sync failed.",
     pdfConversionUnavailableBanner: "PDF conversion is not available for this version yet.",
+    invoiceDropboxSyncFailedBanner: "Invoice saved, but Dropbox sync failed.",
+    invoicePdfConversionUnavailableBanner: "PDF conversion is not available for this invoice yet.",
     final: "FINAL",
     current: "Current",
     historical: "Historical",
@@ -1629,6 +1639,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     cancelInvoiceConfirm: "取消此发票？已扣减的库存将恢复。",
     deleteInvoiceConfirm: "删除此发票？此操作无法撤销。",
     invoiceDeleted: "发票已删除",
+    deleteQuotationConfirmTitle: "确定要删除这份报价单吗？",
+    deleteQuotationConfirmDesc: "此操作会将报价单从系统中移除。",
+    quotationDeleted: "报价单已删除",
     invoiceConfirmed: "发票已确认",
     invoiceCancelled: "发票已取消",
     salesRecordCreated: "销售记录已创建",
@@ -1915,6 +1928,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     retrySync: "重试同步",
     dropboxSyncFailedBanner: "报价单已保存，但同步到 Dropbox 失败。",
     pdfConversionUnavailableBanner: "该版本的 PDF 转换暂不可用。",
+    invoiceDropboxSyncFailedBanner: "发票已保存，但同步到 Dropbox 失败。",
+    invoicePdfConversionUnavailableBanner: "该发票的 PDF 转换暂不可用。",
     final: "最终版",
     current: "当前",
     historical: "历史版本",
