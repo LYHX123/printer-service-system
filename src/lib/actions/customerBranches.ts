@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CustomerProjectSchema, type CustomerProjectInput } from "@/lib/schemas"
-import { canAccess } from "@/lib/permissions"
+import { canEditCustomer } from "@/lib/permissions"
 import { logActivity } from "@/lib/audit"
 import type { Role } from "@/types"
 
@@ -26,7 +26,7 @@ export async function createCustomerBranch(customerId: string, data: CustomerPro
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
+  if (!canEditCustomer(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = CustomerProjectSchema.safeParse(data)
@@ -79,7 +79,7 @@ export async function updateCustomerBranch(
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
+  if (!canEditCustomer(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = CustomerProjectSchema.safeParse(data)
@@ -133,7 +133,7 @@ export async function setCustomerBranchActive(
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
+  if (!canEditCustomer(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   try {

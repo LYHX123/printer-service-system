@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CustomerWithProjectsSchema, CustomerSchema } from "@/lib/schemas"
 import { generateCustomerCode } from "@/lib/utils"
-import { canAccess } from "@/lib/permissions"
+import { canCreateCustomer, canEditCustomer } from "@/lib/permissions"
 import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import { ensureCustomerFolder, DropboxError } from "@/lib/dropbox"
 import type { CustomerWithProjectsInput, CustomerInput } from "@/lib/schemas"
@@ -19,7 +19,7 @@ export async function createCustomer(
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
+  if (!canCreateCustomer(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -111,7 +111,7 @@ export async function updateCustomer(id: string, data: CustomerInput) {
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
+  if (!canEditCustomer(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = CustomerSchema.safeParse(data)
@@ -166,7 +166,7 @@ export async function setCustomerActive(id: string, isActive: boolean) {
   if (!session?.user) return { error: "Unauthorized" }
   const role = session.user.role as Role
   const permissions = (session.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) return { error: "Forbidden" }
+  if (!canEditCustomer(role, permissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 

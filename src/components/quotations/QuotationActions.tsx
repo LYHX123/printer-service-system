@@ -18,6 +18,8 @@ interface QuotationActionsProps {
   quotationId: string
   status: QuotationStatus
   role: Role
+  /** Whether the viewer holds quotations.approve — gates the Approve/Reject buttons themselves (server-enforced too; this is UI-only). */
+  canApprove: boolean
   /** Null when this quotation has no invoice yet — shows "Create Invoice" instead of "View Invoice". At most one invoice per quotation (enforced by a DB unique constraint). */
   existingInvoice: { id: string; invoiceNumber: string } | null
   canConvertToInvoice: boolean
@@ -38,6 +40,7 @@ interface QuotationActionsProps {
 export function QuotationActions({
   quotationId,
   status,
+  canApprove: canApprovePermission,
   existingInvoice,
   canConvertToInvoice,
   customerPin,
@@ -67,8 +70,8 @@ export function QuotationActions({
   // QUOTATION_STATUS_TRANSITIONS). Both are current-view-only: a historical
   // version being read-only is the whole point of Historical View.
   const canAdjust = isCurrent && (status === "DRAFT" || status === "SENT")
-  const canApprove = isCurrent && (status === "DRAFT" || status === "SENT")
-  const canReject = isCurrent && status === "SENT"
+  const canApprove = canApprovePermission && isCurrent && (status === "DRAFT" || status === "SENT")
+  const canReject = canApprovePermission && isCurrent && status === "SENT"
 
   function handleSync() {
     startSyncing(async () => {

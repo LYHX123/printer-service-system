@@ -2,14 +2,15 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ChevronLeft, Boxes, AlertTriangle } from "lucide-react"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, getViewableStockBuckets } from "@/lib/permissions"
 import {
   getInventoryValuation,
   getLowStockParts,
   getStockMovements,
   getStockLevel,
 } from "@/lib/data/inventory"
-import { getLowStockThreshold } from "@/lib/stock-types"
+import { getLowStockThreshold, STOCK_TYPES, CATEGORIES_FOR_STOCK_TYPE, stockTypeToBucket } from "@/lib/stock-types"
+import type { PartCategory } from "@/types"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
 import { Tabs } from "@/components/ui/tabs"
@@ -32,8 +33,17 @@ export default async function InventoryReportsPage({
   searchParams: Promise<{ tab?: string; type?: string; from?: string; to?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "inventory", session!.user.modulePermissions)) redirect("/dashboard")
+  const role = session!.user.role as Role
+  const permissions = session!.user.modulePermissions
+  if (!canAccess(role, "inventory", permissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
+
+  // Never leak data from a bucket the caller can't view — a stock.equipment.view-only
+  // user must not see Consumption/Parts figures in these reports.
+  const viewableBuckets = getViewableStockBuckets(role, permissions)
+  const viewableTypes = STOCK_TYPES.filter((st) => viewableBuckets.includes(stockTypeToBucket(st)))
+  if (viewableTypes.length === 0) redirect("/dashboard")
+  const allowedCategories: PartCategory[] = viewableTypes.flatMap((st) => CATEGORIES_FOR_STOCK_TYPE[st])
 
   const { tab = "valuation", type, from, to } = await searchParams
   const activeTab = ["valuation", "low-stock", "movements"].includes(tab) ? tab : "valuation"
@@ -59,17 +69,17 @@ export default async function InventoryReportsPage({
         />
       </div>
 
-      {activeTab === "valuation" && <ValuationReport companyId={companyId} />}
-      {activeTab === "low-stock" && <LowStockReport companyId={companyId} />}
+      {activeTab === "valuation" && <ValuationReport companyId={companyId} categories={allowedCategories} />}
+      {activeTab === "low-stock" && <LowStockReport companyId={companyId} categories={allowedCategories} />}
       {activeTab === "movements" && (
-        <MovementsReport companyId={companyId} type={type} from={from} to={to} />
+        <MovementsReport companyId={companyId} type={type} from={from} to={to} categories={allowedCategories} />
       )}
     </div>
   )
 }
 
-async function ValuationReport({ companyId }: { companyId: string }) {
-  const { rows, totalCostValue, totalSellingValue } = await getInventoryValuation(companyId)
+async function ValuationReport({ companyId, categories }: { companyId: string; categories: PartCategory[] }) {
+  const { rows, totalCostValue, totalSellingValue } = await getInventoryValuation(companyId, categories)
 
   return (
     <div className="space-y-4">
@@ -122,8 +132,8 @@ async function ValuationReport({ companyId }: { companyId: string }) {
   )
 }
 
-async function LowStockReport({ companyId }: { companyId: string }) {
-  const parts = await getLowStockParts(companyId)
+async function LowStockReport({ companyId, categories }: { companyId: string; categories: PartCategory[] }) {
+  const parts = await getLowStockParts(companyId, categories)
 
   return (
     <div className="space-y-4">
@@ -183,14 +193,16 @@ async function MovementsReport({
   type,
   from,
   to,
+  categories,
 }: {
   companyId: string
   type?: string
   from?: string
   to?: string
+  categories: PartCategory[]
 }) {
   const validType = TRANSACTION_TYPES.includes(type as TransactionType) ? (type as TransactionType) : undefined
-  const transactions = await getStockMovements(companyId, { type: validType, from, to })
+  const transactions = await getStockMovements(companyId, { type: validType, from, to, categories })
 
   return (
     <div className="space-y-4">

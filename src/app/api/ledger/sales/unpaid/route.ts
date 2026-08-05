@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { hasAnyPermission } from "@/lib/permissions"
 import { getUnpaidSalesLedgerEntriesForCustomer } from "@/lib/data/ledger"
 import type { Role } from "@/types"
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canAccess(session.user.role as Role, "ledger", session.user.modulePermissions)) {
+  if (!hasAnyPermission(session.user.role as Role, session.user.modulePermissions, "ledger.sales.")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

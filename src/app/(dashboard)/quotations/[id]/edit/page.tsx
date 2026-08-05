@@ -18,7 +18,7 @@ export default async function EditQuotationPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-  if (!canCreateQuotation(session!.user.role as Role)) redirect("/quotations")
+  if (!canCreateQuotation(session!.user.role as Role, session!.user.modulePermissions)) redirect("/quotations")
   const { id } = await params
   const companyId = session!.user.companyId as string
 

@@ -6,8 +6,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { SparePartSchema, StockMovementSchema } from "@/lib/schemas"
 import { generatePartNumber } from "@/lib/utils"
-import { canManageInventory } from "@/lib/permissions"
-import { getStockType } from "@/lib/stock-types"
+import { canCreateStock, canEditStock, canDeleteStock, canAdjustStock } from "@/lib/permissions"
+import { getStockType, categoryToBucket } from "@/lib/stock-types"
 import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { SparePartInput, StockMovementInput } from "@/lib/schemas"
 import type { Role } from "@/types"
@@ -17,7 +17,6 @@ export async function createSparePart(
 ): Promise<{ error: string } | { success: true; id: string }> {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -28,6 +27,13 @@ export async function createSparePart(
     name, model, specification, description, category, brand, supplier, compatibleWith,
     unit, unitCost, sellingPrice, reorderLevel, location, quantity,
   } = parsed.data
+
+  // Bucket-specific: stock.equipment.view alone must never grant create rights
+  // on Consumption/Parts — the bucket is resolved from the validated category,
+  // not trusted verbatim from the client.
+  if (!canCreateStock(session.user.role as Role, session.user.modulePermissions, categoryToBucket(category))) {
+    return { error: "Forbidden" }
+  }
 
   let part: { id: string }
   try {
@@ -108,7 +114,8 @@ export async function createSparePart(
 export async function updateSparePart(id: string, data: SparePartInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const role = session.user.role as Role
+  const permissions = session.user.modulePermissions
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -123,6 +130,13 @@ export async function updateSparePart(id: string, data: SparePartInput) {
   try {
     const existing = await prisma.sparePart.findFirst({ where: { id, companyId }, include: { stock: true } })
     if (!existing) return { error: "Part not found" }
+
+    // Bucket-specific: must be allowed to edit the item's current bucket, and
+    // (if the form is also moving it to a different bucket) the target bucket too.
+    if (!canEditStock(role, permissions, categoryToBucket(existing.category))) return { error: "Forbidden" }
+    if (category !== existing.category && !canEditStock(role, permissions, categoryToBucket(category))) {
+      return { error: "Forbidden" }
+    }
 
     const currentQuantity = existing.stock?.quantity ?? 0
     const quantityDelta = quantity - currentQuantity
@@ -192,13 +206,16 @@ export async function updateSparePart(id: string, data: SparePartInput) {
 export async function setSparePartActive(id: string, isActive: boolean) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
   try {
     const existing = await prisma.sparePart.findFirst({ where: { id, companyId } })
     if (!existing) return { error: "Part not found" }
+
+    if (!canDeleteStock(session.user.role as Role, session.user.modulePermissions, categoryToBucket(existing.category))) {
+      return { error: "Forbidden" }
+    }
 
     await prisma.sparePart.update({ where: { id }, data: { isActive } })
 
@@ -227,7 +244,6 @@ export async function setSparePartActive(id: string, isActive: boolean) {
 export async function recordStockMovement(partId: string, data: StockMovementInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const userId = session.user.id as string
 
@@ -238,6 +254,10 @@ export async function recordStockMovement(partId: string, data: StockMovementInp
   try {
     const existing = await prisma.sparePart.findFirst({ where: { id: partId, companyId }, include: { stock: true } })
     if (!existing) return { error: "Part not found" }
+
+    if (!canAdjustStock(session.user.role as Role, session.user.modulePermissions, categoryToBucket(existing.category))) {
+      return { error: "Forbidden" }
+    }
 
     const currentQuantity = existing.stock?.quantity ?? 0
     let newQuantity: number

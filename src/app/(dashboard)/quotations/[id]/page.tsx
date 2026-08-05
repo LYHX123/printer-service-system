@@ -7,7 +7,7 @@ import {
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation, getQuotationDropboxDocuments, getQuotationVersionSnapshot } from "@/lib/data/quotations"
-import { canAccess, canConvertQuotationToInvoice, canExportQuotation, canViewInvoice } from "@/lib/permissions"
+import { canAccess, canConvertQuotationToInvoice, canExportQuotation, canViewInvoice, canApproveQuotation } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { QuotationStatusBadge, InvoiceStatusBadge } from "@/components/ui/badge"
@@ -222,6 +222,7 @@ export default async function QuotationDetailPage({
             quotationId={quotation.id}
             status={quotation.status}
             role={role}
+            canApprove={canApproveQuotation(role, permissions)}
             existingInvoice={quotation.invoice ? { id: quotation.invoice.id, invoiceNumber: quotation.invoice.invoiceNumber } : null}
             canConvertToInvoice={canConvertQuotationToInvoice(role, permissions)}
             customerPin={quotation.customer.pinNumber ?? ""}

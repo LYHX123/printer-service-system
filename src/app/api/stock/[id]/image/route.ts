@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canManageInventory } from "@/lib/permissions"
+import { canEditStock } from "@/lib/permissions"
 import { saveSparePartImage, deleteSparePartImage } from "@/lib/uploads"
 import { ALLOWED_IMAGE_TYPES, MAX_PHOTO_SIZE } from "@/lib/constants"
+import { categoryToBucket } from "@/lib/stock-types"
 import type { Role } from "@/types"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -12,15 +13,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
   const companyId = session.user.companyId as string
 
   const { id } = await params
   const part = await prisma.sparePart.findFirst({ where: { id, companyId } })
   if (!part) {
     return NextResponse.json({ error: "Part not found" }, { status: 404 })
+  }
+  if (!canEditStock(session.user.role as Role, session.user.modulePermissions, categoryToBucket(part.category))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const formData = await request.formData()
@@ -55,15 +56,15 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canManageInventory(session.user.role as Role, session.user.modulePermissions)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
   const companyId = session.user.companyId as string
 
   const { id } = await params
   const part = await prisma.sparePart.findFirst({ where: { id, companyId } })
   if (!part) {
     return NextResponse.json({ error: "Part not found" }, { status: 404 })
+  }
+  if (!canEditStock(session.user.role as Role, session.user.modulePermissions, categoryToBucket(part.category))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   if (part.imageUrl) {

@@ -3,9 +3,9 @@ import Image from "next/image"
 import { redirect } from "next/navigation"
 import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, ImageOff, ArrowLeftRight } from "lucide-react"
 import { auth } from "@/lib/auth"
-import { canAccess, canManageInventory } from "@/lib/permissions"
+import { canAccess, canViewStock, canCreateStock, canEditStock, canAdjustStock, canDeleteStock } from "@/lib/permissions"
 import { getSpareParts, getStockTypeCounts, getStockLevel } from "@/lib/data/inventory"
-import { getLowStockThreshold } from "@/lib/stock-types"
+import { getLowStockThreshold, stockTypeToBucket } from "@/lib/stock-types"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { T, TInput } from "@/components/ui/T"
@@ -38,21 +38,23 @@ export default async function StockPage({
   searchParams: Promise<{ search?: string; type?: string }>
 }) {
   const session = await auth()
+  const role = session!.user.role as Role
   const permissions = session!.user.modulePermissions
-  if (!canAccess(session!.user.role as Role, "inventory", permissions)) redirect("/dashboard")
-  const canEdit = canManageInventory(session!.user.role as Role, permissions)
+  if (!canAccess(role, "inventory", permissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
   const { search = "", type } = await searchParams
   const stockType = isStockType(type) ? type : undefined
 
   if (!stockType) {
+    const viewableTypes = STOCK_TYPES.filter((st) => canViewStock(role, permissions, stockTypeToBucket(st)))
+    if (viewableTypes.length === 0) redirect("/dashboard")
     const counts = await getStockTypeCounts(companyId)
     return (
       <div>
         <PageHeader title={<T k="inventory" />} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {STOCK_TYPES.map((st) => {
+          {viewableTypes.map((st) => {
             const Icon = STOCK_TYPE_ICONS[st]
             return (
               <Link
@@ -78,6 +80,18 @@ export default async function StockPage({
     )
   }
 
+  if (!canViewStock(role, permissions, stockTypeToBucket(stockType))) redirect("/stock")
+  const bucket = stockTypeToBucket(stockType)
+  const canAddNew = canCreateStock(role, permissions, bucket)
+  // Row actions (edit/move/archive) share one control in SparePartActions —
+  // shown if the user has any write capability on this bucket; each
+  // individual action is still independently enforced server-side.
+  const canEdit =
+    canCreateStock(role, permissions, bucket) ||
+    canEditStock(role, permissions, bucket) ||
+    canAdjustStock(role, permissions, bucket) ||
+    canDeleteStock(role, permissions, bucket)
+
   const parts = await getSpareParts(companyId, {
     search: search || undefined,
     categories: CATEGORIES_FOR_STOCK_TYPE[stockType],
@@ -98,7 +112,7 @@ export default async function StockPage({
             <Link href="/stock/movements">
               <Button variant="outline" icon={<ArrowLeftRight className="h-4 w-4" />}>Movement History</Button>
             </Link>
-            {canEdit && (
+            {canAddNew && (
               <Link href={`/stock/new?type=${stockType}`}>
                 <Button icon={<Plus className="h-4 w-4" />}><T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} /></Button>
               </Link>

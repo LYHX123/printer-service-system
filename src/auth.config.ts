@@ -24,6 +24,27 @@ export const authConfig: NextAuthConfig = {
   pages: { signIn: "/login" },
   providers: [],
   callbacks: {
+    // Edge-safe (no DB): projects the custom fields the `jwt` callback in the
+    // full auth.ts already embedded in the encrypted token (role, companyId,
+    // modulePermissions, ...) onto `session.user`. Without this, the default
+    // NextAuth session shape only carries name/email/id, so `auth.user.role`
+    // below was always undefined at the edge and silently fell back to the
+    // "RECEPTIONIST" + [] defaults — auth.ts's own `session` callback
+    // re-applies the identical projection for the Node-side auth() calls
+    // (page Server Components), so this is not a behavior change there, only
+    // a fix for the middleware path that only ever sees authConfig.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    session({ session, token }: any) {
+      if (token) {
+        session.user.id = token.id
+        session.user.role = token.role
+        session.user.companyId = token.companyId
+        session.user.modulePermissions = token.modulePermissions ?? []
+        session.user.username = token.username ?? ""
+        session.user.position = token.position ?? null
+      }
+      return session
+    },
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl
       const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p))

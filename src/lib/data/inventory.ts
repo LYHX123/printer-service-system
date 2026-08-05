@@ -128,9 +128,9 @@ export async function getSparePartOptions(companyId: string): Promise<SparePartO
   return parts.map((p) => ({ ...p, sellingPrice: Number(p.sellingPrice) }))
 }
 
-export async function getLowStockParts(companyId: string): Promise<SparePartListItem[]> {
+export async function getLowStockParts(companyId: string, categories?: PartCategory[]): Promise<SparePartListItem[]> {
   const parts = await prisma.sparePart.findMany({
-    where: { companyId, isActive: true },
+    where: { companyId, isActive: true, ...(categories ? { category: { in: categories } } : {}) },
     include: { stock: true },
     orderBy: { name: "asc" },
   })
@@ -194,13 +194,13 @@ export type InventoryValuationRow = {
   sellingValue: number
 }
 
-export async function getInventoryValuation(companyId: string): Promise<{
+export async function getInventoryValuation(companyId: string, categories?: PartCategory[]): Promise<{
   rows: InventoryValuationRow[]
   totalCostValue: number
   totalSellingValue: number
 }> {
   const parts = await prisma.sparePart.findMany({
-    where: { companyId, isActive: true },
+    where: { companyId, isActive: true, ...(categories ? { category: { in: categories } } : {}) },
     include: { stock: true },
     orderBy: { name: "asc" },
   })

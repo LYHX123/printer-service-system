@@ -19,7 +19,7 @@ export default async function SettingsPage({
 }) {
   const session = await auth()
   const role = session!.user.role as Role
-  if (!canManageSettings(role)) {
+  if (!canManageSettings(role, session!.user.modulePermissions)) {
     redirect("/dashboard")
   }
 

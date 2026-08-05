@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canManageUsers, ADMIN_SELF_PROTECTED_PERMISSIONS } from "@/lib/permissions"
+import {
+  canCreateUserPerm,
+  canEditUserPerm,
+  canManageUserPermissions,
+  ADMIN_SELF_PROTECTED_PERMISSIONS,
+} from "@/lib/permissions"
 import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import {
   CreateUserSchema,
@@ -29,7 +34,7 @@ function trim(v: string | undefined | null): string | null {
 export async function createUser(data: CreateUserInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  if (!canCreateUserPerm(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const performedById = session.user.id as string
@@ -89,13 +94,16 @@ export async function createUser(data: CreateUserInput) {
 export async function updateUserRole(id: string, data: UpdateUserRoleInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  if (!canManageUserPermissions(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = UpdateUserRoleSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid role" }
 
-  if (id === session.user.id && parsed.data.role !== "ADMIN") {
+  // No self role changes, full stop — including to ADMIN. The previous check only
+  // blocked self-changes to a *non*-ADMIN role, which left a privilege-escalation
+  // hole: anyone who reached this action could promote themselves to ADMIN.
+  if (id === session.user.id) {
     return { error: "You cannot change your own role" }
   }
 
@@ -124,7 +132,7 @@ export async function updateUserRole(id: string, data: UpdateUserRoleInput) {
 export async function setUserActive(id: string, isActive: boolean) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  if (!canEditUserPerm(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   if (id === session.user.id) return { error: "You cannot disable your own account" }
@@ -154,7 +162,8 @@ export async function setUserActive(id: string, isActive: boolean) {
 export async function updateUserPermissions(id: string, data: UpdateUserPermissionsInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  const role = session.user.role as Role
+  if (!canManageUserPermissions(role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
   const currentUserId = session.user.id as string
 
@@ -162,6 +171,15 @@ export async function updateUserPermissions(id: string, data: UpdateUserPermissi
   if (!parsed.success) return { error: "Invalid permissions" }
 
   let permissions: string[] = parsed.data.modulePermissions
+
+  if (id === currentUserId && role !== "ADMIN") {
+    // Self-escalation guard: a non-ADMIN manager editing their OWN permissions
+    // may only remove leaves they already hold, never grant themselves new
+    // ones — otherwise "users.permissions.manage" would let anyone holding it
+    // hand themselves the entire permission tree.
+    const current = new Set(session.user.modulePermissions as string[])
+    permissions = permissions.filter((p) => current.has(p))
+  }
 
   // Self-protection: admin cannot accidentally remove critical modules from own account
   if (id === currentUserId) {
@@ -200,7 +218,7 @@ export async function updateUserPermissions(id: string, data: UpdateUserPermissi
 export async function unlockUser(id: string) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  if (!canEditUserPerm(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   try {
@@ -221,7 +239,7 @@ export async function unlockUser(id: string) {
 export async function updateUserProfile(id: string, data: UpdateUserProfileInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canManageUsers(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  if (!canEditUserPerm(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = UpdateUserProfileSchema.safeParse(data)

@@ -2,14 +2,16 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ChevronRight, Wallet, Receipt } from "lucide-react"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canViewLedgerHub } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
 export default async function LedgerPage() {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "ledger", session!.user.modulePermissions)) redirect("/dashboard")
+  // General Ledger + Sales Ledger only — Shop Account is a separate scope
+  // (reached directly via /ledger/shop, not linked from this hub).
+  if (!canViewLedgerHub(session!.user.role as Role, session!.user.modulePermissions)) redirect("/dashboard")
 
   return (
     <div>

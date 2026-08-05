@@ -139,17 +139,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token
     },
+    // Runs authConfig's own session() first (edge-safe projection of
+    // token.role/companyId/modulePermissions/username/position onto
+    // session.user — see src/auth.config.ts) and then additionally restores
+    // session.user.name, which that shared callback doesn't set. A plain
+    // object-spread override here would silently DROP authConfig's session()
+    // entirely (spread + a same-key function after it replaces, it doesn't
+    // merge), which would leave role/companyId/modulePermissions undefined
+    // on every page.tsx `auth()` call — so this explicitly composes instead.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    session({ session, token }: any) {
-      if (token) {
-        session.user.id = token.id
-        session.user.name = token.name  // explicitly pass refreshed name
-        session.user.role = token.role
-        session.user.companyId = token.companyId
-        session.user.modulePermissions = token.modulePermissions ?? []
-        session.user.username = token.username ?? ""
-        session.user.position = token.position ?? null
-      }
+    async session(params: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const session = await (authConfig.callbacks!.session as any)(params)
+      if (params.token) session.user.name = params.token.name
       return session
     },
   },

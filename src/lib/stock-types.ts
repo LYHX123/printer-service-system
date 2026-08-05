@@ -1,5 +1,6 @@
 import type { PartCategory } from "@/types"
 import type { TranslationKey } from "@/lib/i18n/translations"
+import type { StockBucket } from "@/lib/permissions"
 
 /**
  * UI-facing stock buckets. The underlying PartCategory enum (11 values) is kept
@@ -32,6 +33,16 @@ export const CATEGORY_TO_STOCK_TYPE: Record<PartCategory, StockType> = STOCK_TYP
 
 export function getStockType(category: PartCategory): StockType {
   return CATEGORY_TO_STOCK_TYPE[category]
+}
+
+/** Maps a UI-facing StockType to the lowercase `stock.<bucket>.*` permission bucket. */
+export function stockTypeToBucket(stockType: StockType): StockBucket {
+  return stockType.toLowerCase() as StockBucket
+}
+
+/** Convenience: a PartCategory straight to its permission bucket. */
+export function categoryToBucket(category: PartCategory): StockBucket {
+  return stockTypeToBucket(getStockType(category))
 }
 
 /** Default low-stock alert thresholds by stock type. Quantity at or below this triggers a low-stock alert. */

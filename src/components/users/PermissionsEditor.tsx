@@ -57,13 +57,15 @@ function TriCheckbox({
 export function PermissionsEditor({ permissions, userRole, isSelf, onChange }: PermissionsEditorProps) {
   const { t, language } = useLanguage()
   const isAdmin = userRole === "ADMIN"
-  // Empty array means "full access" (back-compat) — reflect that as all-checked in the UI too.
-  const effective = isAdmin || permissions.length === 0 ? ALL_PERMISSIONS : permissions
+  // Admin always has full access regardless of stored permissions; for everyone
+  // else an empty array now means zero access (not "full access" back-compat —
+  // see the comment on hasPermission in lib/permissions.ts).
+  const effective = isAdmin ? ALL_PERMISSIONS : permissions
 
   function setLeaves(keys: string[], value: boolean) {
     if (isAdmin) return
     const lockedOn = isSelf ? keys.filter(isSelfProtectedPermission) : []
-    const next = new Set(permissions.length === 0 ? ALL_PERMISSIONS : permissions)
+    const next = new Set(permissions)
     if (value) {
       keys.forEach((k) => next.add(k))
     } else {

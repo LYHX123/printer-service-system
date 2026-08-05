@@ -37,6 +37,10 @@ interface UserActionsProps {
   phone: string | null
   department: string | null
   position: string | null
+  /** Whether the VIEWER (not the row's user) can edit profiles/enable/disable/unlock. */
+  canEditUsers: boolean
+  /** Whether the VIEWER can change roles and permissions. */
+  canManagePermissions: boolean
 }
 
 export function UserActions({
@@ -50,6 +54,8 @@ export function UserActions({
   phone,
   department,
   position,
+  canEditUsers,
+  canManagePermissions,
 }: UserActionsProps) {
   const router = useRouter()
   const toast = useToast()
@@ -134,7 +140,7 @@ export function UserActions({
       {/* Role selector */}
       <Select
         value={role}
-        disabled={isSelf || updatingRole}
+        disabled={isSelf || updatingRole || !canManagePermissions}
         onChange={(e) => handleRoleChange(e.target.value as Role)}
         className="w-36 py-1.5 text-xs"
       >
@@ -144,30 +150,34 @@ export function UserActions({
       </Select>
 
       {/* Permissions */}
-      <Button
-        variant="outline"
-        size="sm"
-        icon={<ShieldCheck className="h-3.5 w-3.5" />}
-        onClick={() => { setTempPermissions(modulePermissions); setPermissionsOpen(true) }}
-      >
-        {t("editPermissions")}
-      </Button>
+      {canManagePermissions && (
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+          onClick={() => { setTempPermissions(modulePermissions); setPermissionsOpen(true) }}
+        >
+          {t("editPermissions")}
+        </Button>
+      )}
 
       {/* Edit profile */}
-      <Button
-        variant="outline"
-        size="sm"
-        icon={<Pencil className="h-3.5 w-3.5" />}
-        onClick={() => {
-          reset({ name, phone: phone ?? "", department: department ?? "", position: position ?? "", newPassword: "" })
-          setEditOpen(true)
-        }}
-      >
-        {t("editProfile")}
-      </Button>
+      {canEditUsers && (
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<Pencil className="h-3.5 w-3.5" />}
+          onClick={() => {
+            reset({ name, phone: phone ?? "", department: department ?? "", position: position ?? "", newPassword: "" })
+            setEditOpen(true)
+          }}
+        >
+          {t("editProfile")}
+        </Button>
+      )}
 
       {/* Unlock (only when locked) */}
-      {isLocked && (
+      {isLocked && canEditUsers && (
         <Button
           variant="outline"
           size="sm"
@@ -180,7 +190,7 @@ export function UserActions({
       )}
 
       {/* Disable / Enable */}
-      {isActive ? (
+      {canEditUsers && (isActive ? (
         <Button variant="outline" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)} disabled={isSelf}>
           {t("disable")}
         </Button>
@@ -188,7 +198,7 @@ export function UserActions({
         <Button variant="outline" size="sm" icon={<CheckCircle className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)}>
           {t("enable")}
         </Button>
-      )}
+      ))}
 
       {/* Disable/Enable confirmation modal */}
       <Modal

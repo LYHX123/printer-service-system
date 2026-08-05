@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
-import { canManageUsers } from "@/lib/permissions"
+import { canCreateUserPerm } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { UserForm } from "@/components/users/UserForm"
 import { T } from "@/components/ui/T"
@@ -10,7 +10,7 @@ import type { Role } from "@/types"
 
 export default async function NewUserPage() {
   const session = await auth()
-  if (!canManageUsers(session!.user.role as Role, session!.user.modulePermissions)) redirect("/users")
+  if (!canCreateUserPerm(session!.user.role as Role, session!.user.modulePermissions)) redirect("/users")
 
   return (
     <div>

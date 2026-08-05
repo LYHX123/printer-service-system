@@ -2,11 +2,11 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
-import { canManageInventory } from "@/lib/permissions"
+import { canCreateStock } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { T } from "@/components/ui/T"
 import { InventoryForm } from "@/components/inventory/InventoryForm"
-import { isStockType, STOCK_TYPE_LABELS, DEFAULT_CATEGORY_FOR_STOCK_TYPE, ADD_ITEM_TRANSLATION_KEYS } from "@/lib/stock-types"
+import { isStockType, STOCK_TYPE_LABELS, DEFAULT_CATEGORY_FOR_STOCK_TYPE, ADD_ITEM_TRANSLATION_KEYS, stockTypeToBucket } from "@/lib/stock-types"
 import type { Role } from "@/types"
 
 export default async function NewSparePartPage({
@@ -15,10 +15,12 @@ export default async function NewSparePartPage({
   searchParams: Promise<{ type?: string }>
 }) {
   const session = await auth()
-  if (!canManageInventory(session!.user.role as Role, session!.user.modulePermissions)) redirect("/stock")
 
   const { type } = await searchParams
   if (!isStockType(type)) redirect("/stock")
+  if (!canCreateStock(session!.user.role as Role, session!.user.modulePermissions, stockTypeToBucket(type))) {
+    redirect("/stock")
+  }
 
   return (
     <div>

@@ -16,7 +16,7 @@ export default async function NewQuotationPage({
   searchParams: Promise<{ customerId?: string }>
 }) {
   const session = await auth()
-  if (!canCreateQuotation(session!.user.role as Role)) redirect("/quotations")
+  if (!canCreateQuotation(session!.user.role as Role, session!.user.modulePermissions)) redirect("/quotations")
   const { customerId } = await searchParams
   const companyId = session!.user.companyId as string
 

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ChevronLeft, Clock, User, Receipt } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess, canViewInvoice } from "@/lib/permissions"
+import { hasAnyPermission, canViewInvoice } from "@/lib/permissions"
 import { getSalesLedgerEntry } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { SalesPaymentStatusBadge } from "@/components/ui/badge"
@@ -20,7 +20,7 @@ export default async function SalesLedgerDetailPage({
   const session = await auth()
   const role = session!.user.role as Role
   const permissions = session!.user.modulePermissions as string[]
-  if (!canAccess(role, "ledger", permissions)) redirect("/dashboard")
+  if (!hasAnyPermission(role, permissions, "ledger.sales.")) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 

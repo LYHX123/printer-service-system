@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { canCreateQuotation, canExportQuotation, canDeleteQuotationPerm } from "@/lib/permissions"
+import { canCreateQuotation, canEditQuotationPerm, canApproveQuotation, canExportQuotation, canDeleteQuotationPerm } from "@/lib/permissions"
 import { QuotationSchema, QuotationStatusSchema } from "@/lib/schemas"
 import { extractTrailingNumber, normalizeBusinessNumber } from "@/lib/numbering"
 import { getStockType } from "@/lib/stock-types"
@@ -398,10 +398,22 @@ export async function updateQuotation(id: string, data: QuotationInput) {
 export async function updateQuotationStatus(id: string, data: QuotationStatusInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
+  const role = session.user.role as Role
+  const permissions = session.user.modulePermissions
   const companyId = session.user.companyId as string
 
   const parsed = QuotationStatusSchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid data" }
+
+  // Approve/Reject is a distinct, server-enforced authority — quotations.edit
+  // (or even quotations.view) must never be enough to approve/reject one's own
+  // or anyone else's quotation. Other transitions (e.g. DRAFT -> SENT) fall
+  // back to the regular edit permission.
+  const isApprovalDecision = parsed.data.toStatus === "APPROVED" || parsed.data.toStatus === "REJECTED"
+  const authorized = isApprovalDecision
+    ? canApproveQuotation(role, permissions)
+    : canEditQuotationPerm(role, permissions)
+  if (!authorized) return { error: "Forbidden" }
 
   try {
     const existing = await prisma.quotation.findFirst({

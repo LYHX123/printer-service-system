@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Plus } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getUsers } from "@/lib/data/users"
-import { canAccess, ALL_PERMISSIONS, PERMISSION_TREE } from "@/lib/permissions"
+import { canAccess, canEditUserPerm, canManageUserPermissions, ALL_PERMISSIONS, PERMISSION_TREE } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
@@ -30,7 +30,10 @@ function ModulesSummary({ role, permissions }: { role: Role; permissions: string
   if (role === "ADMIN") {
     return <Badge className="bg-purple-100 text-purple-700 text-xs">Full Access</Badge>
   }
-  if (permissions.length === 0 || permissions.length >= ALL_PERMISSIONS.length) {
+  if (permissions.length === 0) {
+    return <span className="text-xs text-red-500">No Access</span>
+  }
+  if (permissions.length >= ALL_PERMISSIONS.length) {
     return <span className="text-xs text-slate-500">All Modules</span>
   }
   // Summarize by top-level module (leaf permissions are too granular/numerous to list row-by-row).
@@ -57,6 +60,8 @@ export default async function UsersPage() {
 
   const companyId = session!.user.companyId as string
   const currentUserId = session!.user.id as string
+  const viewerCanEditUsers = canEditUserPerm(role, modulePermissions)
+  const viewerCanManagePermissions = canManageUserPermissions(role, modulePermissions)
 
   const users = await getUsers(companyId)
 
@@ -134,6 +139,8 @@ export default async function UsersPage() {
                 phone={row.phone}
                 department={row.department}
                 position={row.position}
+                canEditUsers={viewerCanEditUsers}
+                canManagePermissions={viewerCanManagePermissions}
               />
             ),
           },

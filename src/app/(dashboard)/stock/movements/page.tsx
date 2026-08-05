@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { ChevronLeft, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, getViewableStockBuckets } from "@/lib/permissions"
 import { getStockMovements } from "@/lib/data/inventory"
 import { PageHeader } from "@/components/ui/page-header"
 import { Table } from "@/components/ui/table"
@@ -14,7 +14,7 @@ import { TransactionTypeBadge } from "@/components/ui/badge"
 import { TInput } from "@/components/ui/T"
 import { TRANSACTION_TYPE_LABELS } from "@/types"
 import type { TransactionType, Role } from "@/types"
-import { STOCK_TYPES, CATEGORIES_FOR_STOCK_TYPE, STOCK_TYPE_LABELS, getStockType, isStockType } from "@/lib/stock-types"
+import { STOCK_TYPES, CATEGORIES_FOR_STOCK_TYPE, STOCK_TYPE_LABELS, getStockType, isStockType, stockTypeToBucket } from "@/lib/stock-types"
 
 const TRANSACTION_TYPES = Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]
 
@@ -24,11 +24,20 @@ export default async function StockMovementsPage({
   searchParams: Promise<{ category?: string; type?: string; search?: string; date?: string }>
 }) {
   const session = await auth()
-  if (!canAccess(session!.user.role as Role, "inventory", session!.user.modulePermissions)) redirect("/dashboard")
+  const role = session!.user.role as Role
+  const permissions = session!.user.modulePermissions
+  if (!canAccess(role, "inventory", permissions)) redirect("/dashboard")
   const companyId = session!.user.companyId as string
 
+  // Never leak movements from a bucket the caller can't view — a stock.equipment.view-only
+  // user must not see Consumption/Parts history just because "inventory" access exists.
+  const viewableBuckets = getViewableStockBuckets(role, permissions)
+  const viewableTypes = STOCK_TYPES.filter((st) => viewableBuckets.includes(stockTypeToBucket(st)))
+  if (viewableTypes.length === 0) redirect("/dashboard")
+
   const { category, type, search = "", date } = await searchParams
-  const stockType = isStockType(category) ? category : undefined
+  const requestedType = isStockType(category) ? category : undefined
+  const stockType = requestedType && viewableTypes.includes(requestedType) ? requestedType : undefined
   const validType = TRANSACTION_TYPES.includes(type as TransactionType) ? (type as TransactionType) : undefined
   // Plain text field (not a native date input) so the placeholder can be translated — validate the
   // expected YYYY-MM-DD shape before using it as a filter; anything else is treated as no filter.
@@ -39,7 +48,7 @@ export default async function StockMovementsPage({
     from: validDate,
     to: validDate,
     search: search || undefined,
-    categories: stockType ? CATEGORIES_FOR_STOCK_TYPE[stockType] : undefined,
+    categories: stockType ? CATEGORIES_FOR_STOCK_TYPE[stockType] : viewableTypes.flatMap((st) => CATEGORIES_FOR_STOCK_TYPE[st]),
   })
 
   const exportParams = new URLSearchParams()
@@ -69,7 +78,7 @@ export default async function StockMovementsPage({
         <Input name="search" type="search" placeholder="Search item name or part number…" defaultValue={search} className="w-56" />
         <Select name="category" defaultValue={stockType ?? ""} className="w-44">
           <option value="">All Stock Categories</option>
-          {STOCK_TYPES.map((st) => (
+          {viewableTypes.map((st) => (
             <option key={st} value={st}>{STOCK_TYPE_LABELS[st]}</option>
           ))}
         </Select>

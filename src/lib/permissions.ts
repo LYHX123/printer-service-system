@@ -12,7 +12,7 @@ import type { Role } from "@/types"
 export type PermissionKey =
   | "dashboard.view"
   | "customers.view" | "customers.create" | "customers.edit" | "customers.delete" | "customers.files.upload"
-  | "quotations.view" | "quotations.create" | "quotations.edit" | "quotations.delete" | "quotations.export" | "quotations.convertToInvoice"
+  | "quotations.view" | "quotations.create" | "quotations.edit" | "quotations.delete" | "quotations.export" | "quotations.convertToInvoice" | "quotations.approve"
   | "invoice.view" | "invoice.create" | "invoice.edit" | "invoice.delete" | "invoice.confirm" | "invoice.cancel" | "invoice.createSalesRecord"
   | "stock.equipment.view" | "stock.equipment.create" | "stock.equipment.edit" | "stock.equipment.delete" | "stock.equipment.adjust"
   | "stock.consumption.view" | "stock.consumption.create" | "stock.consumption.edit" | "stock.consumption.delete" | "stock.consumption.adjust"
@@ -64,6 +64,7 @@ export const PERMISSION_TREE: PermNode[] = [
       { key: "quotations.delete", en: "Delete", zh: "删除" },
       { key: "quotations.export", en: "Export", zh: "导出" },
       { key: "quotations.convertToInvoice", en: "Convert to Invoice", zh: "生成发票" },
+      { key: "quotations.approve", en: "Approve / Reject", zh: "批准/拒绝" },
     ],
   },
   {
@@ -221,7 +222,7 @@ const LEGACY_EXPANSION: Record<string, PermissionKey[]> = {
   dashboard: ["dashboard.view"],
   customers: ["customers.view", "customers.create", "customers.edit", "customers.delete", "customers.files.upload"],
   quotations: [
-    "quotations.view", "quotations.create", "quotations.edit", "quotations.delete", "quotations.export",
+    "quotations.view", "quotations.create", "quotations.edit", "quotations.delete", "quotations.export", "quotations.approve",
     // Invoices were previously reached via the Quotations tab with no separate gate.
     "invoice.view", "invoice.create", "invoice.edit", "invoice.delete", "invoice.confirm", "invoice.cancel",
   ],
@@ -264,19 +265,25 @@ export function migratePermissions(stored: string[]): PermissionKey[] {
 /**
  * Core permission check.
  * - ADMIN role → always true
- * - empty permissions array → true (backward compat; existing users get full access)
  * - otherwise → explicit allowlist check (after expanding any legacy keys)
+ *
+ * An empty (or non-matching) permissions array means NO access for non-ADMIN
+ * roles — this used to be treated as "full access" for backward compat, but
+ * that meant a user created with every checkbox unchecked (a "zero
+ * permission" user) silently got the entire app, which is a privilege
+ * escalation hole (see Final Remediation Phase 1, P0-1). Any pre-existing
+ * account that legitimately relied on the old back-compat behavior was
+ * migrated to an explicit `ALL_PERMISSIONS` grant as a one-time data
+ * backfill at the time this changed, so no real user loses access here.
  */
 export function hasPermission(role: Role, permissions: string[], key: PermissionKey): boolean {
   if (role === "ADMIN") return true
-  if (permissions.length === 0) return true
   return migratePermissions(permissions).includes(key)
 }
 
 /** Whether the user has ANY leaf permission under a given prefix (e.g. "stock." or "ledger."). */
 export function hasAnyPermission(role: Role, permissions: string[], prefix: string): boolean {
   if (role === "ADMIN") return true
-  if (permissions.length === 0) return true
   return migratePermissions(permissions).some((k) => k === prefix || k.startsWith(prefix))
 }
 
@@ -344,6 +351,8 @@ export const canEditQuotationPerm = (role: Role, p: string[]) => hasPermission(r
 export const canDeleteQuotationPerm = (role: Role, p: string[]) => hasPermission(role, p, "quotations.delete")
 export const canExportQuotation = (role: Role, p: string[]) => hasPermission(role, p, "quotations.export")
 export const canConvertQuotationToInvoice = (role: Role, p: string[]) => hasPermission(role, p, "quotations.convertToInvoice")
+/** Approve/Reject a quotation (SENT/DRAFT -> APPROVED/REJECTED) — distinct from quotations.edit so a plain editor can't self-authorize their own quote. */
+export const canApproveQuotation = (role: Role, p: string[]) => hasPermission(role, p, "quotations.approve")
 
 export const canViewInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.view")
 export const canCreateInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.create")
@@ -367,6 +376,21 @@ export const canEditLedgerEntryPerm = (role: Role, p: string[], book: LedgerBook
 export const canDeleteLedgerEntryPerm = (role: Role, p: string[], book: LedgerBook) => hasPermission(role, p, `ledger.${book}.delete` as PermissionKey)
 export const canExportLedgerBook = (role: Role, p: string[], book: LedgerBook) => hasPermission(role, p, `ledger.${book}.export` as PermissionKey)
 export const canAllocateReceipt = (role: Role, p: string[]) => hasPermission(role, p, "ledger.receipts.allocate")
+
+/**
+ * The "Ledger" hub (General Ledger + Sales Ledger) is a distinct scope from
+ * Shop Account — a Shop-Account-only user must not reach /ledger, /ledger/sales
+ * or /ledger/income-expense, and a Ledger-only user must not reach /ledger/shop.
+ * Deliberately excludes the "shop" book.
+ */
+export const canViewLedgerHub = (role: Role, p: string[]) =>
+  hasAnyPermission(role, p, "ledger.general.") || hasAnyPermission(role, p, "ledger.sales.")
+
+/** Every stock bucket the caller has at least view access to. */
+export function getViewableStockBuckets(role: Role, p: string[]): StockBucket[] {
+  const buckets: StockBucket[] = ["equipment", "consumption", "parts"]
+  return buckets.filter((b) => canViewStock(role, p, b))
+}
 
 export const canViewUsers = (role: Role, p: string[]) => hasPermission(role, p, "users.view")
 export const canCreateUserPerm = (role: Role, p: string[]) => hasPermission(role, p, "users.create")

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { ChevronLeft, TrendingUp, TrendingDown, Scale, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { canAccess, canAllocateReceipt } from "@/lib/permissions"
+import { hasAnyPermission, canAllocateReceipt } from "@/lib/permissions"
 import { getLedgerEntries, getLedgerCategories, getLedgerMonthStats } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
@@ -28,7 +28,9 @@ export default async function IncomeExpenseBookPage({
   const session = await auth()
   const role = session!.user.role as Role
   const permissions = session!.user.modulePermissions as string[]
-  if (!canAccess(role, "ledger", permissions)) redirect("/dashboard")
+  // General Ledger specifically — a Shop-Account-only user must not reach this
+  // page just because they hold some other leaf under "ledger.".
+  if (!hasAnyPermission(role, permissions, "ledger.general.")) redirect("/dashboard")
   const companyId = session!.user.companyId as string
   const canAllocate = canAllocateReceipt(role, permissions)
 
