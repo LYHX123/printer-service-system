@@ -669,7 +669,7 @@ model InvoiceDocument {
   updatedAt        DateTime                @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
-  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@unique([invoiceId, fileType])
   @@index([invoiceId])

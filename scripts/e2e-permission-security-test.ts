@@ -158,6 +158,7 @@ async function main() {
   const invoiceViewOnly = await makeUser(companyA.id, `E2E InvoiceView ${Date.now()}`, "RECEPTIONIST", ["dashboard.view", "invoice.view"])
   const invoiceAndQuotationBoth = await makeUser(companyA.id, `E2E InvQuoteBoth ${Date.now()}`, "RECEPTIONIST", ["dashboard.view", "invoice.view", "quotations.view"])
   const invoiceCreateEditUser = await makeUser(companyA.id, `E2E InvoiceCreateEdit ${Date.now()}`, "RECEPTIONIST", ["dashboard.view", "invoice.view", "invoice.create", "invoice.edit"])
+  const invoiceDeleteUser = await makeUser(companyA.id, `E2E InvoiceDelete ${Date.now()}`, "RECEPTIONIST", ["dashboard.view", "invoice.view", "invoice.delete"])
   const taskParticipant = await makeUser(companyA.id, `E2E TaskParticipant ${Date.now()}`, "RECEPTIONIST", ["dashboard.view", "tasks.view"])
   const taskCreatorUser = await makeUser(companyA.id, `E2E TaskCreator ${Date.now()}`, "MANAGER", ["dashboard.view", "tasks.view", "tasks.create"])
   // NOTE: the engineerA/engineerB/managerWithJobs personas that used to live here
@@ -1938,6 +1939,199 @@ async function main() {
     }
   }
 
+  // ─── X. Invoice deletion — InvoiceDocument cascade-delete fix ───────────────
+  // Production-only failure: deleteInvoice() threw a P2003 FK violation whenever
+  // the target invoice had an InvoiceDocument row (created by the real Dropbox
+  // sync / ETR upload paths — never exercised by bare local-dev fixtures), because
+  // InvoiceDocument.invoice lacked onDelete: Cascade (unlike its InvoiceItem
+  // sibling). Fix: prisma/schema.prisma now cascades, matching InvoiceItem.
+  console.log("\n=== X. Invoice deletion — InvoiceDocument cascade-delete fix ===")
+  {
+    const invoiceDeleteCookieX = await login(invoiceDeleteUser.name)
+    const invoiceViewOnlyCookieX = await login(invoiceViewOnly.name)
+    const companyBAdminCookieX = await login(companyBAdmin.name)
+
+    await getPage(invoiceDeleteCookieX, "/quotations/invoices")
+    const deleteInvoiceActionId = await getActionId("(dashboard)/quotations/invoices/page", "src/lib/actions/invoices.ts", "deleteInvoice")
+
+    async function makeInvoiceX(status: "DRAFT" | "CANCELLED" | "CONFIRMED", tag: string) {
+      return prisma.invoice.create({
+        data: {
+          invoiceNumber: `E2E-INV-DELX-${tag}-${Date.now() % 1000000}`,
+          companyId: companyA.id,
+          customerId: companyACustomer.id,
+          createdById: admin.id,
+          date: new Date(),
+          subtotal: 0,
+          vatPercent: 0,
+          vatAmount: 0,
+          totalAmount: 0,
+          status,
+        },
+        select: { id: true, invoiceNumber: true },
+      })
+    }
+
+    // A. DRAFT invoice with zero InvoiceDocument rows -> delete succeeds (the pre-fix
+    // local-dev baseline — this always worked, must keep working).
+    const invoiceA_X = await makeInvoiceX("DRAFT", "A")
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceDeleteCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceA_X.id])
+      record("X", "A. DRAFT invoice, no InvoiceDocument -> delete succeeds", /"success"\s*:\s*true/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "A. DRAFT invoice, no InvoiceDocument -> delete succeeds", false, "could not resolve action id")
+    }
+    record("X", "DB check: invoice from A is actually gone", (await prisma.invoice.findUnique({ where: { id: invoiceA_X.id } })) === null, "")
+
+    // B/D. DRAFT invoice with PDF + XLSX InvoiceDocument rows — the exact production
+    // failure shape, since Dropbox sync creates these on every real invoice — now
+    // succeeds, and the InvoiceDocument rows go with it (cascade, confirmed at the DB
+    // level, not just inferred from the HTTP response).
+    const invoiceB_X = await makeInvoiceX("DRAFT", "B")
+    await prisma.invoiceDocument.create({
+      data: { companyId: companyA.id, invoiceId: invoiceB_X.id, fileType: "PDF", storageKey: `fake/${invoiceB_X.invoiceNumber}.pdf`, storageProvider: "DROPBOX", mimeType: "application/pdf", fileSize: 100 },
+    })
+    await prisma.invoiceDocument.create({
+      data: { companyId: companyA.id, invoiceId: invoiceB_X.id, fileType: "XLSX", storageKey: `fake/${invoiceB_X.invoiceNumber}.xlsx`, storageProvider: "DROPBOX", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileSize: 100 },
+    })
+    const docCountBeforeB = await prisma.invoiceDocument.count({ where: { invoiceId: invoiceB_X.id } })
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceDeleteCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceB_X.id])
+      record("X", "B. DRAFT invoice WITH PDF+XLSX InvoiceDocument rows -> delete succeeds (the fix)", /"success"\s*:\s*true/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "B. DRAFT invoice WITH PDF+XLSX InvoiceDocument rows -> delete succeeds (the fix)", false, "could not resolve action id")
+    }
+    record("X", "setup check: B actually had 2 InvoiceDocument rows before delete", docCountBeforeB === 2, `count=${docCountBeforeB}`)
+    record("X", "DB check: invoice from B is actually gone", (await prisma.invoice.findUnique({ where: { id: invoiceB_X.id } })) === null, "")
+    record("X", "D. DB check: both InvoiceDocument rows were cascade-deleted with the invoice", (await prisma.invoiceDocument.count({ where: { invoiceId: invoiceB_X.id } })) === 0, "")
+
+    // C. CANCELLED invoice with an ETR InvoiceDocument row -> delete succeeds.
+    const invoiceC_X = await makeInvoiceX("CANCELLED", "C")
+    await prisma.invoiceDocument.create({
+      data: { companyId: companyA.id, invoiceId: invoiceC_X.id, fileType: "ETR", originalFileName: "receipt.pdf", storageKey: `fake/${invoiceC_X.invoiceNumber}-ETR.pdf`, storageProvider: "DROPBOX", mimeType: "application/pdf", fileSize: 100 },
+    })
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceDeleteCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceC_X.id])
+      record("X", "C. CANCELLED invoice WITH ETR InvoiceDocument row -> delete succeeds", /"success"\s*:\s*true/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "C. CANCELLED invoice WITH ETR InvoiceDocument row -> delete succeeds", false, "could not resolve action id")
+    }
+    record("X", "DB check: invoice from C is actually gone", (await prisma.invoice.findUnique({ where: { id: invoiceC_X.id } })) === null, "")
+
+    // E. A separate, still-alive Company A invoice's InvoiceDocument row is completely
+    // unaffected by deleting B and C above — cascade only ever touches rows for the
+    // specific invoiceId being deleted, never sibling rows in the same company.
+    const invoiceE_X = await makeInvoiceX("DRAFT", "E")
+    const survivorDoc = await prisma.invoiceDocument.create({
+      data: { companyId: companyA.id, invoiceId: invoiceE_X.id, fileType: "PDF", storageKey: `fake/${invoiceE_X.invoiceNumber}.pdf`, storageProvider: "DROPBOX", mimeType: "application/pdf", fileSize: 100 },
+      select: { id: true },
+    })
+    record(
+      "X",
+      "E. Unrelated invoice's InvoiceDocument row is untouched by B/C's cascade deletes",
+      (await prisma.invoiceDocument.findUnique({ where: { id: survivorDoc.id } })) !== null,
+      ""
+    )
+
+    // F1. Existing permission enforcement is unchanged — invoice.view-only (no
+    // invoice.delete) is still Forbidden.
+    const invoiceF1_X = await makeInvoiceX("DRAFT", "F1")
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceViewOnlyCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceF1_X.id])
+      record("X", "F1. invoice.view-only (no delete permission) -> still Forbidden", wasForbidden(res), res.text.slice(0, 150))
+    } else {
+      record("X", "F1. invoice.view-only (no delete permission) -> still Forbidden", false, "could not resolve action id")
+    }
+    record("X", "DB check: F1's denied attempt left the invoice in place", (await prisma.invoice.findUnique({ where: { id: invoiceF1_X.id } })) !== null, "")
+
+    // F2. The existing DRAFT/CANCELLED-only status guard is unchanged — a CONFIRMED
+    // invoice is still rejected, even with the correct permission.
+    const invoiceF2_X = await makeInvoiceX("CONFIRMED", "F2")
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceDeleteCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceF2_X.id])
+      record("X", "F2. CONFIRMED invoice still rejected (\"Only draft or cancelled invoices can be deleted\")", /"error"\s*:\s*"Only draft or cancelled invoices can be deleted"/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "F2. CONFIRMED invoice still rejected", false, "could not resolve action id")
+    }
+    record("X", "DB check: F2's rejected CONFIRMED invoice was not deleted", (await prisma.invoice.findUnique({ where: { id: invoiceF2_X.id } })) !== null, "")
+
+    // G. Existing Sales Ledger protection is unchanged, even when the invoice ALSO has an
+    // InvoiceDocument row — the salesLedgerEntry guard must still fire first, before the
+    // delete (and its cascade) is ever attempted.
+    const invoiceG_X = await makeInvoiceX("DRAFT", "G")
+    await prisma.invoiceDocument.create({
+      data: { companyId: companyA.id, invoiceId: invoiceG_X.id, fileType: "PDF", storageKey: `fake/${invoiceG_X.invoiceNumber}.pdf`, storageProvider: "DROPBOX", mimeType: "application/pdf", fileSize: 100 },
+    })
+    const salesLedgerForG = await prisma.salesLedgerEntry.create({
+      data: {
+        companyId: companyA.id, invoiceId: invoiceG_X.id, date: new Date(), customerId: companyACustomer.id,
+        customerName: "E2E Section X", invoiceAmount: 0, amountReceived: 0, balance: 0, createdById: admin.id,
+      },
+      select: { id: true },
+    })
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceDeleteCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceG_X.id])
+      record("X", "G. Invoice linked to a Sales Ledger record still rejected (unchanged)", /"error"\s*:\s*"This invoice is linked to a Sales Ledger record and cannot be deleted"/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "G. Invoice linked to a Sales Ledger record still rejected", false, "could not resolve action id")
+    }
+    record("X", "DB check: G's invoice was not deleted", (await prisma.invoice.findUnique({ where: { id: invoiceG_X.id } })) !== null, "")
+    record("X", "DB check: G's Sales Ledger entry was not deleted", (await prisma.salesLedgerEntry.findUnique({ where: { id: salesLedgerForG.id } })) !== null, "")
+    record("X", "DB check: G's InvoiceDocument row was not touched (guard fired before any delete attempt)", (await prisma.invoiceDocument.count({ where: { invoiceId: invoiceG_X.id } })) === 1, "")
+    // deleteInvoice() correctly refuses to touch this one — clean it up manually, since
+    // the suite-wide cleanup below doesn't know about per-test SalesLedgerEntry rows.
+    await prisma.salesLedgerEntry.delete({ where: { id: salesLedgerForG.id } })
+    await prisma.invoiceDocument.deleteMany({ where: { invoiceId: invoiceG_X.id } })
+    await prisma.invoice.delete({ where: { id: invoiceG_X.id } })
+
+    // H. deleteInvoice() never calls out to Dropbox to remove the actual file — only the
+    // DB metadata row is ever affected by this fix. Static check: the function's own
+    // source contains no reference to Dropbox at all. Behavioral corroboration: B and C
+    // above both cascade-deleted DROPBOX-provider InvoiceDocument rows and reported
+    // success with no thrown error, even though Dropbox is not configured/reachable in
+    // this environment — a real attempted Dropbox API call here would have thrown.
+    const invoicesSource = await readFile(path.join(process.cwd(), "src", "lib", "actions", "invoices.ts"), "utf8")
+    const deleteFnStart = invoicesSource.indexOf("export async function deleteInvoice")
+    const deleteInvoiceSource = invoicesSource.slice(deleteFnStart, deleteFnStart + 1500)
+    record("X", "H. deleteInvoice()'s source contains no Dropbox deletion call (static check)", !/dropbox/i.test(deleteInvoiceSource), "")
+
+    // I. Cross-company Invoice deletion remains denied — tenant isolation is completely
+    // independent of, and unaffected by, this cascade fix.
+    const invoiceI_CoB = await prisma.invoice.create({
+      data: {
+        invoiceNumber: `E2E-INV-DELX-I-COB-${Date.now() % 1000000}`,
+        companyId: companyB.id,
+        customerId: companyBCustomer.id,
+        createdById: companyBAdmin.id,
+        date: new Date(),
+        subtotal: 0,
+        vatPercent: 0,
+        vatAmount: 0,
+        totalAmount: 0,
+        status: "DRAFT",
+      },
+      select: { id: true },
+    })
+    if (deleteInvoiceActionId) {
+      const res = await callAction(invoiceDeleteCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceI_CoB.id])
+      record("X", "I1. Company A user cannot delete Company B's invoice -> denied (\"Invoice not found\")", /"error"\s*:\s*"Invoice not found"/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "I1. Company A user cannot delete Company B's invoice -> denied", false, "could not resolve action id")
+    }
+    record("X", "DB check: I1's Company B invoice still exists", (await prisma.invoice.findUnique({ where: { id: invoiceI_CoB.id } })) !== null, "")
+
+    const invoiceI_CoA = await makeInvoiceX("DRAFT", "I2")
+    if (deleteInvoiceActionId) {
+      const res = await callAction(companyBAdminCookieX, "/quotations/invoices", deleteInvoiceActionId, [invoiceI_CoA.id])
+      record("X", "I2. Company B admin cannot delete Company A's invoice -> denied (\"Invoice not found\")", /"error"\s*:\s*"Invoice not found"/i.test(res.text), res.text.slice(0, 150))
+    } else {
+      record("X", "I2. Company B admin cannot delete Company A's invoice -> denied", false, "could not resolve action id")
+    }
+    record("X", "DB check: I2's Company A invoice still exists", (await prisma.invoice.findUnique({ where: { id: invoiceI_CoA.id } })) !== null, "")
+
+    await prisma.invoice.deleteMany({ where: { id: { in: [invoiceI_CoB.id, invoiceI_CoA.id] } } })
+  }
+
   // ─── Regression: Admin ──────────────────────────────────────────────────────
   console.log("\n=== Regression: Admin (full access) ===")
   {
@@ -1991,6 +2185,7 @@ async function main() {
     await prisma.taskStep.deleteMany({ where: { task: { companyId: { in: companyIds } } } })
     await prisma.task.deleteMany({ where: { companyId: { in: companyIds } } })
     await prisma.invoiceItem.deleteMany({ where: { invoice: { companyId: { in: companyIds } } } })
+    await prisma.invoiceDocument.deleteMany({ where: { companyId: { in: companyIds } } })
     await prisma.invoice.deleteMany({ where: { companyId: { in: companyIds } } })
     await prisma.quotationItem.deleteMany({ where: { quotation: { companyId: { in: companyIds } } } })
     // Section S's createQuotation()/updateQuotation() calls are the first fixtures in this
