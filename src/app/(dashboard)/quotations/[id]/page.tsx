@@ -237,18 +237,17 @@ export default async function QuotationDetailPage({
         }
       />
 
-      {/* Converted-to-job banner */}
+      {/* Converted-to-job banner — the legacy Jobs module has been decommissioned
+          (Final Remediation Phase 5), so this stays a plain historical
+          identifier, never a link into the now-unreachable /jobs/** pages. */}
       {quotation.convertedJob && (
         <div className="mb-4 flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
           <Briefcase className="h-4 w-4 text-green-600 shrink-0" />
           <span className="text-sm text-green-800">
             <T k="convertedToJob" />{" "}
-            <Link
-              href={`/jobs/${quotation.convertedJob.id}`}
-              className="font-semibold text-green-700 hover:underline"
-            >
+            <span className="font-semibold text-green-700" title="Job (legacy — no longer viewable)">
               {quotation.convertedJob.jobNumber}
-            </Link>
+            </span>
           </span>
         </div>
       )}

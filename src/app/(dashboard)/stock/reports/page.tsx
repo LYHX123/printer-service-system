@@ -254,9 +254,12 @@ async function MovementsReport({
           },
           { key: "reference", label: <T k="reference" />, render: (row) => <span className="text-xs text-slate-500">{row.reference ?? "—"}</span> },
           {
+            // The legacy Jobs module has been decommissioned (Final Remediation
+            // Phase 5) — this stays a plain historical identifier, never a link
+            // into the now-unreachable /jobs/** pages.
             key: "job", label: <T k="job" />,
             render: (row) => row.job ? (
-              <Link href={`/jobs/${row.job.id}`} className="font-mono text-xs text-blue-600 hover:underline">{row.job.jobNumber}</Link>
+              <span className="font-mono text-xs text-slate-500" title="Job (legacy — no longer viewable)">{row.job.jobNumber}</span>
             ) : "—",
           },
           { key: "performedBy", label: <T k="by" />, render: (row) => <span className="text-xs text-slate-500">{row.performedBy.name}</span> },

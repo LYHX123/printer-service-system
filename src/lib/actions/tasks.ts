@@ -38,6 +38,21 @@ export async function createTask(data: CreateTaskInput) {
 
   const { title, initialStepTitle, initialStepDescription, participantIds } = parsed.data
 
+  // Every participant must belong to this company and be active — same
+  // ownership model addTaskParticipants() already enforces when adding to an
+  // existing task. participantIds is client-supplied; companyId comes only
+  // from the session, never the request. Checked before any write, so a
+  // rejected request creates zero Task/TaskParticipant rows — never distinguishes
+  // "malformed", "nonexistent", or "belongs to another company" in the response.
+  const uniqueParticipantIds = [...new Set(participantIds)]
+  const validParticipants = await prisma.user.findMany({
+    where: { id: { in: uniqueParticipantIds }, companyId, isActive: true },
+    select: { id: true },
+  })
+  if (validParticipants.length !== uniqueParticipantIds.length) {
+    return { error: "One or more selected participants are invalid" }
+  }
+
   try {
     const task = await prisma.task.create({
       data: {
@@ -45,7 +60,7 @@ export async function createTask(data: CreateTaskInput) {
         title,
         createdById: userId,
         participants: {
-          create: participantIds.map((uid) => ({ userId: uid })),
+          create: uniqueParticipantIds.map((uid) => ({ userId: uid })),
         },
         steps: {
           create: {
@@ -67,7 +82,7 @@ export async function createTask(data: CreateTaskInput) {
       entityId: task.id,
       action: AUDIT_ACTIONS.CREATED,
       performedById: userId,
-      metadata: { title, participantCount: participantIds.length },
+      metadata: { title, participantCount: uniqueParticipantIds.length },
     })
 
     return { success: true as const, taskId: task.id, initialStepId: task.steps[0].id }

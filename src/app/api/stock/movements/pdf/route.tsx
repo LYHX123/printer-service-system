@@ -3,9 +3,9 @@ import { renderToBuffer } from "@react-pdf/renderer"
 import { auth } from "@/lib/auth"
 import { getStockMovements } from "@/lib/data/inventory"
 import { getCompanySettings } from "@/lib/data/settings"
-import { canAccess } from "@/lib/permissions"
+import { getViewableStockBuckets } from "@/lib/permissions"
 import { StockMovementDocument } from "@/components/pdf/StockMovementDocument"
-import { CATEGORIES_FOR_STOCK_TYPE, isStockType } from "@/lib/stock-types"
+import { STOCK_TYPES, CATEGORIES_FOR_STOCK_TYPE, isStockType, stockTypeToBucket } from "@/lib/stock-types"
 import { TRANSACTION_TYPE_LABELS } from "@/types"
 import type { TransactionType, Role } from "@/types"
 
@@ -16,10 +16,17 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  if (!canAccess(session.user.role as Role, "inventory", session.user.modulePermissions)) {
+  const role = session.user.role as Role
+  const permissions = session.user.modulePermissions
+  const companyId = session.user.companyId as string
+
+  // Same source of truth as /stock/movements/page.tsx — a stock.equipment.view-only
+  // user must never get Consumption/Parts movements out of this export either.
+  const viewableBuckets = getViewableStockBuckets(role, permissions)
+  const viewableTypes = STOCK_TYPES.filter((st) => viewableBuckets.includes(stockTypeToBucket(st)))
+  if (viewableTypes.length === 0) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
-  const companyId = session.user.companyId as string
 
   const { searchParams } = new URL(request.url)
   const category = searchParams.get("category") ?? undefined
@@ -27,7 +34,15 @@ export async function GET(request: Request) {
   const search = searchParams.get("search") ?? undefined
   const date = searchParams.get("date") ?? undefined
 
-  const stockType = isStockType(category) ? category : undefined
+  // Unlike the page (which silently falls back to the caller's viewable
+  // buckets on an unauthorized/invalid category), an explicit category this
+  // caller isn't allowed to view — or that isn't a real stock type at all —
+  // is rejected outright here rather than substituted.
+  const requestedType = category !== undefined ? (isStockType(category) ? category : undefined) : undefined
+  if (category !== undefined && (!requestedType || !viewableTypes.includes(requestedType))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const validType = TRANSACTION_TYPES.includes(type as TransactionType) ? (type as TransactionType) : undefined
   const validDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined
 
@@ -37,7 +52,9 @@ export async function GET(request: Request) {
       from: validDate,
       to: validDate,
       search,
-      categories: stockType ? CATEGORIES_FOR_STOCK_TYPE[stockType] : undefined,
+      categories: requestedType
+        ? CATEGORIES_FOR_STOCK_TYPE[requestedType]
+        : viewableTypes.flatMap((st) => CATEGORIES_FOR_STOCK_TYPE[st]),
     }),
     getCompanySettings(companyId),
   ])

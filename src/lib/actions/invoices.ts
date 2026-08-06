@@ -267,6 +267,13 @@ export async function updateInvoice(id: string, data: DirectInvoiceInput) {
     if (!existing) return { error: "Invoice not found" }
     if (existing.status !== "DRAFT") return { error: "Only draft invoices can be edited" }
 
+    // Same ownership validation createDirectInvoice already has — customerId is
+    // client-supplied and companyId comes only from the session, never the
+    // request. Generic "not found" whether the id is missing, malformed, or
+    // real-but-belongs-to-another-company — never distinguishable.
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!customer) return { error: "Customer not found" }
+
     const existingNumber = await prisma.invoice.findFirst({
       where: { invoiceNumber, companyId, NOT: { id } },
       select: { id: true },

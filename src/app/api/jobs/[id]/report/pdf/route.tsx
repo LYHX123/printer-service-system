@@ -1,32 +1,9 @@
 import { NextResponse } from "next/server"
-import { renderToBuffer } from "@react-pdf/renderer"
-import { auth } from "@/lib/auth"
-import { getJobForReport } from "@/lib/data/reports"
-import { RepairReportDocument } from "@/components/pdf/RepairReportDocument"
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth()
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  const companyId = session.user.companyId as string
-  const { id } = await params
-
-  const job = await getJobForReport(id, companyId)
-  if (!job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 404 })
-  }
-
-  const buffer = await renderToBuffer(<RepairReportDocument job={job} />)
-  const fileName = `${job.customer.code}-${job.jobNumber}-${job.equipment.type}-Report.pdf`
-
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
-    },
-  })
+// The legacy Jobs module has been decommissioned — see Final Remediation
+// Phase 5 (Legacy Jobs Decommission). Unconditionally 404, regardless of
+// authentication or permission state, so the retired feature isn't
+// advertised as a live endpoint.
+export async function GET() {
+  return new NextResponse(null, { status: 404 })
 }

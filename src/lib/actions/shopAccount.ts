@@ -29,6 +29,17 @@ export async function createShopAccountEntry(
   const { date, type, categoryId, newCategoryName, description, payee, amount, paymentMethod, remarks } = parsed.data
 
   try {
+    // categoryId is client-supplied — when picking an EXISTING category (not the
+    // "__new__" workflow, which already scopes by companyId via
+    // findOrCreateShopAccountCategory), verify it belongs to this authenticated
+    // company before it's ever persisted. companyId comes only from the session,
+    // never from the request. Generic "not found" whether the id is missing,
+    // malformed, or real-but-belongs-to-another-company — never distinguishable.
+    if (categoryId !== NEW_CATEGORY_VALUE) {
+      const ownedCategory = await prisma.shopAccountCategory.findFirst({ where: { id: categoryId, companyId }, select: { id: true } })
+      if (!ownedCategory) return { error: "Category not found" }
+    }
+
     const finalCategoryId =
       categoryId === NEW_CATEGORY_VALUE
         ? (await findOrCreateShopAccountCategory(companyId, type, newCategoryName!)).id
@@ -83,6 +94,12 @@ export async function updateShopAccountEntry(id: string, data: ShopAccountEntryI
   try {
     const existing = await prisma.shopAccountEntry.findFirst({ where: { id, companyId } })
     if (!existing) return { error: "Record not found" }
+
+    // Same ownership validation as createShopAccountEntry — see its comment.
+    if (categoryId !== NEW_CATEGORY_VALUE) {
+      const ownedCategory = await prisma.shopAccountCategory.findFirst({ where: { id: categoryId, companyId }, select: { id: true } })
+      if (!ownedCategory) return { error: "Category not found" }
+    }
 
     const finalCategoryId =
       categoryId === NEW_CATEGORY_VALUE

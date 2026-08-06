@@ -1,77 +1,20 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { RepairReportSchema, type RepairReportInput } from "@/lib/schemas"
+import type { RepairReportInput } from "@/lib/schemas"
 
+/**
+ * The legacy Jobs module has been decommissioned — see Final Remediation
+ * Phase 5 (Legacy Jobs Decommission). This export is kept only because the
+ * (now-unreachable, since /jobs/[id]/report returns notFound()) legacy
+ * RepairReportForm component still imports it by name — it is now a pure
+ * no-op: no session read, no database access, no mutation, regardless of
+ * caller, session state, or arguments. This was previously the subject of
+ * a confirmed P1 (missing Engineer-assigned-job ownership check); rather
+ * than patch that individually, the entire legacy Jobs mutation surface —
+ * including this action — is being retired.
+ */
 export async function saveRepairReport(jobId: string, data: RepairReportInput) {
-  const session = await auth()
-  if (!session?.user) return { error: "Unauthorized" }
-  const companyId = session.user.companyId as string
-  const userId = session.user.id as string
-
-  const parsed = RepairReportSchema.safeParse(data)
-  if (!parsed.success) return { error: "Invalid form data" }
-
-  const { diagnosis, workDone, recommendations, labourCost, parts } = parsed.data
-
-  try {
-    const job = await prisma.serviceJob.findFirst({
-      where: { id: jobId, companyId },
-      select: { id: true },
-    })
-    if (!job) return { error: "Job not found" }
-
-    const partsCost = parts.reduce((sum, p) => sum + p.quantity * p.unitPrice, 0)
-    const totalCost = labourCost + partsCost
-
-    await prisma.$transaction(async (tx) => {
-      const report = await tx.repairReport.upsert({
-        where: { jobId },
-        create: {
-          jobId,
-          writtenById: userId,
-          diagnosis,
-          workDone,
-          recommendations: recommendations || null,
-          labourCost,
-          partsCost,
-        },
-        update: {
-          writtenById: userId,
-          diagnosis,
-          workDone,
-          recommendations: recommendations || null,
-          labourCost,
-          partsCost,
-        },
-      })
-
-      await tx.jobPart.deleteMany({ where: { reportId: report.id } })
-      if (parts.length > 0) {
-        await tx.jobPart.createMany({
-          data: parts.map((p) => ({
-            reportId: report.id,
-            partId: p.partId || null,
-            partName: p.partName,
-            quantity: p.quantity,
-            unitPrice: p.unitPrice,
-            subtotal: p.quantity * p.unitPrice,
-          })),
-        })
-      }
-
-      await tx.serviceJob.update({
-        where: { id: jobId },
-        data: { labourCost, partsCost, totalCost },
-      })
-    })
-
-    revalidatePath(`/jobs/${jobId}/report`)
-    revalidatePath(`/jobs/${jobId}`)
-    return { success: true }
-  } catch {
-    return { error: "Failed to save repair report" }
-  }
+  void jobId
+  void data
+  return { error: "This feature is no longer available." }
 }

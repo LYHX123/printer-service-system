@@ -100,6 +100,26 @@ export async function createQuotation(data: QuotationInput) {
   let quotation: { id: string }
   let partMap: Map<string, QuotationPart>
   try {
+    // customerId/customerBranchId are client-supplied — verify both belong to
+    // this authenticated company (and the branch to this exact customer)
+    // before they're ever persisted. companyId here comes only from the
+    // session, never from the request. Same generic "not found" whether the
+    // id is missing, malformed, or real-but-belongs-to-another-company —
+    // never distinguishable, so a response can't confirm another company's
+    // customer/branch exists.
+    const ownedCustomer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!ownedCustomer) return { error: "Customer not found" }
+
+    let validatedBranchId: string | null = null
+    if (customerBranchId) {
+      const ownedBranch = await prisma.customerBranch.findFirst({
+        where: { id: customerBranchId, customerId, companyId },
+        select: { id: true },
+      })
+      if (!ownedBranch) return { error: "Customer branch not found" }
+      validatedBranchId = ownedBranch.id
+    }
+
     const existingNumber = await prisma.quotation.findUnique({ where: { quotationNumber } })
     if (existingNumber) return { error: "QUOTATION_NUMBER_EXISTS" }
 
@@ -124,7 +144,7 @@ export async function createQuotation(data: QuotationInput) {
         quotationSortNumber: extractTrailingNumber(quotationNumber),
         companyId,
         customerId,
-        customerBranchId: customerBranchId || null,
+        customerBranchId: validatedBranchId,
         contactName: contactName || null,
         contactPhone: contactPhone || null,
         contactEmail: contactEmail || null,
@@ -250,6 +270,21 @@ export async function updateQuotation(id: string, data: QuotationInput) {
     }
     existing = found
 
+    // Same ownership validation as createQuotation — see its comment.
+    const ownedCustomer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!ownedCustomer) return { error: "Customer not found" }
+
+    if (customerBranchId) {
+      const ownedBranch = await prisma.customerBranch.findFirst({
+        where: { id: customerBranchId, customerId, companyId },
+        select: { id: true },
+      })
+      if (!ownedBranch) return { error: "Customer branch not found" }
+      newCustomerBranchId = ownedBranch.id
+    } else {
+      newCustomerBranchId = null
+    }
+
     const existingNumber = await prisma.quotation.findFirst({
       where: { quotationNumber, companyId, NOT: { id } },
       select: { id: true },
@@ -270,7 +305,6 @@ export async function updateQuotation(id: string, data: QuotationInput) {
       0
     )
     const totalCost = computeTotal(subtotal, vatPercent)
-    newCustomerBranchId = customerBranchId || null
 
     await prisma.$transaction(async (tx) => {
       await tx.quotationItem.deleteMany({ where: { quotationId: id } })

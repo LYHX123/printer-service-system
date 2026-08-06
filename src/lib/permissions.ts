@@ -185,10 +185,13 @@ export const PERMISSION_TREE: PermNode[] = [
       { key: "settings.edit", en: "Edit", zh: "编辑" },
     ],
   },
-  {
-    key: "jobs", en: "Jobs (legacy)", zh: "工单（旧）",
-    leaves: [{ key: "jobs", en: "Access", zh: "访问" }],
-  },
+  // The "jobs" (legacy) group has been removed from this tree — see Final
+  // Remediation Phase 5 (Legacy Jobs Decommission). It's no longer
+  // grantable through the Permissions Editor. The "jobs" PermissionKey /
+  // Module entry itself is left in place (dormant, harmless) rather than
+  // touched here — every /jobs/** page, API route, and Server Action now
+  // unconditionally refuses regardless of whether a legacy account still
+  // has "jobs" in its stored modulePermissions array.
 ]
 
 function collectLeaves(nodes: PermNode[]): PermissionKey[] {
@@ -416,6 +419,18 @@ export function canCreateJob(_role: Role): boolean {
 /** Engineers see only jobs assigned to them; other roles see all company jobs. */
 export function isRestrictedToAssignedJobs(role: Role): boolean {
   return role === "ENGINEER"
+}
+
+/**
+ * Single source of truth for the Engineer-assigned-job ownership rule — every
+ * page, API route, PDF/photo/signature route, and Server Action that loads a
+ * job by id must call this (in addition to, not instead of, its own
+ * `findFirst({ id, companyId })` tenant scoping) before returning or mutating
+ * it. An ENGINEER may only reach a job assigned to them; every other role is
+ * unrestricted here, same as `isRestrictedToAssignedJobs`.
+ */
+export function canAccessJob(role: Role, userId: string, assignedToId: string): boolean {
+  return !isRestrictedToAssignedJobs(role) || assignedToId === userId
 }
 
 export function canCreateQuotation(role: Role, permissions: string[] = []): boolean {

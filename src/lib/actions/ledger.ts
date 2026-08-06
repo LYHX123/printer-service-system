@@ -76,6 +76,17 @@ export async function createLedgerEntry(data: LedgerEntryInput) {
     return { error: "Forbidden" }
   }
 
+  // A linked customer must belong to the caller's own company — customerId is
+  // client-supplied, and companyId here comes only from the authenticated
+  // session, never from the request. Same generic "not found" whether the id
+  // is missing, malformed, or a real customer belonging to another company —
+  // never distinguishable, so a response can't confirm another company's
+  // customer exists.
+  if (type === "INCOME" && customerId) {
+    const ownedCustomer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!ownedCustomer) return { error: "Customer not found" }
+  }
+
   try {
     const finalCategoryId =
       categoryId === NEW_CATEGORY_VALUE
@@ -153,6 +164,12 @@ export async function updateLedgerEntry(id: string, data: LedgerEntryInput) {
 
   if (allocations.length > 0 && !canAllocateReceipt(session.user.role as Role, session.user.modulePermissions)) {
     return { error: "Forbidden" }
+  }
+
+  // Same ownership check as createLedgerEntry — see its comment.
+  if (type === "INCOME" && customerId) {
+    const ownedCustomer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!ownedCustomer) return { error: "Customer not found" }
   }
 
   try {
@@ -288,6 +305,16 @@ export async function createSalesLedgerEntry(data: SalesLedgerEntryInput) {
   const parsed = SalesLedgerEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
   const { date, customerId, customerName, orderNo, invoiceAmount, amountReceived, remark } = parsed.data
+
+  // customerId is optional (a pure manual/legacy entry has none) but when supplied it's
+  // client input — verify it belongs to this authenticated company before persisting.
+  // companyId comes only from the session, never the request. Same generic "not found"
+  // whether the id is missing, malformed, or real-but-belongs-to-another-company.
+  if (customerId) {
+    const ownedCustomer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!ownedCustomer) return { error: "Customer not found" }
+  }
+
   const { balance, status } = computeSalesLedgerStatus(invoiceAmount, amountReceived)
   const entryDate = new Date(`${date}T12:00:00`)
   const { referenceYear, referenceSequence } = parseSalesReference(orderNo, entryDate)
@@ -339,6 +366,13 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
   const parsed = SalesLedgerEntrySchema.safeParse(data)
   if (!parsed.success) return { error: "Invalid form data" }
   const { date, customerId, customerName, orderNo, invoiceAmount, remark } = parsed.data
+
+  // Same ownership validation as createSalesLedgerEntry — see its comment.
+  if (customerId) {
+    const ownedCustomer = await prisma.customer.findFirst({ where: { id: customerId, companyId }, select: { id: true } })
+    if (!ownedCustomer) return { error: "Customer not found" }
+  }
+
   const entryDate = new Date(`${date}T12:00:00`)
   const { referenceYear, referenceSequence } = parseSalesReference(orderNo, entryDate)
 
