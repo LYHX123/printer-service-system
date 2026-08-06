@@ -31,6 +31,14 @@ import {
   declineSignature,
 } from "../src/lib/actions/jobs"
 import { saveRepairReport } from "../src/lib/actions/reports"
+import {
+  getCurrentMonthSalesTotal,
+  getCurrentMonthSalesIncomeTotal,
+  getSalesLedgerMonthlyStatistics,
+  getSalesLedgerYearRange,
+  getUnpaidSalesBalance,
+} from "../src/lib/data/ledger"
+import { formatCurrency } from "../src/lib/utils"
 import type { JobInput } from "../src/lib/schemas"
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3000"
@@ -2130,6 +2138,375 @@ async function main() {
     record("X", "DB check: I2's Company A invoice still exists", (await prisma.invoice.findUnique({ where: { id: invoiceI_CoA.id } })) !== null, "")
 
     await prisma.invoice.deleteMany({ where: { id: { in: [invoiceI_CoB.id, invoiceI_CoA.id] } } })
+  }
+
+  // ─── Y. Sales Ledger statistics redesign — current-month KPIs + dynamic Monthly
+  // Sales Statistics ───────────────────────────────────────────────────────────
+  // Two deliberately distinct dimensions under test throughout this section:
+  //   (1) top-card "Current Month Income" — cash-flow, grouped by the RECEIPT's
+  //       own date, regardless of which month the sale it pays off belongs to.
+  //   (2) Monthly Sales Statistics "Collected" — business-attribution, grouped by
+  //       the SALE's own date, regardless of when (or in which year) it was paid.
+  console.log("\n=== Y. Sales Ledger statistics — current-month KPIs + Monthly Sales Statistics ===")
+  {
+    function ymd(y: number, m: number, d: number): string {
+      return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+    }
+
+    const adminCookieY = await login(admin.name)
+    const ledgerOnlyCookieY = await login(ledgerOnly.name)
+    const zeroPermCookieY = await login(zeroPerm.name)
+    const companyBAdminCookieY = await login(companyBAdmin.name)
+
+    const ledgerCategoryY = await prisma.ledgerCategory.create({
+      data: { companyId: companyA.id, type: "INCOME", name: `E2E Income Category Y ${Date.now()}` },
+      select: { id: true },
+    })
+    const ledgerCategoryYCoB = await prisma.ledgerCategory.create({
+      data: { companyId: companyB.id, type: "INCOME", name: `E2E Income Category Y CoB ${Date.now()}` },
+      select: { id: true },
+    })
+
+    await getPage(adminCookieY, "/ledger/sales")
+    await getPage(adminCookieY, "/ledger/income-expense")
+    await getPage(adminCookieY, "/quotations/invoices/new")
+    const createSalesLedgerActionIdY = await getActionId("(dashboard)/ledger/sales/page", "src/lib/actions/ledger.ts", "createSalesLedgerEntry")
+    const createLedgerActionIdY = await getActionId("(dashboard)/ledger/income-expense/page", "src/lib/actions/ledger.ts", "createLedgerEntry")
+    const createDirectInvoiceActionIdY = await getActionId("(dashboard)/quotations/invoices/new/page", "src/lib/actions/invoices.ts", "createDirectInvoice")
+
+    async function makeManualSale(date: string, invoiceAmount: number, tag: string) {
+      const res = createSalesLedgerActionIdY
+        ? await callAction(adminCookieY, "/ledger/sales", createSalesLedgerActionIdY, [{
+            date, customerId: "", customerName: `E2E Monthly Stats ${tag}`, orderNo: "", invoiceAmount, amountReceived: 0, remark: "",
+          }])
+        : { status: 0, text: "" }
+      const entry = await prisma.salesLedgerEntry.findFirst({ where: { companyId: companyA.id, customerName: `E2E Monthly Stats ${tag}` }, select: { id: true } })
+      return { res, entry }
+    }
+
+    async function makeReceipt(date: string, amount: number, salesLedgerEntryId: string) {
+      return createLedgerActionIdY
+        ? callAction(adminCookieY, "/ledger/income-expense", createLedgerActionIdY, [{
+            type: "INCOME", categoryId: ledgerCategoryY.id, date, amount, paymentMethod: "CASH", referenceNo: "",
+            remark: `E2E Y receipt ${date}`, customerId: companyACustomer.id, allocations: [{ salesLedgerEntryId, amount }],
+          }])
+        : { status: 0, text: "" }
+    }
+
+    // ── Historical Monthly Sales Statistics, year 2031 (a year with no other data
+    // in this suite, so absolute totals — not just deltas — can be asserted safely) ──
+
+    // Month-boundary precision: 30 June and 1 July must land in different buckets.
+    const { entry: saleJune30 } = await makeManualSale(ymd(2031, 6, 30), 9999, "June30")
+    const { entry: saleJuly1 } = await makeManualSale(ymd(2031, 7, 1), 8888, "July1")
+
+    // Sale J — unpaid at first, then fully paid across two LATER months (Aug, Sep).
+    const { res: saleJRes, entry: saleJ } = await makeManualSale(ymd(2031, 7, 10), 100000, "SaleJ")
+    record("Y", "1. createSalesLedgerEntry succeeds for the Monthly Stats fixture (Sale J)", /"success"\s*:\s*true/i.test(saleJRes.text), saleJRes.text.slice(0, 150))
+
+    // Same-month multiple sales: Sale K, also in July 2031.
+    const { entry: saleK } = await makeManualSale(ymd(2031, 7, 20), 60000, "SaleK")
+
+    // Cross-year isolation fixtures — must NEVER appear in year 2031's statistics.
+    await makeManualSale(ymd(2030, 7, 15), 77777, "Sale2030")
+    await makeManualSale(ymd(2032, 7, 15), 66666, "Sale2032")
+
+    // December/January year-boundary fixture (mirrors the spec's own example exactly).
+    const { entry: saleDec } = await makeManualSale(ymd(2031, 12, 15), 100000, "SaleDec")
+
+    if (!saleJ || !saleK || !saleDec || !saleJune30 || !saleJuly1) {
+      record("Y", "2031 Monthly Stats fixtures all created", false, "one or more fixture entries failed to persist — skipping dependent checks")
+    } else {
+      // 9. Unpaid historical sale -> full balance, before any receipts exist.
+      let stats2031 = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+      record("Y", "9. July 2031 (unpaid so far): Sales=168888, Collected=0, Balance=168888", stats2031[6].sales === 168888 && stats2031[6].collected === 0 && stats2031[6].balance === 168888, JSON.stringify(stats2031[6]))
+      record("Y", "Month-boundary: June 2031 = 9999 only (July 1 excluded)", stats2031[5].sales === 9999, JSON.stringify(stats2031[5]))
+      record("Y", "11. Year isolation: 2030 and 2032 sales never appear in year 2031's totals", stats2031.reduce((s, m) => s + m.sales, 0) === 9999 + 168888 + 100000, `yearTotal=${stats2031.reduce((s, m) => s + m.sales, 0)}`)
+
+      // 5. August receipt allocated to the July sale -> July Collected/Balance update dynamically.
+      const r1 = await makeReceipt(ymd(2031, 8, 10), 50000, saleJ.id)
+      record("Y", "17. createLedgerEntry with a receipt allocation still succeeds (unchanged workflow)", /"success"\s*:\s*true/i.test(r1.text), r1.text.slice(0, 150))
+      stats2031 = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+      record("Y", "5. July 2031 after an August receipt: Collected=50000, Balance=118888 (100000+8888-50000)", stats2031[6].collected === 50000 && stats2031[6].balance === 118888, JSON.stringify(stats2031[6]))
+
+      // 6/8. A second receipt, in yet another later month, fully pays off Sale J.
+      await makeReceipt(ymd(2031, 9, 10), 50000, saleJ.id)
+      stats2031 = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+      record("Y", "6. July 2031 after a September receipt: Collected dynamically reaches 100000 for Sale J's share", stats2031[6].collected === 100000, JSON.stringify(stats2031[6]))
+      // Sale K (60000) hasn't received any receipts yet at this point — July's Balance
+      // still carries its full amount alongside July1's untouched 8888.
+      record("Y", "8. Sale J is now fully paid: July Balance = 68888 (168888 - 100000; Sale K's 60000 still outstanding)", stats2031[6].balance === 68888, JSON.stringify(stats2031[6]))
+      const saleJFresh = await prisma.salesLedgerEntry.findUnique({ where: { id: saleJ.id } })
+      record("Y", "Consistency: Sale J's own stored balance/status agree with the new monthly aggregate", Number(saleJFresh?.balance) === 0 && saleJFresh?.paymentStatus === "PAID", `balance=${saleJFresh?.balance} status=${saleJFresh?.paymentStatus}`)
+
+      // 7. Multiple partial receipts across three different months on Sale K.
+      await makeReceipt(ymd(2031, 7, 25), 20000, saleK.id)
+      await makeReceipt(ymd(2031, 8, 5), 15000, saleK.id)
+      await makeReceipt(ymd(2031, 9, 15), 25000, saleK.id)
+      stats2031 = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+      record("Y", "7. Sale K's three partial receipts (20000+15000+25000=60000) fully paid off, reflected in July's Collected", stats2031[6].collected === 100000 + 60000, JSON.stringify(stats2031[6]))
+      record("Y", "7b. July 2031 fully settled except the untouched July1 sale: Balance=8888", stats2031[6].balance === 8888, JSON.stringify(stats2031[6]))
+
+      // 10. December sale + January (next year) receipt — December's balance updates
+      // dynamically even though the receipt is recorded in the following calendar year.
+      await makeReceipt(ymd(2032, 1, 10), 40000, saleDec.id)
+      stats2031 = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+      record("Y", "10. December 2031 after a January 2032 receipt: Sales=100000, Collected=40000, Balance=60000", stats2031[11].sales === 100000 && stats2031[11].collected === 40000 && stats2031[11].balance === 60000, JSON.stringify(stats2031[11]))
+    }
+
+    // Year range / clamping ------------------------------------------------------
+    const yearRangeY = await getSalesLedgerYearRange(companyA.id)
+    record("Y", "getSalesLedgerYearRange: maxYear is the real current year, unaffected by the 2032 future-dated fixture", yearRangeY.maxYear === new Date().getFullYear(), `maxYear=${yearRangeY.maxYear}`)
+    record("Y", "getSalesLedgerYearRange: minYear reaches back to at least 2030 (this section's earliest fixture)", yearRangeY.minYear <= 2030, `minYear=${yearRangeY.minYear}`)
+    const outOfRangeYearPage = await getPage(adminCookieY, "/ledger/sales?salesYear=2031")
+    record("Y", "14. Page gracefully clamps an out-of-range (future) salesYear param instead of erroring", outOfRangeYearPage.status === 200, `status=${outOfRangeYearPage.status}`)
+
+    // ── Top-card current-month KPIs, anchored to the REAL current month so this
+    // suite stays correct no matter when it's run. Uses before/after deltas so any
+    // pre-existing Company A data from earlier sections can never skew the result. ──
+    const now = new Date()
+    const thisY = now.getFullYear()
+    const thisM = now.getMonth() + 1
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 5)
+    const lastY = lastMonthDate.getFullYear()
+    const lastM = lastMonthDate.getMonth() + 1
+
+    const beforeThisMonthSales = await getCurrentMonthSalesTotal(companyA.id)
+    const beforeThisMonthIncome = await getCurrentMonthSalesIncomeTotal(companyA.id)
+    const beforeThisMonthBucketCollected = (await getSalesLedgerMonthlyStatistics(companyA.id, thisY))[thisM - 1].collected
+
+    const { entry: thisMonthSale } = await makeManualSale(ymd(thisY, thisM, 5), 33000, "ThisMonthSale")
+    const { entry: lastMonthSale } = await makeManualSale(ymd(lastY, lastM, 5), 44000, "LastMonthSale")
+
+    // 15. Invoice-generated Sales Ledger entry, dated this month.
+    const invoiceThisMonthNumber = `E2E-INV-Y-${Date.now() % 100000}`
+    let invoiceThisMonth: { id: string } | null = null
+    if (createDirectInvoiceActionIdY) {
+      await callAction(adminCookieY, "/quotations/invoices/new", createDirectInvoiceActionIdY, [{
+        invoiceNumber: invoiceThisMonthNumber, customerId: companyACustomer.id, customerPin: "", date: ymd(thisY, thisM, 8),
+        vatPercent: 0, remarks: "", items: [{ partId: companyASparePart.id, quantity: 1, unitPrice: 15000 }],
+      }])
+      invoiceThisMonth = await prisma.invoice.findUnique({ where: { invoiceNumber: invoiceThisMonthNumber }, select: { id: true } })
+    }
+    if (invoiceThisMonth) {
+      await getPage(adminCookieY, `/quotations/invoices/${invoiceThisMonth.id}`)
+      const createSalesLedgerFromInvoiceActionIdY = await getActionId("(dashboard)/quotations/invoices/[id]/page", "src/lib/actions/invoices.ts", "createSalesLedgerFromInvoice")
+      if (createSalesLedgerFromInvoiceActionIdY) {
+        const res = await callAction(adminCookieY, `/quotations/invoices/${invoiceThisMonth.id}`, createSalesLedgerFromInvoiceActionIdY, [invoiceThisMonth.id])
+        record("Y", "15. createSalesLedgerFromInvoice succeeds for the this-month invoice fixture", /"success"\s*:\s*true/i.test(res.text), res.text.slice(0, 150))
+      } else {
+        record("Y", "15. createSalesLedgerFromInvoice succeeds for the this-month invoice fixture", false, "could not resolve action id")
+      }
+    } else {
+      record("Y", "15. createSalesLedgerFromInvoice succeeds for the this-month invoice fixture", false, "invoice fixture was not created")
+    }
+
+    // 1/2. Current Month Sales includes this month's manual + invoice-generated sale,
+    // and excludes last month's sale entirely.
+    const afterThisMonthSales = await getCurrentMonthSalesTotal(companyA.id)
+    record("Y", "1. Current Month Sales delta = 33000 (manual) + 15000 (invoice-generated) = 48000", afterThisMonthSales - beforeThisMonthSales === 48000, `delta=${afterThisMonthSales - beforeThisMonthSales}`)
+    record("Y", "2. Last month's sale (44000) did not affect Current Month Sales", afterThisMonthSales - beforeThisMonthSales === 48000, "")
+
+    if (thisMonthSale && lastMonthSale) {
+      // 3. A this-month receipt allocated to a this-month sale.
+      const r3 = await makeReceipt(ymd(thisY, thisM, 15), 10000, thisMonthSale.id)
+      record("Y", "3. Receipt recorded this month, allocated to a this-month sale -> real success", /"success"\s*:\s*true/i.test(r3.text), r3.text.slice(0, 150))
+
+      // 4. A this-month receipt allocated to a LAST-month sale — still counted in this
+      // month's cash-flow Income, precisely because Income follows the receipt's own date.
+      const r4 = await makeReceipt(ymd(thisY, thisM, 16), 12000, lastMonthSale.id)
+      record("Y", "4. Receipt recorded this month, allocated to last month's sale -> still real success", /"success"\s*:\s*true/i.test(r4.text), r4.text.slice(0, 150))
+
+      const afterThisMonthIncome = await getCurrentMonthSalesIncomeTotal(companyA.id)
+      const incomeDelta = afterThisMonthIncome - beforeThisMonthIncome
+      record("Y", "3/4. Current Month Income delta = 10000 + 12000 = 22000 (both receipts, regardless of which month their sale belongs to)", incomeDelta === 22000, `delta=${incomeDelta}`)
+
+      const afterThisMonthBucketCollected = (await getSalesLedgerMonthlyStatistics(companyA.id, thisY))[thisM - 1].collected
+      const bucketDelta = afterThisMonthBucketCollected - beforeThisMonthBucketCollected
+      const dimensionsGenuinelyDiffer = incomeDelta !== bucketDelta
+      record(
+        "Y",
+        "Current Month Income (22000) != this month's OWN sale-bucket Collected (10000) — the two dimensions genuinely differ",
+        incomeDelta === 22000 && bucketDelta === 10000 && dimensionsGenuinelyDiffer,
+        `incomeDelta=${incomeDelta} bucketDelta=${bucketDelta}`
+      )
+    } else {
+      record("Y", "3/4. This-month / last-month receipt allocation fixtures", false, "sale fixtures were not created")
+    }
+
+    // 12. Company/tenant isolation — Company B activity must never move Company A's numbers.
+    const coASalesBefore = await getCurrentMonthSalesTotal(companyA.id)
+    const coAIncomeBefore = await getCurrentMonthSalesIncomeTotal(companyA.id)
+    const coABalanceBefore = await getUnpaidSalesBalance(companyA.id)
+    const coAStats2031Before = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+
+    const coBSaleRes = createSalesLedgerActionIdY
+      ? await callAction(companyBAdminCookieY, "/ledger/sales", createSalesLedgerActionIdY, [{
+          date: ymd(thisY, thisM, 5), customerId: companyBCustomer.id, customerName: "E2E CoB Isolation Sale", orderNo: "", invoiceAmount: 500000, amountReceived: 0, remark: "",
+        }])
+      : { text: "" }
+    void coBSaleRes
+    const coBSale = await prisma.salesLedgerEntry.findFirst({ where: { companyId: companyB.id, customerName: "E2E CoB Isolation Sale" }, select: { id: true } })
+    if (coBSale) {
+      await getPage(companyBAdminCookieY, "/ledger/income-expense")
+      const createLedgerActionIdCoB = await getActionId("(dashboard)/ledger/income-expense/page", "src/lib/actions/ledger.ts", "createLedgerEntry")
+      if (createLedgerActionIdCoB) {
+        await callAction(companyBAdminCookieY, "/ledger/income-expense", createLedgerActionIdCoB, [{
+          type: "INCOME", categoryId: ledgerCategoryYCoB.id, date: ymd(thisY, thisM, 6), amount: 250000, paymentMethod: "CASH",
+          referenceNo: "", remark: "E2E CoB Isolation Receipt", customerId: companyBCustomer.id, allocations: [{ salesLedgerEntryId: coBSale.id, amount: 250000 }],
+        }])
+      }
+    }
+
+    const coASalesAfter = await getCurrentMonthSalesTotal(companyA.id)
+    const coAIncomeAfter = await getCurrentMonthSalesIncomeTotal(companyA.id)
+    const coABalanceAfter = await getUnpaidSalesBalance(companyA.id)
+    const coAStats2031After = await getSalesLedgerMonthlyStatistics(companyA.id, 2031)
+    record("Y", "12a. Company A's Current Month Sales is unchanged after Company B activity", coASalesAfter === coASalesBefore, `before=${coASalesBefore} after=${coASalesAfter}`)
+    record("Y", "12b. Company A's Current Month Income is unchanged after Company B activity", coAIncomeAfter === coAIncomeBefore, `before=${coAIncomeBefore} after=${coAIncomeAfter}`)
+    record("Y", "12c. Company A's Total Outstanding Balance is unchanged after Company B activity", coABalanceAfter === coABalanceBefore, `before=${coABalanceBefore} after=${coABalanceAfter}`)
+    record("Y", "12d. Company A's 2031 Monthly Statistics are byte-for-byte unchanged after Company B activity", JSON.stringify(coAStats2031After) === JSON.stringify(coAStats2031Before), "")
+
+    // 13. Permission isolation — obeys the existing Sales Ledger view permission, no new gate.
+    const salesPageResY = await fetch(`${BASE_URL}/ledger/sales`, { headers: { Cookie: ledgerOnlyCookieY }, redirect: "manual" })
+    const salesPageHtmlY = await salesPageResY.text()
+    record("Y", "13a. ledger.sales.view-only user CAN reach /ledger/sales -> 200", salesPageResY.status === 200, `status=${salesPageResY.status}`)
+    record("Y", "13b. ledger.sales.view-only user's response includes the new Monthly Sales Statistics section", salesPageHtmlY.includes("Monthly Sales Statistics"), "")
+    const deniedPageY = await getPage(zeroPermCookieY, "/ledger/sales")
+    record("Y", "13c. Zero-permission user is denied /ledger/sales entirely (redirected away, no stats leak)", deniedPageY.status >= 300 && deniedPageY.status < 400, `status=${deniedPageY.status} location=${deniedPageY.location}`)
+
+    // 16. Existing Sales Ledger list page still renders correctly after the redesign.
+    record("Y", "16. Sales Ledger list still functional after the statistics redesign: GET /ledger/sales -> 200", (await getPage(adminCookieY, "/ledger/sales")).status === 200, "")
+
+    // 18. Existing Sales Ledger Excel export (transaction-level, intentionally left unchanged) still works.
+    const exportResY = await fetch(`${BASE_URL}/api/ledger/sales/export`, { headers: { Cookie: adminCookieY } })
+    record(
+      "Y",
+      "18. Sales Ledger Excel export still works, unmodified by the statistics redesign",
+      exportResY.status === 200 && (exportResY.headers.get("content-type") ?? "").includes("spreadsheetml"),
+      `status=${exportResY.status}`
+    )
+  }
+
+  // ─── Z. Monthly Sales Statistics — single-month display + Year/Month filter ──
+  // Confirms the UI-only change (12-month table -> one compact month at a time)
+  // still surfaces exactly the same dynamic figures Section Y already proved at
+  // the calculation layer, through the real page this time — and that the three
+  // independent scopes (Top KPI / Monthly Sales Statistics / Sales Ledger list)
+  // still can't influence each other via the new salesMonth param.
+  console.log("\n=== Z. Monthly Sales Statistics — single-month display + filter ===")
+  {
+    const adminCookieZ = await login(admin.name)
+    const zeroPermCookieZ = await login(zeroPerm.name)
+
+    // A. Default state: no salesYear/salesMonth params -> shows the REAL current
+    // year/month (not a 12-month table).
+    const now = new Date()
+    const currentLabel = `${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][now.getMonth()]} ${now.getFullYear()}`
+    const defaultPageRes = await fetch(`${BASE_URL}/ledger/sales`, { headers: { Cookie: adminCookieZ }, redirect: "manual" })
+    const defaultPageHtml = await defaultPageRes.text()
+    record("Z", "A. Default Monthly Sales Statistics shows the real current month/year", defaultPageHtml.includes(currentLabel), `expected "${currentLabel}"`)
+    // Next.js embeds a serialized RSC payload alongside the rendered HTML for
+    // hydration, which doubles every real text/class occurrence — confirmed by
+    // direct inspection (a single rendered month consistently produces exactly 2,
+    // never dozens). A 12-row table would still produce a number in the dozens, so
+    // a generous "<=3" threshold cleanly distinguishes "one month" from "twelve"
+    // without being tripped up by that framework-level duplication.
+    const monthLinkOccurrences = (defaultPageHtml.match(/\/ledger\/sales\?from=\d{4}-\d{2}-\d{2}(&|&amp;)to=/g) ?? []).length
+    record("Z", "A. Default view renders exactly one month's statistics block, not a 12-row table", monthLinkOccurrences > 0 && monthLinkOccurrences <= 3, `occurrences=${monthLinkOccurrences}`)
+
+    // Fresh, isolated fixture using REAL, page-selectable years (the year selector
+    // is intentionally capped at the real current year — see Section Y's
+    // getSalesLedgerYearRange checks — so December 2025 / January-February 2026 is
+    // used here instead of an artificial future year, to exercise the actual
+    // year-boundary case through the real page, not just the direct function call).
+    const ledgerCategoryZ = await prisma.ledgerCategory.create({
+      data: { companyId: companyA.id, type: "INCOME", name: `E2E Income Category Z ${Date.now()}` },
+      select: { id: true },
+    })
+    await getPage(adminCookieZ, "/ledger/sales")
+    await getPage(adminCookieZ, "/ledger/income-expense")
+    const createSalesLedgerActionIdZ = await getActionId("(dashboard)/ledger/sales/page", "src/lib/actions/ledger.ts", "createSalesLedgerEntry")
+    const createLedgerActionIdZ = await getActionId("(dashboard)/ledger/income-expense/page", "src/lib/actions/ledger.ts", "createLedgerEntry")
+
+    if (createSalesLedgerActionIdZ) {
+      await callAction(adminCookieZ, "/ledger/sales", createSalesLedgerActionIdZ, [{
+        date: "2025-12-10", customerId: "", customerName: "E2E Monthly Stats SaleM", orderNo: "", invoiceAmount: 100000, amountReceived: 0, remark: "",
+      }])
+    }
+    const saleM = await prisma.salesLedgerEntry.findFirst({ where: { companyId: companyA.id, customerName: "E2E Monthly Stats SaleM" }, select: { id: true } })
+
+    async function fetchMonthlyStatsPage(year: number, month: number, extraQuery = ""): Promise<string> {
+      const res = await fetch(`${BASE_URL}/ledger/sales?salesYear=${year}&salesMonth=${month}${extraQuery}`, { headers: { Cookie: adminCookieZ }, redirect: "manual" })
+      return res.text()
+    }
+
+    if (saleM) {
+      // B/C. Selecting Year=2025, Month=December shows ONLY December 2025 — Sales=100000, Collected=0, Balance=100000.
+      let html = await fetchMonthlyStatsPage(2025, 12)
+      record("Z", "B. Selecting a specific Year+Month shows December 2025's own figures", html.includes("December 2025"), "")
+      record("Z", "C1. December 2025 before any receipt: Sales=100,000.00, Balance=100,000.00", html.includes(formatCurrency(100000)), `looked for ${formatCurrency(100000)}`)
+
+      // C. January 2026 receipt (a real year boundary) allocated to the December
+      // 2025 sale -> December's Collected/Balance updates dynamically.
+      if (createLedgerActionIdZ) {
+        await callAction(adminCookieZ, "/ledger/income-expense", createLedgerActionIdZ, [{
+          type: "INCOME", categoryId: ledgerCategoryZ.id, date: "2026-01-10", amount: 50000, paymentMethod: "CASH",
+          referenceNo: "", remark: "E2E Z receipt 1", customerId: companyACustomer.id, allocations: [{ salesLedgerEntryId: saleM.id, amount: 50000 }],
+        }])
+      }
+      html = await fetchMonthlyStatsPage(2025, 12)
+      record("Z", "C2/E. December 2025 after a January 2026 (next-year) receipt: Collected=50,000.00, Balance=50,000.00", html.includes(formatCurrency(50000)), "")
+
+      // D. A second receipt, in yet another later month, fully pays off Sale M.
+      if (createLedgerActionIdZ) {
+        await callAction(adminCookieZ, "/ledger/income-expense", createLedgerActionIdZ, [{
+          type: "INCOME", categoryId: ledgerCategoryZ.id, date: "2026-02-10", amount: 50000, paymentMethod: "CASH",
+          referenceNo: "", remark: "E2E Z receipt 2", customerId: companyACustomer.id, allocations: [{ salesLedgerEntryId: saleM.id, amount: 50000 }],
+        }])
+      }
+      html = await fetchMonthlyStatsPage(2025, 12)
+      const saleMFresh = await prisma.salesLedgerEntry.findUnique({ where: { id: saleM.id } })
+      record("Z", "D. December 2025 after a February 2026 receipt: Collected reaches 100,000.00, Balance reaches 0.00", html.includes(formatCurrency(100000)) && Number(saleMFresh?.balance) === 0, `status=${saleMFresh?.paymentStatus}`)
+    } else {
+      record("Z", "B/C/D/E. December 2025 dynamic-update fixture", false, "Sale M fixture was not created")
+    }
+
+    // F. Monthly Sales Statistics year/month filter never changes the top 3 KPIs.
+    const expectedTopSales = formatCurrency(await getCurrentMonthSalesTotal(companyA.id))
+    const expectedTopIncome = formatCurrency(await getCurrentMonthSalesIncomeTotal(companyA.id))
+    const expectedTopBalance = formatCurrency(await getUnpaidSalesBalance(companyA.id))
+    const pageWithDec2025 = await fetchMonthlyStatsPage(2025, 12)
+    const pageWithFeb2026 = await fetchMonthlyStatsPage(2026, 2)
+    const topKpiUnaffected =
+      pageWithDec2025.includes(expectedTopSales) && pageWithDec2025.includes(expectedTopIncome) && pageWithDec2025.includes(expectedTopBalance) &&
+      pageWithFeb2026.includes(expectedTopSales) && pageWithFeb2026.includes(expectedTopIncome) && pageWithFeb2026.includes(expectedTopBalance)
+    record("Z", "F. Top KPI cards are byte-for-byte identical regardless of the selected Monthly Statistics Year/Month", topKpiUnaffected, "")
+
+    // G. Monthly Sales Statistics filter never narrows the Sales Ledger list below it.
+    const decFilteredPage = await fetchMonthlyStatsPage(2025, 12)
+    record("Z", "G. Selecting Monthly Stats Year/Month alone does not trigger the list's \"Clear\" (no from/to/customer/status filter applied)", !decFilteredPage.includes(">Clear<"), "")
+
+    // H. Sales Ledger list filters (customer/date/status) never change the Monthly
+    // Sales Statistics figures for the selected month.
+    const monthlyStatsNoListFilter = await fetchMonthlyStatsPage(2025, 12)
+    const monthlyStatsWithUnrelatedCustomerFilter = await fetchMonthlyStatsPage(2025, 12, "&customer=NoSuchCustomerNameZZZ")
+    record(
+      "Z",
+      "H. An unrelated Sales Ledger list customer filter does not change December 2025's Monthly Statistics figures",
+      monthlyStatsNoListFilter.includes(formatCurrency(100000)) === monthlyStatsWithUnrelatedCustomerFilter.includes(formatCurrency(100000)),
+      ""
+    )
+
+    // I. Permission/company isolation regression — the new salesMonth param can't be
+    // abused to reach the page without permission, and an invalid month value degrades
+    // gracefully instead of leaking or crashing.
+    const deniedPageZ = await getPage(zeroPermCookieZ, "/ledger/sales?salesYear=2025&salesMonth=12")
+    record("Z", "I1. Zero-permission user is still denied /ledger/sales even with salesYear/salesMonth set", deniedPageZ.status >= 300 && deniedPageZ.status < 400, `status=${deniedPageZ.status}`)
+    const invalidMonthPage = await getPage(adminCookieZ, "/ledger/sales?salesMonth=13")
+    record("Z", "I2. An out-of-range salesMonth (13) does not crash the page -> 200", invalidMonthPage.status === 200, `status=${invalidMonthPage.status}`)
+    const garbageMonthPage = await getPage(adminCookieZ, "/ledger/sales?salesMonth=abc")
+    record("Z", "I3. A non-numeric salesMonth does not crash the page -> 200", garbageMonthPage.status === 200, `status=${garbageMonthPage.status}`)
   }
 
   // ─── Regression: Admin ──────────────────────────────────────────────────────

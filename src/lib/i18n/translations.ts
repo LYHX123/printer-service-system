@@ -312,6 +312,15 @@ export type TranslationKey =
   | "totalInvoiceAmount"
   | "totalReceived"
   | "totalBalance"
+  | "currentMonthSalesLabel"
+  | "totalOutstandingBalanceLabel"
+  | "monthlySalesStatistics"
+  | "monthlyStatsYearLabel"
+  | "monthlyStatsMonthLabel"
+  | "monthlyStatsSalesLabel"
+  | "monthlyStatsCollectedLabel"
+  | "monthlyStatsBalanceLabel"
+  | "monthlyStatsViewMonth"
   // Shop Account
   | "shopAccountDesc"
   | "supplierPayee"
@@ -1165,6 +1174,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     totalInvoiceAmount: "Total Invoice Amount",
     totalReceived: "Total Received",
     totalBalance: "Total Balance",
+    currentMonthSalesLabel: "Current Month Sales",
+    totalOutstandingBalanceLabel: "Total Outstanding Balance",
+    monthlySalesStatistics: "Monthly Sales Statistics",
+    monthlyStatsYearLabel: "Year",
+    monthlyStatsMonthLabel: "Month",
+    monthlyStatsSalesLabel: "Sales",
+    monthlyStatsCollectedLabel: "Cumulative Received",
+    monthlyStatsBalanceLabel: "Current Balance",
+    monthlyStatsViewMonth: "View this month's records",
     // Shop Account
     shopAccountDesc: "Daily shop purchases, expenses, and income — independent from the company Ledger.",
     supplierPayee: "Supplier / Payee",
@@ -1888,6 +1906,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     totalInvoiceAmount: "总发票金额",
     totalReceived: "总已收金额",
     totalBalance: "总余额",
+    currentMonthSalesLabel: "本月销售",
+    totalOutstandingBalanceLabel: "总未收余额",
+    monthlySalesStatistics: "月度销售统计",
+    monthlyStatsYearLabel: "年份",
+    monthlyStatsMonthLabel: "月份",
+    monthlyStatsSalesLabel: "销售额",
+    monthlyStatsCollectedLabel: "累计已收",
+    monthlyStatsBalanceLabel: "当前余额",
+    monthlyStatsViewMonth: "查看该月记录",
     // Shop Account
     shopAccountDesc: "店铺日常采购、支出和收入 — 独立于公司总账。",
     supplierPayee: "供应商 / 收款方",

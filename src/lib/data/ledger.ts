@@ -221,6 +221,122 @@ export async function getUnpaidSalesBalance(companyId: string): Promise<number> 
   return Number(result._sum.balance ?? 0)
 }
 
+function monthRange(year: number, monthIndex0: number): { start: Date; end: Date } {
+  return {
+    start: new Date(year, monthIndex0, 1, 0, 0, 0),
+    end: new Date(year, monthIndex0 + 1, 0, 23, 59, 59, 999),
+  }
+}
+
+/**
+ * Sum of Sales Ledger sale amounts whose own sale date falls in the current
+ * calendar month — a pure "what was sold this month" figure, independent of
+ * when (or whether) any of it has been collected.
+ */
+export async function getCurrentMonthSalesTotal(companyId: string): Promise<number> {
+  const now = new Date()
+  const { start, end } = monthRange(now.getFullYear(), now.getMonth())
+  const result = await prisma.salesLedgerEntry.aggregate({
+    where: { companyId, isArchived: false, date: { gte: start, lte: end } },
+    _sum: { invoiceAmount: true },
+  })
+  return Number(result._sum.invoiceAmount ?? 0)
+}
+
+/**
+ * Sum of receipt money actually applied to Sales Ledger invoices during the
+ * current calendar month, grouped by the RECEIPT's own date (LedgerEntry.date)
+ * — a cash-flow figure, deliberately independent of which month the sale
+ * being paid off originated in. Scoped through both sides of the allocation
+ * (the receiving LedgerEntry and the target SalesLedgerEntry) so a receipt or
+ * sale from another company can never contribute here even indirectly.
+ */
+export async function getCurrentMonthSalesIncomeTotal(companyId: string): Promise<number> {
+  const now = new Date()
+  const { start, end } = monthRange(now.getFullYear(), now.getMonth())
+  const result = await prisma.receiptAllocation.aggregate({
+    where: {
+      ledgerEntry: { companyId, date: { gte: start, lte: end } },
+      salesLedgerEntry: { companyId },
+    },
+    _sum: { allocatedAmount: true },
+  })
+  return Number(result._sum.allocatedAmount ?? 0)
+}
+
+export type MonthlySalesStat = {
+  /** 1-12 */
+  month: number
+  sales: number
+  collected: number
+  balance: number
+}
+
+/**
+ * Shared by both call shapes below — grouping is always by each Sales Ledger
+ * entry's OWN sale date; "collected"/"balance" reflect every receipt currently
+ * allocated to that entry as of right now, regardless of which month or year
+ * the receipt itself was recorded in. This is why a July balance can still
+ * drop to zero after a September (or next-year) payment: the figure is always
+ * recomputed live from current allocations, never a stored month-end
+ * snapshot. Exactly two queries total (entries in range, then one grouped
+ * allocation sum for all of them) — no per-month or per-entry query.
+ */
+async function computeMonthlyStats(companyId: string, start: Date, end: Date, bucketCount: number, bucketIndex: (date: Date) => number): Promise<MonthlySalesStat[]> {
+  const entries = await prisma.salesLedgerEntry.findMany({
+    where: { companyId, isArchived: false, date: { gte: start, lte: end } },
+    select: { id: true, date: true, invoiceAmount: true },
+  })
+
+  const ids = entries.map((e) => e.id)
+  const allocationSums =
+    ids.length > 0
+      ? await prisma.receiptAllocation.groupBy({
+          by: ["salesLedgerEntryId"],
+          where: { salesLedgerEntryId: { in: ids } },
+          _sum: { allocatedAmount: true },
+        })
+      : []
+  const receivedByEntryId = new Map(allocationSums.map((a) => [a.salesLedgerEntryId, Number(a._sum.allocatedAmount ?? 0)]))
+
+  const buckets: MonthlySalesStat[] = Array.from({ length: bucketCount }, (_, i) => ({ month: i + 1, sales: 0, collected: 0, balance: 0 }))
+  for (const e of entries) {
+    const bucket = buckets[bucketIndex(e.date)]
+    const sales = Number(e.invoiceAmount)
+    const collected = receivedByEntryId.get(e.id) ?? 0
+    bucket.sales += sales
+    bucket.collected += collected
+    bucket.balance += sales - collected
+  }
+  return buckets
+}
+
+/** One row per calendar month of `year` — unchanged 12-month shape used by existing callers/tests. */
+export async function getSalesLedgerMonthlyStatistics(companyId: string, year: number): Promise<MonthlySalesStat[]>
+/** A single specified month (1-12) of `year` — same underlying logic, narrower query, one-element result. */
+export async function getSalesLedgerMonthlyStatistics(companyId: string, year: number, month: number): Promise<[MonthlySalesStat]>
+export async function getSalesLedgerMonthlyStatistics(companyId: string, year: number, month?: number): Promise<MonthlySalesStat[]> {
+  if (month === undefined) {
+    const { start } = monthRange(year, 0)
+    const { end } = monthRange(year, 11)
+    return computeMonthlyStats(companyId, start, end, 12, (date) => date.getMonth())
+  }
+  const { start, end } = monthRange(year, month - 1)
+  const [stat] = await computeMonthlyStats(companyId, start, end, 1, () => 0)
+  return [{ ...stat, month }]
+}
+
+/** Earliest year with a non-archived Sales Ledger sale, through the current year — feeds the Monthly Sales Statistics year selector. Falls back to just the current year for a company with no Sales Ledger history yet. */
+export async function getSalesLedgerYearRange(companyId: string): Promise<{ minYear: number; maxYear: number }> {
+  const currentYear = new Date().getFullYear()
+  const earliest = await prisma.salesLedgerEntry.aggregate({
+    where: { companyId, isArchived: false },
+    _min: { date: true },
+  })
+  const minYear = earliest._min.date ? Math.min(earliest._min.date.getFullYear(), currentYear) : currentYear
+  return { minYear, maxYear: currentYear }
+}
+
 /** A customer's UNPAID/PARTIAL Sales Ledger entries — feeds the Receipt Allocation panel on the Income form. */
 export type AllocatableSalesLedgerEntry = {
   id: string
