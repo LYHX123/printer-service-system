@@ -282,7 +282,6 @@ export type TranslationKey =
   | "addIncome"
   | "addExpense"
   | "editEntry"
-  | "archiveRecord"
   | "restoreRecord"
   | "addCategory"
   | "categoryName"
@@ -300,7 +299,6 @@ export type TranslationKey =
   | "paymentMethodCard"
   | "paymentMethodOther"
   | "salesCustomerName"
-  | "orderNo"
   | "invoiceAmount"
   | "amountReceived"
   | "balance"
@@ -354,6 +352,9 @@ export type TranslationKey =
   | "toDate"
   | "statusActive"
   | "statusArchived"
+  | "salesLedgerInvoiceNoLockedHint"
+  | "deleteSalesRecordConfirm"
+  | "salesLedgerHasPaymentsError"
   // Settings
   | "companySettings"
   | "companySettingsDesc"
@@ -1144,7 +1145,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     addIncome: "Add Income",
     addExpense: "Add Expense",
     editEntry: "Edit Entry",
-    archiveRecord: "Archive",
     restoreRecord: "Restore",
     addCategory: "Add Category",
     categoryName: "Category Name",
@@ -1162,7 +1162,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     paymentMethodCard: "Card",
     paymentMethodOther: "Other",
     salesCustomerName: "Customer Name",
-    orderNo: "Order No / Reference No",
     invoiceAmount: "Invoice Amount",
     amountReceived: "Amount Received",
     balance: "Balance",
@@ -1209,13 +1208,16 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     editSalesRecord: "Edit Sales Record",
     noSalesLedgerFound: "No sales ledger records found",
     noSalesLedgerDesc: "Add your first sales record to get started.",
-    searchSalesLedgerPlaceholder: "Search by customer name or order no…",
+    searchSalesLedgerPlaceholder: "Search by customer name or invoice no…",
     searchLedgerPlaceholder: "Search income or expense...",
     currentMonth: "Current Month",
     fromDate: "From Date",
     toDate: "To Date",
     statusActive: "Active",
     statusArchived: "Archived",
+    salesLedgerInvoiceNoLockedHint: "Linked to an Invoice — cannot be edited here",
+    deleteSalesRecordConfirm: "Delete this sales record? This action cannot be undone.",
+    salesLedgerHasPaymentsError: "This sales record has received payments and cannot be deleted. Please remove or adjust the related receipt allocations first.",
     // Settings
     companySettings: "Company Settings",
     companySettingsDesc: "Manage your company profile, branding, and regional preferences.",
@@ -1876,7 +1878,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     addIncome: "新增收入",
     addExpense: "新增支出",
     editEntry: "编辑记录",
-    archiveRecord: "归档",
     restoreRecord: "恢复",
     addCategory: "新增分类",
     categoryName: "分类名称",
@@ -1894,7 +1895,6 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     paymentMethodCard: "银行卡",
     paymentMethodOther: "其他",
     salesCustomerName: "客户名称",
-    orderNo: "订单号 / 参考编号",
     invoiceAmount: "发票金额",
     amountReceived: "已收金额",
     balance: "余额",
@@ -1941,13 +1941,16 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     editSalesRecord: "编辑销售记录",
     noSalesLedgerFound: "未找到销售账记录",
     noSalesLedgerDesc: "添加第一笔销售记录以开始使用。",
-    searchSalesLedgerPlaceholder: "按客户名称或订单号搜索…",
+    searchSalesLedgerPlaceholder: "按客户名称或发票编号搜索…",
     searchLedgerPlaceholder: "搜索收入或支出…",
     currentMonth: "本月",
     fromDate: "起始日期",
     toDate: "结束日期",
     statusActive: "进行中",
     statusArchived: "已归档",
+    salesLedgerInvoiceNoLockedHint: "已关联发票，无法在此编辑",
+    deleteSalesRecordConfirm: "确定删除这条销售记录吗？此操作无法撤销。",
+    salesLedgerHasPaymentsError: "该销售记录已有收款记录，无法直接删除。请先处理相关收款分配。",
     // Settings
     companySettings: "公司设置",
     companySettingsDesc: "管理您的公司资料、品牌和区域设置。",

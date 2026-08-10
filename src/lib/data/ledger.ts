@@ -176,11 +176,15 @@ export async function getSalesLedgerEntries(
       companyId,
       isArchived: archived,
       ...(paymentStatus ? { paymentStatus } : {}),
+      // Invoice No search must reach both manual entries (own orderNo field) and
+      // invoice-generated entries — via the live Invoice.invoiceNumber relation, not the
+      // orderNo snapshot copied at generation time, which can go stale after a rename.
       ...(customerName
         ? {
             OR: [
               { customerName: { contains: customerName, mode: "insensitive" } },
               { orderNo: { contains: customerName, mode: "insensitive" } },
+              { invoice: { invoiceNumber: { contains: customerName, mode: "insensitive" } } },
             ],
           }
         : {}),

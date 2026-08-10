@@ -46,7 +46,9 @@ export function SalesLedgerModal({ isOpen, onClose, entry }: SalesLedgerModalPro
           date: new Date(e.date).toISOString().slice(0, 10),
           customerId: e.customerId ?? "",
           customerName: e.customerName,
-          orderNo: e.orderNo ?? "",
+          // Invoice-generated entries display the linked Invoice's real number (locked,
+          // see isInvoiceGenerated below) instead of the orderNo snapshot.
+          orderNo: e.invoiceId ? e.invoice?.invoiceNumber ?? e.orderNo ?? "" : e.orderNo ?? "",
           invoiceAmount: e.invoiceAmount,
           amountReceived: e.amountReceived,
           remark: e.remark ?? "",
@@ -93,6 +95,10 @@ export function SalesLedgerModal({ isOpen, onClose, entry }: SalesLedgerModalPro
   // amountReceived is owned by that allocation total — editing it here would silently
   // get overwritten on the next recompute, so lock it and point to the real source.
   const hasAllocations = Boolean(entry?._count?.allocations)
+  // Invoice-generated entries show the real linked Invoice number and must not let this
+  // form write a diverging copy back into orderNo — see updateSalesLedgerEntry's
+  // matching guard in src/lib/actions/ledger.ts.
+  const isInvoiceGenerated = Boolean(entry?.invoiceId)
 
   function handleCustomerChange(name: string, customerId: string) {
     setCustomerDisplayName(name)
@@ -160,8 +166,13 @@ export function SalesLedgerModal({ isOpen, onClose, entry }: SalesLedgerModalPro
           />
         </FormField>
 
-        <FormField label={t("orderNo")} htmlFor="salesOrderNo" error={errors.orderNo?.message}>
-          <Input id="salesOrderNo" {...register("orderNo")} />
+        <FormField
+          label={t("invoiceNoLabel")}
+          htmlFor="salesOrderNo"
+          error={errors.orderNo?.message}
+          hint={isInvoiceGenerated ? t("salesLedgerInvoiceNoLockedHint") : undefined}
+        >
+          <Input id="salesOrderNo" disabled={isInvoiceGenerated} {...register("orderNo")} />
         </FormField>
 
         <FormField label={t("invoiceAmount")} htmlFor="salesInvoiceAmount" required error={errors.invoiceAmount?.message}>

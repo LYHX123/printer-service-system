@@ -391,14 +391,18 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
     const amountReceived = hasAllocations ? Number(existing.amountReceived) : parsed.data.amountReceived
     const { balance, status } = computeSalesLedgerStatus(invoiceAmount, amountReceived)
 
+    // Invoice-generated entries (invoiceId set) show the linked Invoice's own number as
+    // their Invoice No (see resolveSalesLedgerInvoiceNo) — the orderNo/reference* fields
+    // are frozen at their original snapshot and never touched by this form, so editing a
+    // generated Sales Ledger entry can never drift from, or write back into, the Invoice.
+    const isInvoiceGenerated = Boolean(existing.invoiceId)
+
     await prisma.salesLedgerEntry.update({
       where: { id },
       data: {
         date: entryDate,
         customerName,
-        orderNo: orderNo || null,
-        referenceYear,
-        referenceSequence,
+        ...(isInvoiceGenerated ? {} : { orderNo: orderNo || null, referenceYear, referenceSequence }),
         invoiceAmount,
         ...(hasAllocations ? {} : { amountReceived }),
         balance,
@@ -422,6 +426,52 @@ export async function updateSalesLedgerEntry(id: string, data: SalesLedgerEntryI
     return { success: true as const }
   } catch {
     return { error: "Failed to update record" }
+  }
+}
+
+/**
+ * Permanently removes a Sales Ledger entry — allowed only when it has never received
+ * any money (amountReceived = 0 AND zero ReceiptAllocation rows). Once a receipt has
+ * been allocated, the entry feeds live cashflow/statistics figures (Current Month
+ * Income, Monthly Sales Statistics' Cumulative Received/Current Balance) and must be
+ * kept — deletion is refused with a friendly error instead. Never touches the linked
+ * Invoice: SalesLedgerEntry.delete ≠ Invoice.delete, and there is no cascade to
+ * ReceiptAllocation/LedgerEntry (the FK has no onDelete: Cascade, so the DB itself
+ * would reject the delete even if this check were somehow bypassed).
+ */
+export async function deleteSalesLedgerEntry(id: string) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  if (!canDeleteLedgerEntryPerm(session.user.role as Role, session.user.modulePermissions, "sales")) return { error: "Forbidden" }
+  const companyId = session.user.companyId as string
+  const userId = session.user.id as string
+
+  try {
+    const existing = await prisma.salesLedgerEntry.findFirst({
+      where: { id, companyId },
+      include: { _count: { select: { allocations: true } } },
+    })
+    if (!existing) return { error: "Record not found" }
+
+    if (Number(existing.amountReceived) !== 0 || existing._count.allocations > 0) {
+      return { error: "HAS_PAYMENTS" }
+    }
+
+    await prisma.salesLedgerEntry.delete({ where: { id } })
+    revalidatePath("/ledger/sales")
+
+    await logActivity({
+      companyId,
+      entityType: AUDIT_ENTITY_TYPES.SALES_LEDGER_ENTRY,
+      entityId: id,
+      action: AUDIT_ACTIONS.DELETED,
+      performedById: userId,
+      metadata: { customerName: existing.customerName, invoiceId: existing.invoiceId },
+    })
+
+    return { success: true as const }
+  } catch {
+    return { error: "Failed to delete record" }
   }
 }
 

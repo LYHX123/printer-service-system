@@ -4,6 +4,7 @@ import { format } from "date-fns"
 import { auth } from "@/lib/auth"
 import { canExportLedgerBook } from "@/lib/permissions"
 import { getSalesLedgerEntries } from "@/lib/data/ledger"
+import { resolveSalesLedgerInvoiceNo } from "@/lib/ledger-utils"
 import { SALES_PAYMENT_STATUS_LABELS } from "@/types"
 import type { Role, SalesPaymentStatus } from "@/types"
 
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
   const header = [
     "Date",
     "Customer Name",
-    "Order No / Ref No",
+    "Invoice No",
     "Invoice Amount",
     "Amount Received",
     "Balance",
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
   const dataRows = entries.map((e) => [
     format(new Date(e.date), "dd MMM yyyy"),
     e.customerName,
-    e.orderNo ?? "",
+    resolveSalesLedgerInvoiceNo(e) ?? "",
     e.invoiceAmount,
     e.amountReceived,
     e.balance,
@@ -82,7 +83,7 @@ export async function GET(request: Request) {
   ws["!cols"] = [
     { wch: 14 }, // Date
     { wch: 28 }, // Customer Name
-    { wch: 20 }, // Order No
+    { wch: 20 }, // Invoice No
     { wch: 16 }, // Invoice Amount
     { wch: 16 }, // Amount Received
     { wch: 14 }, // Balance

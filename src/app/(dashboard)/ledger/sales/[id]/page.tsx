@@ -3,12 +3,13 @@ import { notFound, redirect } from "next/navigation"
 import { ChevronLeft, Clock, User, Receipt } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { hasAnyPermission, canViewInvoice } from "@/lib/permissions"
+import { hasAnyPermission, canViewInvoice, canEditLedgerEntryPerm, canDeleteLedgerEntryPerm } from "@/lib/permissions"
 import { getSalesLedgerEntry } from "@/lib/data/ledger"
 import { PageHeader } from "@/components/ui/page-header"
 import { SalesPaymentStatusBadge } from "@/components/ui/badge"
 import { SalesLedgerActions } from "@/components/ledger/SalesLedgerActions"
 import { formatCurrency } from "@/lib/utils"
+import { resolveSalesLedgerInvoiceNo } from "@/lib/ledger-utils"
 import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
@@ -31,6 +32,8 @@ export default async function SalesLedgerDetailPage({
   // plain text (never hidden) instead of a link when the viewer can't see
   // Invoice Detail.
   const canLinkToInvoice = canViewInvoice(role, permissions)
+  const canEdit = canEditLedgerEntryPerm(role, permissions, "sales")
+  const canDelete = canDeleteLedgerEntryPerm(role, permissions, "sales")
 
   return (
     <div>
@@ -42,12 +45,12 @@ export default async function SalesLedgerDetailPage({
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2">
-            {entry.orderNo ?? entry.id.slice(0, 8)}
+            {resolveSalesLedgerInvoiceNo(entry) ?? entry.id.slice(0, 8)}
             <SalesPaymentStatusBadge status={entry.paymentStatus} />
           </span>
         }
         subtitle={<span className="text-slate-400 text-xs">{format(new Date(entry.date), "dd MMM yyyy")}</span>}
-        actions={<SalesLedgerActions entry={entry} />}
+        actions={<SalesLedgerActions entry={entry} canEdit={canEdit} canDelete={canDelete} hideView />}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

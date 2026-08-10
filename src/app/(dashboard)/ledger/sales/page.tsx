@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { ChevronLeft, FileText, Wallet, Scale, Download } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
-import { hasAnyPermission, canViewInvoice } from "@/lib/permissions"
+import { hasAnyPermission, canViewInvoice, canEditLedgerEntryPerm, canDeleteLedgerEntryPerm } from "@/lib/permissions"
 import {
   getSalesLedgerEntries,
   getCurrentMonthSalesTotal,
@@ -23,6 +23,7 @@ import { T, TInput } from "@/components/ui/T"
 import { SalesLedgerAddButton } from "@/components/ledger/SalesLedgerAddButton"
 import { SalesLedgerActions } from "@/components/ledger/SalesLedgerActions"
 import { formatCurrency } from "@/lib/utils"
+import { resolveSalesLedgerInvoiceNo } from "@/lib/ledger-utils"
 import type { Role, SalesPaymentStatus } from "@/types"
 
 const PAYMENT_STATUSES: SalesPaymentStatus[] = ["UNPAID", "PARTIAL", "PAID"]
@@ -46,6 +47,8 @@ export default async function SalesLedgerPage({
   // that module — otherwise it's shown as plain text (never hidden — the
   // number itself isn't sensitive, only the target page's contents are).
   const canLinkToInvoice = canViewInvoice(role, permissions)
+  const canEdit = canEditLedgerEntryPerm(role, permissions, "sales")
+  const canDelete = canDeleteLedgerEntryPerm(role, permissions, "sales")
 
   const { from, to, customer, paymentStatus, status, salesYear, salesMonth } = await searchParams
   const validPaymentStatus = PAYMENT_STATUSES.includes(paymentStatus as SalesPaymentStatus)
@@ -225,15 +228,6 @@ export default async function SalesLedgerPage({
           },
           { key: "customerName", label: <T k="salesCustomerName" />, render: (row) => <span className="text-sm font-medium text-slate-900">{row.customerName}</span> },
           {
-            key: "orderNo",
-            label: <T k="orderNo" />,
-            render: (row) => (
-              <Link href={`/ledger/sales/${row.id}`} className="text-xs text-blue-600 hover:underline">
-                {row.orderNo ?? row.id.slice(0, 8)}
-              </Link>
-            ),
-          },
-          {
             key: "invoiceNo",
             label: <T k="invoiceNoLabel" />,
             render: (row) =>
@@ -246,7 +240,7 @@ export default async function SalesLedgerPage({
                   <span className="font-mono text-xs text-slate-500">{row.invoice.invoiceNumber}</span>
                 )
               ) : (
-                <span className="text-xs text-slate-300">—</span>
+                <span className="font-mono text-xs text-slate-500">{resolveSalesLedgerInvoiceNo(row) ?? "—"}</span>
               ),
           },
           {
@@ -275,7 +269,7 @@ export default async function SalesLedgerPage({
           {
             key: "actions",
             label: "",
-            render: (row) => <SalesLedgerActions entry={row} />,
+            render: (row) => <SalesLedgerActions entry={row} canEdit={canEdit} canDelete={canDelete} />,
           },
         ]}
         data={entries}
