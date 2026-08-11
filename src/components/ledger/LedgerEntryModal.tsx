@@ -157,7 +157,12 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
     .map(([salesLedgerEntryId, raw]) => ({ salesLedgerEntryId, amount: Number(raw) || 0 }))
     .filter((a) => a.amount > 0)
   const totalAllocated = allocations.reduce((sum, a) => sum + a.amount, 0)
-  const unallocated = receiptAmount - totalAllocated
+  // Allocated total is allowed to exceed the receipt amount (withholding tax etc.) —
+  // when it does, there's nothing left "unallocated"; the excess is a Difference
+  // (money settled against Sales Ledger beyond what actually came in as cash/bank).
+  const isOverReceipt = totalAllocated > receiptAmount + 0.001
+  const unallocated = isOverReceipt ? 0 : receiptAmount - totalAllocated
+  const allocationDifference = isOverReceipt ? totalAllocated - receiptAmount : 0
 
   function handleClose() {
     reset()
@@ -168,10 +173,6 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
   }
 
   async function onSubmit(data: LedgerEntryInput) {
-    if (totalAllocated > receiptAmount + 0.001) {
-      toast.error(t("allocationExceedsReceipt"))
-      return
-    }
     const payload: LedgerEntryInput = {
       ...data,
       customerId: data.type === "INCOME" ? selectedCustomerId : "",
@@ -307,12 +308,8 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
                     <span className="font-mono text-xs text-slate-700">{se.orderNo ?? "—"}</span>
                     <span className="text-right text-slate-600">{formatCurrency(se.invoiceAmount)}</span>
                     <span className="text-right text-slate-600">{formatCurrency(se.balance)}</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
+                    <MoneyInput
                       className="text-right"
-                      placeholder="0.00"
                       value={allocationInputs[se.id] ?? ""}
                       onChange={(e) => setAllocation(se.id, e.target.value)}
                     />
@@ -323,10 +320,19 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
               <span className="text-slate-500">{t("receiptAmount")}: <span className="font-medium text-slate-900">{formatCurrency(receiptAmount)}</span></span>
               <span className="text-slate-500">{t("allocatedAmount")}: <span className="font-medium text-slate-900">{formatCurrency(totalAllocated)}</span></span>
-              <span className={unallocated < 0 ? "text-red-600 font-medium" : "text-slate-500"}>
-                {t("unallocatedAmount")}: <span className="font-medium">{formatCurrency(unallocated)}</span>
-              </span>
+              {isOverReceipt ? (
+                <span className="text-amber-600 font-medium">
+                  {t("allocationDifference")}: <span className="font-medium">{formatCurrency(allocationDifference)}</span>
+                </span>
+              ) : (
+                <span className="text-slate-500">
+                  {t("unallocatedAmount")}: <span className="font-medium">{formatCurrency(unallocated)}</span>
+                </span>
+              )}
             </div>
+            {isOverReceipt && (
+              <p className="text-[11px] text-amber-600 italic">{t("allocationDifferenceHint")}</p>
+            )}
           </div>
         )}
 

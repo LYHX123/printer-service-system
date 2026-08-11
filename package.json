@@ -13,6 +13,8 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "test:template-engine": "npx tsx scripts/test-template-engine.ts",
+    "test:receipt-allocation-schema": "npx tsx scripts/test-receipt-allocation-schema.ts",
+    "test:receipt-allocation-db": "npx tsx scripts/test-receipt-allocation-db.ts",
     "backfill:sales-ledger-reference": "npx tsx scripts/backfill-sales-ledger-reference.ts",
     "migrate:username-to-name": "npx tsx scripts/migrate-username-to-name.ts",
     "report:duplicate-customers": "npx tsx scripts/report-duplicate-customers.ts"

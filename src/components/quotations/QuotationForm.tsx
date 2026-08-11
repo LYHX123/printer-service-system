@@ -9,6 +9,7 @@ import { ImageOff, Trash2 } from "lucide-react"
 import { QuotationSchema, type QuotationInput } from "@/lib/schemas"
 import { createQuotation, updateQuotation } from "@/lib/actions/quotations"
 import { FormField, Input } from "@/components/ui/input"
+import { MoneyInput } from "@/components/ui/money-input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -307,11 +308,7 @@ export function QuotationForm({
                         />
                       </div>
                       <div className="flex-1 sm:col-span-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
+                        <MoneyInput
                           onFocus={selectOnFocus}
                           {...register(`items.${index}.unitPrice`)}
                           error={errors.items?.[index]?.unitPrice?.message}
@@ -342,7 +339,7 @@ export function QuotationForm({
           <h2 className="text-sm font-semibold text-slate-900 mb-5">Cost Summary</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField label={`${t("vat")} (%)`} htmlFor="vatPercent" error={errors.vatPercent?.message}>
-              <Input id="vatPercent" type="number" min="0" max="100" step="0.01" placeholder="0.00" {...register("vatPercent")} />
+              <Input id="vatPercent" type="number" min="0" max="100" step="0.01" placeholder="0.00" className="no-spinner" {...register("vatPercent")} />
             </FormField>
           </div>
 

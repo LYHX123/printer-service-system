@@ -388,10 +388,11 @@ export const LedgerEntrySchema = z
     if (data.categoryId === NEW_CATEGORY_VALUE && !data.newCategoryName?.trim()) {
       ctx.addIssue({ code: "custom", path: ["newCategoryName"], message: "Category name is required" })
     }
-    const totalAllocated = data.allocations.reduce((sum, a) => sum + a.amount, 0)
-    if (totalAllocated > data.amount) {
-      ctx.addIssue({ code: "custom", path: ["allocations"], message: "Total allocated cannot exceed the receipt amount" })
-    }
+    // Total allocated is intentionally NOT capped to the receipt amount here — Kenyan
+    // withholding tax means a Sales Ledger invoice can be settled for its full amount
+    // even though the actual cash/bank receipt is smaller. Each individual allocation
+    // is still capped against its target invoice's own balance server-side, in
+    // validateAllocations() (src/lib/actions/ledger.ts) — that's the real overcap guard.
   })
 
 export type LedgerEntryInput = z.infer<typeof LedgerEntrySchema>

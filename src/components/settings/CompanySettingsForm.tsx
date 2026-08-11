@@ -140,7 +140,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
             <Input id="kraPin" placeholder="e.g. P000000000A" {...register("kraPin")} />
           </FormField>
           <FormField label={t("vatPercentage")} htmlFor="vatPercent" required error={errors.vatPercent?.message}>
-            <Input id="vatPercent" type="number" step="0.01" min={0} max={100} {...register("vatPercent")} error={errors.vatPercent?.message} />
+            <Input id="vatPercent" type="number" step="0.01" min={0} max={100} className="no-spinner" {...register("vatPercent")} error={errors.vatPercent?.message} />
           </FormField>
         </div>
 

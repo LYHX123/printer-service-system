@@ -23,7 +23,7 @@ const NEW_CATEGORY_VALUE = "__new__"
  * single source of truth used by every create/update/delete path below, so
  * editing or deleting a receipt can never leave stale paid/balance numbers behind.
  */
-async function recomputeSalesLedgerEntry(tx: Prisma.TransactionClient, salesLedgerEntryId: string) {
+export async function recomputeSalesLedgerEntry(tx: Prisma.TransactionClient, salesLedgerEntryId: string) {
   const entry = await tx.salesLedgerEntry.findUnique({
     where: { id: salesLedgerEntryId },
     select: { invoiceAmount: true },
@@ -44,7 +44,7 @@ async function recomputeSalesLedgerEntry(tx: Prisma.TransactionClient, salesLedg
 }
 
 /** Validates each allocation against its target SalesLedgerEntry's *current* balance (caller must recompute stale balances first, e.g. after removing a prior version's allocations on edit). */
-async function validateAllocations(tx: Prisma.TransactionClient, companyId: string, allocations: ReceiptAllocationInput[]) {
+export async function validateAllocations(tx: Prisma.TransactionClient, companyId: string, allocations: ReceiptAllocationInput[]) {
   for (const alloc of allocations) {
     const entry = await tx.salesLedgerEntry.findFirst({
       where: { id: alloc.salesLedgerEntryId, companyId },

@@ -113,7 +113,7 @@ export function GenerateInvoiceModal({
           required
           error={errors.vatPercent?.message}
         >
-          <Input id="invoiceVatPercent" type="number" step="0.01" min="0" max="100" {...register("vatPercent")} />
+          <Input id="invoiceVatPercent" type="number" step="0.01" min="0" max="100" className="no-spinner" {...register("vatPercent")} />
         </FormField>
       </form>
     </Modal>

@@ -608,7 +608,8 @@ export type TranslationKey =
   | "notLinkedToSalesLedger"
   | "noUnpaidInvoicesForCustomer"
   | "allocationExceedsBalance"
-  | "allocationExceedsReceipt"
+  | "allocationDifference"
+  | "allocationDifferenceHint"
   | "amountReceivedLockedHint"
   | "salesLedgerDetail"
   | "backToSalesLedger"
@@ -1113,7 +1114,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     notLinkedToSalesLedger: "Not yet added to Sales Ledger",
     noUnpaidInvoicesForCustomer: "This customer has no unpaid or partially paid invoices",
     allocationExceedsBalance: "Allocation cannot exceed this invoice's balance",
-    allocationExceedsReceipt: "Total allocated cannot exceed the receipt amount",
+    allocationDifference: "Difference",
+    allocationDifferenceHint: "Allocated total exceeds the receipt amount — the difference settles the Sales Ledger invoice beyond actual cash/bank received (e.g. withholding tax).",
     amountReceivedLockedHint: "Computed from Receipt Allocations — edit via the Income record instead",
     salesLedgerDetail: "Sales Ledger Detail",
     backToSalesLedger: "Sales Ledger",
@@ -1846,7 +1848,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     notLinkedToSalesLedger: "尚未加入销售台账",
     noUnpaidInvoicesForCustomer: "该客户没有未付款或部分付款的发票",
     allocationExceedsBalance: "分配金额不能超过该发票的余额",
-    allocationExceedsReceipt: "分配总额不能超过收款金额",
+    allocationDifference: "差额",
+    allocationDifferenceHint: "分配总额高于收款金额 — 差额部分表示销售台账被冲销的金额超过实际到账的现金/银行金额（例如预扣税）。",
     amountReceivedLockedHint: "由收款分配自动计算 — 请通过对应的收入记录修改",
     salesLedgerDetail: "销售台账详情",
     backToSalesLedger: "销售台账",

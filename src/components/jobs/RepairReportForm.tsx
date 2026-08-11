@@ -8,6 +8,7 @@ import { Plus, Trash2 } from "lucide-react"
 import { RepairReportSchema, type RepairReportInput } from "@/lib/schemas"
 import { saveRepairReport } from "@/lib/actions/reports"
 import { FormField, Input } from "@/components/ui/input"
+import { MoneyInput } from "@/components/ui/money-input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -169,11 +170,7 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
                     />
                   </div>
                   <div className="col-span-5 sm:col-span-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                    <MoneyInput
                       {...register(`parts.${index}.unitPrice`)}
                       error={errors.parts?.[index]?.unitPrice?.message}
                     />
@@ -201,7 +198,7 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
       <div className="border-t border-slate-100 pt-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:max-w-sm">
           <FormField label="Labour Cost (KES)" htmlFor="labourCost" error={errors.labourCost?.message}>
-            <Input id="labourCost" type="number" min="0" step="0.01" placeholder="0.00" {...register("labourCost")} />
+            <MoneyInput id="labourCost" {...register("labourCost")} />
           </FormField>
         </div>
         <div className="mt-3 ml-auto max-w-xs space-y-1.5 text-sm">
