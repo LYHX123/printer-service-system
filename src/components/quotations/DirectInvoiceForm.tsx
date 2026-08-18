@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react"
 import Image from "next/image"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm, useFieldArray, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
 import { ImageOff, Trash2 } from "lucide-react"
@@ -10,7 +10,7 @@ import { DirectInvoiceSchema, type DirectInvoiceInput } from "@/lib/schemas"
 import { createDirectInvoice, updateInvoice } from "@/lib/actions/invoices"
 import { FormField, Input } from "@/components/ui/input"
 import { MoneyInput } from "@/components/ui/money-input"
-import { Select } from "@/components/ui/select"
+import { CustomerSearchSelect } from "@/components/ui/customer-search-select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
@@ -27,6 +27,7 @@ interface CustomerOption {
   name: string | null
   code: string
   companyName: string
+  shortName: string | null
   pinNumber: string | null
 }
 
@@ -110,18 +111,23 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
               <Input id="invoiceNumber" placeholder="e.g. CN00456" {...register("invoiceNumber")} error={errors.invoiceNumber?.message} />
             </FormField>
             <FormField label={t("customer")} htmlFor="customerId" required error={errors.customerId?.message}>
-              <Select
-                id="customerId"
-                placeholder="Select customer…"
-                {...register("customerId", { onChange: (e) => handleCustomerChange(e.target.value) })}
-                error={errors.customerId?.message}
-              >
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.companyName} ({c.code})
-                  </option>
-                ))}
-              </Select>
+              <Controller
+                control={control}
+                name="customerId"
+                render={({ field }) => (
+                  <CustomerSearchSelect
+                    id="customerId"
+                    customers={customers}
+                    value={field.value}
+                    onChange={(customerId) => {
+                      field.onChange(customerId)
+                      handleCustomerChange(customerId)
+                    }}
+                    placeholder={t("searchCustomersPlaceholder")}
+                    error={errors.customerId?.message}
+                  />
+                )}
+              />
             </FormField>
           </div>
 

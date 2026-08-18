@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { getQuotationForEdit } from "@/lib/data/quotations"
 import { getCustomersWithBranches, getCustomerBranchById } from "@/lib/data/customers"
 import { getSparePartOptions } from "@/lib/data/inventory"
-import { canCreateQuotation } from "@/lib/permissions"
+import { canEditQuotationPerm } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { QuotationForm } from "@/components/quotations/QuotationForm"
 import { format } from "date-fns"
@@ -18,7 +18,7 @@ export default async function EditQuotationPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-  if (!canCreateQuotation(session!.user.role as Role, session!.user.modulePermissions)) redirect("/quotations")
+  if (!canEditQuotationPerm(session!.user.role as Role, session!.user.modulePermissions)) redirect("/quotations")
   const { id } = await params
   const companyId = session!.user.companyId as string
 

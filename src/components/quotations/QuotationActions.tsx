@@ -18,6 +18,8 @@ interface QuotationActionsProps {
   quotationId: string
   status: QuotationStatus
   role: Role
+  /** Whether the viewer holds quotations.edit — gates the Adjust Quotation button itself (server-enforced too; this is UI-only). */
+  canEdit: boolean
   /** Whether the viewer holds quotations.approve — gates the Approve/Reject buttons themselves (server-enforced too; this is UI-only). */
   canApprove: boolean
   /** Null when this quotation has no invoice yet — shows "Create Invoice" instead of "View Invoice". At most one invoice per quotation (enforced by a DB unique constraint). */
@@ -40,6 +42,7 @@ interface QuotationActionsProps {
 export function QuotationActions({
   quotationId,
   status,
+  canEdit,
   canApprove: canApprovePermission,
   existingInvoice,
   canConvertToInvoice,
@@ -69,7 +72,7 @@ export function QuotationActions({
   // gated on having gone through "Send to Customer" first (removed — see
   // QUOTATION_STATUS_TRANSITIONS). Both are current-view-only: a historical
   // version being read-only is the whole point of Historical View.
-  const canAdjust = isCurrent && (status === "DRAFT" || status === "SENT")
+  const canAdjust = canEdit && isCurrent && (status === "DRAFT" || status === "SENT")
   const canApprove = canApprovePermission && isCurrent && (status === "DRAFT" || status === "SENT")
   const canReject = canApprovePermission && isCurrent && status === "SENT"
 

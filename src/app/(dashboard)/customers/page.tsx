@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Plus, Search, Download } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomers } from "@/lib/data/customers"
-import { canAccess } from "@/lib/permissions"
+import { canAccess, canCreateCustomer, canEditCustomer } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
@@ -35,9 +35,11 @@ export default async function CustomersPage({
             <a href="/api/customers/summary/pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="outline" icon={<Download className="h-4 w-4" />}><T k="exportPdf" /></Button>
             </a>
-            <Link href="/customers/new">
-              <Button icon={<Plus className="h-4 w-4" />}><T k="newCustomer" /></Button>
-            </Link>
+            {canCreateCustomer(role, permissions) && (
+              <Link href="/customers/new">
+                <Button icon={<Plus className="h-4 w-4" />}><T k="newCustomer" /></Button>
+              </Link>
+            )}
           </div>
         }
       />
@@ -96,7 +98,7 @@ export default async function CustomersPage({
           {
             key: "actions",
             label: "",
-            render: (row) => <CustomerActions customerId={row.id} isActive={row.isActive} />,
+            render: (row) => <CustomerActions customerId={row.id} isActive={row.isActive} canEdit={canEditCustomer(role, permissions)} />,
           },
         ]}
         data={customers}

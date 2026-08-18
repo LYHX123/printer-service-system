@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react"
 import Image from "next/image"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm, useFieldArray, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
 import { ImageOff, Trash2 } from "lucide-react"
@@ -11,6 +11,7 @@ import { createQuotation, updateQuotation } from "@/lib/actions/quotations"
 import { FormField, Input } from "@/components/ui/input"
 import { MoneyInput } from "@/components/ui/money-input"
 import { Select } from "@/components/ui/select"
+import { CustomerSearchSelect } from "@/components/ui/customer-search-select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
@@ -36,6 +37,7 @@ interface CustomerOption {
   name: string | null
   code: string
   companyName: string
+  shortName: string | null
   pinNumber: string | null
   phone: string | null
   location: string | null
@@ -161,18 +163,23 @@ export function QuotationForm({
               <Input id="quotationNumber" placeholder="e.g. QT00455" {...register("quotationNumber")} error={errors.quotationNumber?.message} />
             </FormField>
             <FormField label="Customer" htmlFor="customerId" required error={errors.customerId?.message}>
-              <Select
-                id="customerId"
-                placeholder="Select customer…"
-                {...register("customerId", { onChange: (e) => handleCustomerChange(e.target.value) })}
-                error={errors.customerId?.message}
-              >
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.companyName} ({c.code})
-                  </option>
-                ))}
-              </Select>
+              <Controller
+                control={control}
+                name="customerId"
+                render={({ field }) => (
+                  <CustomerSearchSelect
+                    id="customerId"
+                    customers={customers}
+                    value={field.value}
+                    onChange={(customerId) => {
+                      field.onChange(customerId)
+                      handleCustomerChange(customerId)
+                    }}
+                    placeholder="Search customer by name…"
+                    error={errors.customerId?.message}
+                  />
+                )}
+              />
             </FormField>
             <FormField label="Valid Until" htmlFor="validUntil" error={errors.validUntil?.message}>
               <Input id="validUntil" type="date" {...register("validUntil")} />

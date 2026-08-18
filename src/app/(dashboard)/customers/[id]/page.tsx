@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { getCustomerDetail } from "@/lib/data/customers"
 import { getCustomerBranches } from "@/lib/data/customerBranches"
 import { getCustomerDocuments } from "@/lib/data/customerDocuments"
-import { canAccess, canUploadCustomerFile } from "@/lib/permissions"
+import { canAccess, canUploadCustomerFile, canEditCustomer } from "@/lib/permissions"
 import { getCustomerFolderDisplayPath } from "@/lib/dropbox"
 import { PageHeader } from "@/components/ui/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -34,6 +34,7 @@ export default async function CustomerDetailPage({
     getCustomerDocuments(id, companyId),
   ])
   const canManageDocuments = canUploadCustomerFile(role, permissions)
+  const canEdit = canEditCustomer(role, permissions)
 
   return (
     <div>
@@ -51,11 +52,13 @@ export default async function CustomerDetailPage({
         }
         subtitle={customer.code}
         actions={
-          <Link href={`/customers/${id}/edit`}>
-            <Button variant="outline" icon={<Pencil className="h-4 w-4" />}>
-              Edit
-            </Button>
-          </Link>
+          canEdit && (
+            <Link href={`/customers/${id}/edit`}>
+              <Button variant="outline" icon={<Pencil className="h-4 w-4" />}>
+                Edit
+              </Button>
+            </Link>
+          )
         }
       />
 
@@ -111,7 +114,7 @@ export default async function CustomerDetailPage({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <ProjectsList customerId={id} projects={projects} canManage />
+          <ProjectsList customerId={id} projects={projects} canManage={canEdit} />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6">

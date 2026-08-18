@@ -234,7 +234,7 @@ export async function createQuotation(data: QuotationInput) {
 export async function updateQuotation(id: string, data: QuotationInput) {
   const session = await auth()
   if (!session?.user) return { error: "Unauthorized" }
-  if (!canCreateQuotation(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
+  if (!canEditQuotationPerm(session.user.role as Role, session.user.modulePermissions)) return { error: "Forbidden" }
   const companyId = session.user.companyId as string
 
   const parsed = QuotationSchema.safeParse(data)

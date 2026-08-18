@@ -119,6 +119,7 @@ export async function getCustomersWithBranches(companyId: string): Promise<
     name: string | null
     code: string
     companyName: string
+    shortName: string | null
     pinNumber: string | null
     phone: string | null
     location: string | null
@@ -140,6 +141,7 @@ export async function getCustomersWithBranches(companyId: string): Promise<
       name: true,
       code: true,
       companyName: true,
+      shortName: true,
       pinNumber: true,
       phone: true,
       location: true,
@@ -157,10 +159,10 @@ export async function getCustomersWithBranches(companyId: string): Promise<
 /** Lightweight list for dropdowns */
 export async function getCustomerOptions(
   companyId: string
-): Promise<Pick<Customer, "id" | "name" | "code" | "companyName" | "pinNumber">[]> {
+): Promise<Pick<Customer, "id" | "name" | "code" | "companyName" | "shortName" | "pinNumber">[]> {
   return prisma.customer.findMany({
     where: { companyId, isActive: true },
-    select: { id: true, name: true, code: true, companyName: true, pinNumber: true },
+    select: { id: true, name: true, code: true, companyName: true, shortName: true, pinNumber: true },
     orderBy: { companyName: "asc" },
   })
 }

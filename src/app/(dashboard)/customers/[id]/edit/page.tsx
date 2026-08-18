@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getCustomerForEdit } from "@/lib/data/customers"
-import { canAccess } from "@/lib/permissions"
+import { canEditCustomer } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { CustomerForm } from "@/components/customers/CustomerForm"
 import type { Role } from "@/types"
@@ -16,7 +16,7 @@ export default async function EditCustomerPage({
   const session = await auth()
   const role = session!.user.role as Role
   const permissions = (session!.user.modulePermissions as string[]) ?? []
-  if (!canAccess(role, "customers", permissions)) redirect("/dashboard")
+  if (!canEditCustomer(role, permissions)) redirect("/dashboard")
   const { id } = await params
   const companyId = session!.user.companyId as string
 

@@ -11,9 +11,11 @@ import { setCustomerActive } from "@/lib/actions/customers"
 interface CustomerActionsProps {
   customerId: string
   isActive: boolean
+  /** Whether the viewer holds customers.edit — gates Edit and Archive/Reactivate (both server-enforced too; this is UI-only). */
+  canEdit: boolean
 }
 
-export function CustomerActions({ customerId, isActive }: CustomerActionsProps) {
+export function CustomerActions({ customerId, isActive, canEdit }: CustomerActionsProps) {
   const router = useRouter()
   const toast = useToast()
   const [isPending, startTransition] = useTransition()
@@ -37,20 +39,24 @@ export function CustomerActions({ customerId, isActive }: CustomerActionsProps) 
           View
         </Button>
       </Link>
-      <Link href={`/customers/${customerId}/edit`}>
-        <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />}>
-          Edit
+      {canEdit && (
+        <Link href={`/customers/${customerId}/edit`}>
+          <Button variant="outline" size="sm" icon={<Pencil className="h-3.5 w-3.5" />}>
+            Edit
+          </Button>
+        </Link>
+      )}
+      {canEdit && (
+        <Button
+          variant="outline"
+          size="sm"
+          icon={isActive ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
+          onClick={toggleActive}
+          loading={isPending}
+        >
+          {isActive ? "Archive" : "Reactivate"}
         </Button>
-      </Link>
-      <Button
-        variant="outline"
-        size="sm"
-        icon={isActive ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
-        onClick={toggleActive}
-        loading={isPending}
-      >
-        {isActive ? "Archive" : "Reactivate"}
-      </Button>
+      )}
     </div>
   )
 }

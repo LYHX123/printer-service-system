@@ -45,7 +45,7 @@ export default async function QuotationsPage({
             <Link href="/quotations/invoices">
               <Button variant="outline" icon={<Receipt className="h-4 w-4" />}><T k="invoices" /></Button>
             </Link>
-            {canCreateQuotation(role) && (
+            {canCreateQuotation(role, session!.user.modulePermissions) && (
               <Link href="/quotations/new">
                 <Button icon={<Plus className="h-4 w-4" />}><T k="newQuotation" /></Button>
               </Link>
