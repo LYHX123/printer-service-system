@@ -1,6 +1,6 @@
 export { findPlaceholderCell, findColumnForTokenInRow, replacePlaceholder } from "./placeholders"
 export type { PlaceholderLocation } from "./placeholders"
-export { copyRowStyle, calculateRequiredRowHeight } from "./rowStyle"
+export { copyRowStyle, calculateRequiredRowHeight, estimateWrappedTextHeight, growMergedBlockForText } from "./rowStyle"
 export { planProductRows, insertExtraProductRows } from "./dynamicRows"
 export type { ProductRowLayout } from "./dynamicRows"
 export { ExcelTemplateError } from "./errors"

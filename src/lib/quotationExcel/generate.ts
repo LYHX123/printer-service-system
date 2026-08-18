@@ -6,6 +6,7 @@ import {
   findColumnForTokenInRow,
   replacePlaceholder,
   calculateRequiredRowHeight,
+  growMergedBlockForText,
   planProductRows,
   insertExtraProductRows,
 } from "@/lib/excelTemplate"
@@ -90,11 +91,27 @@ export async function generateQuotationExcel(quotation: QuotationPdfData): Promi
   const data = buildQuotationExcelData(quotation)
 
   // 1. Header placeholders — safe to replace before any row math, since
-  //    they live above the product table and are unaffected by it.
+  //    they live above the product table and are unaffected by it. Each
+  //    placeholder's cell is located BEFORE its token is replaced (the
+  //    search relies on the literal "{{TOKEN}}" text still being there),
+  //    so the resulting merged block can be grown afterwards if the real
+  //    value is long enough to need more than the template's fixed height —
+  //    ExcelJS/LibreOffice never auto-expand a row that already has an
+  //    explicit height, so without this a long Customer name could render
+  //    clipped.
+  const customerNameLoc = findPlaceholderCell(sheet, "{{CUSTOMER_NAME}}")
   replacePlaceholder(sheet, "{{CUSTOMER_NAME}}", data.customerName)
   replacePlaceholder(sheet, "{{CUSTOMER_PIN}}", data.customerPin)
   replacePlaceholder(sheet, "{{QUOTATION_DATE}}", data.quotationDate)
   replacePlaceholder(sheet, "{{QUOTATION_NUMBER}}", data.quotationNumber)
+
+  // Date/Quotation No. aren't grown the same way — they're short,
+  // format-controlled values (and rendered as rich text, not a plain
+  // string) with no realistic risk of overflowing their fixed height.
+  if (customerNameLoc) {
+    const finalText = sheet.getCell(customerNameLoc.address).value
+    if (typeof finalText === "string") growMergedBlockForText(sheet, customerNameLoc.address, finalText)
+  }
 
   // 2. Locate the product template row, its reserved area, and the final
   //    row count (max of item count / minimum / reserved) — all derived
