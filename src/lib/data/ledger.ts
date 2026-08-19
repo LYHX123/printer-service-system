@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma"
+import { extractTrailingNumber } from "@/lib/numbering"
+import { resolveSalesLedgerInvoiceNo } from "@/lib/ledger-utils"
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } from "@/types"
 import type {
   LedgerCategory,
@@ -195,20 +197,37 @@ export async function getSalesLedgerEntries(
       invoice: { select: { id: true, invoiceNumber: true } },
       _count: { select: { allocations: true } },
     },
-    // Strictly by the linked Invoice's natural business number first (spec: Invoice Number
-    // descending, unaffected by edits/payments) — legacy/manual entries with no linked
-    // Invoice fall through to the pre-existing referenceYear/referenceSequence scheme so
-    // they keep their relative order among themselves instead of all clumping together.
-    orderBy: [
-      { invoice: { invoiceSortNumber: { sort: "desc", nulls: "last" } } },
-      { referenceYear: { sort: "desc", nulls: "last" } },
-      { referenceSequence: { sort: "desc", nulls: "last" } },
-      { date: "desc" },
-      { createdAt: "desc" },
-    ],
+    // No DB-side `orderBy` for Invoice No. here — Prisma's ORM can't express
+    // "COALESCE(invoice.invoiceSortNumber, referenceSequence)" across a
+    // relation, and a multi-key `orderBy: [{ invoice: {...} }, { referenceSequence: {...} }, ...]`
+    // is NOT a coalesce: Prisma orderBy is strictly lexicographic, so the
+    // first key alone (non-null only for invoice-linked rows) fully
+    // partitions the result into "all invoice-generated rows" then "all
+    // manual rows" as two separate blocks — a source-based grouping bug,
+    // not a numeric sort. Fixed below with a single unified in-memory sort
+    // instead (small result set — no pagination on this list).
   })
 
-  return entries.map((e) => ({
+  const sorted = entries.sort((a, b) => {
+    // Same "effective Invoice No." shown on screen for every row (see
+    // resolveSalesLedgerInvoiceNo — the live linked Invoice's number when
+    // present, else the manual `orderNo` field), compared with the exact
+    // same trailing-digit-sequence rule Invoice's own list already sorts
+    // by (extractTrailingNumber) — so invoice-generated and manual rows are
+    // never grouped by source, only by this one numeric value.
+    const aSeq = extractTrailingNumber(resolveSalesLedgerInvoiceNo(a) ?? "")
+    const bSeq = extractTrailingNumber(resolveSalesLedgerInvoiceNo(b) ?? "")
+    if (aSeq !== null && bSeq !== null && aSeq !== bSeq) return bSeq - aSeq
+    if (aSeq !== null && bSeq === null) return -1
+    if (aSeq === null && bSeq !== null) return 1
+    // Deterministic fallback for ties and non-standard/unparseable Invoice
+    // Nos (never left to whatever order Postgres happened to return).
+    const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime()
+    if (dateDiff !== 0) return dateDiff
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
+
+  return sorted.map((e) => ({
     ...e,
     invoiceAmount: Number(e.invoiceAmount),
     amountReceived: Number(e.amountReceived),

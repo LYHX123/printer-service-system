@@ -42,9 +42,14 @@ import type {
   Invoice,
   InvoiceItem,
   InvoiceStatus,
+  InvoiceSource,
   ShopAccountCategory,
   ShopAccountEntry,
   AuditLog,
+  Delivery,
+  DeliveryItem,
+  DeliveryDocument,
+  DeliveryFileType,
 } from "@/generated/prisma/client"
 
 export type {
@@ -91,9 +96,14 @@ export type {
   Invoice,
   InvoiceItem,
   InvoiceStatus,
+  InvoiceSource,
   ShopAccountCategory,
   ShopAccountEntry,
   AuditLog,
+  Delivery,
+  DeliveryItem,
+  DeliveryDocument,
+  DeliveryFileType,
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────

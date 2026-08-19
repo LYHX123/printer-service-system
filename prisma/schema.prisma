@@ -201,6 +201,8 @@ model Company {
   quotationDocuments    QuotationDocument[]
   quotationVersions     QuotationVersion[]
   invoiceDocuments      InvoiceDocument[]
+  deliveries            Delivery[]
+  deliveryDocuments     DeliveryDocument[]
   auditLogs             AuditLog[]
   dropboxConnection     DropboxConnection?
 }
@@ -253,6 +255,7 @@ model User {
   createdReceiptAllocations ReceiptAllocation[]
   createdDropboxConnections DropboxConnection[]
   createdQuotationVersions  QuotationVersion[]
+  createdDeliveries         Delivery[]
 }
 
 model Customer {
@@ -282,6 +285,7 @@ model Customer {
   salesLedgerEntries SalesLedgerEntry[]
   invoices           Invoice[]
   ledgerEntries      LedgerEntry[]
+  deliveries         Delivery[]
 }
 
 // Branches or project sites that belong to a customer — surfaced in the UI as "Project"
@@ -307,6 +311,7 @@ model CustomerBranch {
   contracts   CustomerContract[]
   documents   CustomerDocument[]
   quotations  Quotation[]
+  deliveries  Delivery[]
 
   @@index([customerId])
 }
@@ -366,16 +371,16 @@ model AuditLog {
 // short-lived access token, which is minted on demand from the refresh
 // token at request time (see src/lib/dropbox/).
 model DropboxConnection {
-  id                    String    @id @default(uuid())
-  companyId             String    @unique
-  provider              String    @default("dropbox")
+  id                    String   @id @default(uuid())
+  companyId             String   @unique
+  provider              String   @default("dropbox")
   accountId             String?
   accountName           String?
   accountEmail          String?
   encryptedRefreshToken String
-  status                String    @default("CONNECTED") // CONNECTED | DISCONNECTED
-  connectedAt           DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  status                String   @default("CONNECTED") // CONNECTED | DISCONNECTED
+  connectedAt           DateTime @default(now())
+  updatedAt             DateTime @updatedAt
   createdById           String?
 
   company   Company @relation(fields: [companyId], references: [id])
@@ -464,23 +469,23 @@ model Quotation {
   // always targets the same version instead of silently advancing it.
   currentVersion      Int             @default(1)
   companyId           String
-  customerId       String
-  customerBranchId String? // selected Project ("Head Office" when null)
-  contactName      String? // contact snapshot, frozen at creation/selection time
-  contactPhone     String?
-  contactEmail     String?
-  contactAddress   String?
-  status           QuotationStatus @default(DRAFT)
-  validUntil       DateTime?
-  subtotal         Decimal         @default(0) @db.Decimal(10, 2)
-  vatPercent       Decimal         @default(0) @db.Decimal(5, 2)
-  totalCost        Decimal         @default(0) @db.Decimal(10, 2)
-  remarks          String? // customer-facing remarks on quotation
-  internalNotes    String?
-  createdById      String
-  approvedAt       DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  customerId          String
+  customerBranchId    String? // selected Project ("Head Office" when null)
+  contactName         String? // contact snapshot, frozen at creation/selection time
+  contactPhone        String?
+  contactEmail        String?
+  contactAddress      String?
+  status              QuotationStatus @default(DRAFT)
+  validUntil          DateTime?
+  subtotal            Decimal         @default(0) @db.Decimal(10, 2)
+  vatPercent          Decimal         @default(0) @db.Decimal(5, 2)
+  totalCost           Decimal         @default(0) @db.Decimal(10, 2)
+  remarks             String? // customer-facing remarks on quotation
+  internalNotes       String?
+  createdById         String
+  approvedAt          DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   company        Company         @relation(fields: [companyId], references: [id])
   customer       Customer        @relation(fields: [customerId], references: [id])
@@ -488,11 +493,14 @@ model Quotation {
   createdBy      User            @relation(fields: [createdById], references: [id])
 
   items             QuotationItem[]
-  convertedJob      ServiceJob?        @relation("QuotationConversion")
+  convertedJob      ServiceJob?         @relation("QuotationConversion")
   communicationLogs CommunicationLog[]
   invoice           Invoice? // at most one — quotationId is @unique on Invoice
   documents         QuotationDocument[]
   versions          QuotationVersion[]
+  // A quotation may be delivered in installments over time — unlike Invoice,
+  // deliberately NOT @unique. See the Delivery model comment.
+  deliveries        Delivery[]
 }
 
 model QuotationItem {
@@ -590,6 +598,7 @@ model QuotationVersion {
 enum InvoiceSource {
   FROM_QUOTATION
   DIRECT
+  FROM_DELIVERY
 }
 
 model Invoice {
@@ -612,14 +621,14 @@ model Invoice {
   // backfilled to CONFIRMED without retroactive InventoryTransaction rows. Going forward,
   // every new invoice (from either source) is born DRAFT and only moves stock once
   // explicitly confirmed — see confirmInvoice()/cancelInvoice() in src/lib/actions/invoices.ts.
-  status        InvoiceStatus @default(DRAFT)
-  confirmedById String? // plain user-id reference, no FK relation (avoids widening User)
-  confirmedAt   DateTime?
-  cancelledById String?
-  cancelledAt   DateTime?
-  createdById   String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  status            InvoiceStatus @default(DRAFT)
+  confirmedById     String? // plain user-id reference, no FK relation (avoids widening User)
+  confirmedAt       DateTime?
+  cancelledById     String?
+  cancelledAt       DateTime?
+  createdById       String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   company          Company           @relation(fields: [companyId], references: [id])
   quotation        Quotation?        @relation(fields: [quotationId], references: [id])
@@ -628,6 +637,12 @@ model Invoice {
   items            InvoiceItem[]
   salesLedgerEntry SalesLedgerEntry?
   documents        InvoiceDocument[]
+  // Reverse side of Delivery.invoiceId. Plural and non-unique on purpose —
+  // V1 business logic (convertDeliveryToInvoice) only ever creates a brand
+  // new Invoice per Delivery, so this is always a single-item list today,
+  // but the FK is shaped to allow a future many-Deliveries-to-one-Invoice
+  // workflow without a schema change. See the Delivery model comment.
+  deliveries       Delivery[]
 }
 
 enum InvoiceFileType {
@@ -693,6 +708,107 @@ model InvoiceItem {
 
   invoice Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   part    SparePart? @relation(fields: [partId], references: [id])
+}
+
+// ─── Delivery ───────────────────────────────────────────────────────────────
+// Delivery is the system's one and only inventory-movement document — stock is
+// deducted when a Delivery is created (and reconciled on edit/delete), never by
+// Invoice (see confirmInvoice/cancelInvoice in src/lib/actions/invoices.ts,
+// which no longer touch InventoryStock as of this module). Invoice stays a
+// purely financial document downstream of Delivery.
+
+enum DeliveryFileType {
+  PDF
+  XLSX
+}
+
+model Delivery {
+  id                 String   @id @default(uuid())
+  deliveryNumber     String   @unique // server-generated sequential number, e.g. DL00001 — see generateDeliveryNumber in src/lib/utils.ts
+  deliverySortNumber Int? // trailing numeric portion of deliveryNumber, for natural-number sort — see src/lib/numbering.ts
+  companyId          String
+  customerId         String
+  customerBranchId   String? // selected Project ("Head Office" when null) — same convention as Quotation.customerBranchId
+  // Set when this Delivery was created from a Quotation via "Convert to
+  // Delivery". Deliberately NOT @unique on either side — a Quotation may be
+  // delivered in several batches over time, so many Deliveries can point to
+  // the same Quotation. A manually-created Delivery leaves this null.
+  quotationId        String?
+  reference          String? // optional free-text reference (e.g. customer PO number), shown on the delivery note
+  deliveryDate       DateTime
+  // Set once this Delivery has been converted to an Invoice via "Generate
+  // Invoice" — presence of this field IS the Delivery's Uninvoiced/Invoiced
+  // status (see getDelivery in src/lib/data/deliveries.ts), no separate enum
+  // needed. Deliberately NOT @unique — see the Invoice.deliveries comment.
+  invoiceId          String?
+  createdById        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  company        Company         @relation(fields: [companyId], references: [id])
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  customerBranch CustomerBranch? @relation(fields: [customerBranchId], references: [id])
+  quotation      Quotation?      @relation(fields: [quotationId], references: [id])
+  invoice        Invoice?        @relation(fields: [invoiceId], references: [id])
+  createdBy      User            @relation(fields: [createdById], references: [id])
+
+  items     DeliveryItem[]
+  documents DeliveryDocument[]
+
+  @@index([customerId])
+  @@index([quotationId])
+  @@index([invoiceId])
+}
+
+model DeliveryItem {
+  id                    String   @id @default(uuid())
+  deliveryId            String
+  // Always stock-linked — unlike QuotationItem/InvoiceItem, a Delivery item
+  // may never be arbitrary free text (it drives an actual InventoryStock
+  // deduction, so it must always resolve to a real SparePart).
+  partId                String
+  description           String // denormalized "Brand Name" at delivery time, e.g. createDirectInvoice's item.description
+  quantity              Int
+  // Snapshot of the stock item at delivery time, frozen so a later edit to
+  // the SparePart record never changes the wording of a past delivery note —
+  // same rationale as QuotationItem/InvoiceItem's own snapshot fields.
+  // Stores the StockType bucket ("EQUIPMENT"/"CONSUMPTION"/"PARTS", from
+  // getStockType()) — the Delivery Note's ITEM NO. column maps this to
+  // EQUIPMENT/CONSUM/PART, see stockTypeToDeliveryItemCode in
+  // src/lib/deliveryExcel/buildData.ts.
+  stockCategory         String?
+  brandSnapshot         String?
+  nameSnapshot          String?
+  modelSnapshot         String?
+  specificationSnapshot String?
+  unitSnapshot          String?
+  createdAt             DateTime @default(now())
+
+  delivery Delivery  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  part     SparePart @relation(fields: [partId], references: [id])
+}
+
+// One row per (delivery, file type) — same no-versioning convention as
+// InvoiceDocument: a Delivery's official file is always exactly
+// "{DeliveryNo}-{CustomerShortName}.{ext}", and a re-sync just overwrites the
+// same Dropbox path and updates this same row.
+model DeliveryDocument {
+  id              String                  @id @default(uuid())
+  companyId       String
+  deliveryId      String
+  fileType        DeliveryFileType
+  storageKey      String
+  storageProvider DocumentStorageProvider @default(LOCAL)
+  mimeType        String
+  fileSize        Int
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([deliveryId, fileType])
+  @@index([deliveryId])
 }
 
 model JobPhoto {
@@ -788,6 +904,7 @@ model SparePart {
   purchaseOrderItems PurchaseOrderItem[]
   quotationItems     QuotationItem[]
   invoiceItems       InvoiceItem[]
+  deliveryItems      DeliveryItem[]
 }
 
 model InventoryStock {

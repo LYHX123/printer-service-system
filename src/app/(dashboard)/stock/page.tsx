@@ -52,7 +52,14 @@ export default async function StockPage({
     const counts = await getStockTypeCounts(companyId)
     return (
       <div>
-        <PageHeader title={<T k="inventory" />} />
+        <PageHeader
+          title={<T k="inventory" />}
+          actions={
+            <Link href="/stock/movements">
+              <Button variant="outline" icon={<ArrowLeftRight className="h-4 w-4" />}>Movement History</Button>
+            </Link>
+          }
+        />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {viewableTypes.map((st) => {
             const Icon = STOCK_TYPE_ICONS[st]
@@ -108,16 +115,11 @@ export default async function StockPage({
         title={STOCK_TYPE_LABELS[stockType]}
         subtitle={<>{parts.length} <T k={stockCountTranslationKey(stockType, parts.length)} /></>}
         actions={
-          <div className="flex gap-2">
-            <Link href="/stock/movements">
-              <Button variant="outline" icon={<ArrowLeftRight className="h-4 w-4" />}>Movement History</Button>
+          canAddNew && (
+            <Link href={`/stock/new?type=${stockType}`}>
+              <Button icon={<Plus className="h-4 w-4" />}><T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} /></Button>
             </Link>
-            {canAddNew && (
-              <Link href={`/stock/new?type=${stockType}`}>
-                <Button icon={<Plus className="h-4 w-4" />}><T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} /></Button>
-              </Link>
-            )}
-          </div>
+          )
         }
       />
 

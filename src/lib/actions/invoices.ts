@@ -471,18 +471,14 @@ export async function createSalesLedgerFromInvoice(
 }
 
 /**
- * Confirms a DRAFT invoice, deducting stock for every stock-linked item in a
- * single transaction. All-or-nothing: if ANY item lacks sufficient stock, the
- * whole confirmation is rejected (no partial deduction) and the shortfalls are
- * reported back so the caller can display exactly what's short.
+ * Confirms a DRAFT invoice. Invoice is inventory-neutral (Delivery is the
+ * system's only inventory-movement document — see src/lib/actions/deliveries.ts)
+ * so this is now a pure status change: no stock is checked or deducted here.
+ * `shortfalls` is kept on the return type for source compatibility with
+ * existing callers (InvoiceActions' shortfall modal) but is never populated —
+ * confirming an invoice can no longer fail on stock.
  *
- * Idempotent: an invoice that isn't currently DRAFT is rejected outright, so
- * calling this twice on the same invoice can never deduct stock twice.
- *
- * Every new invoice (from either source — generateInvoice or createDirectInvoice)
- * is born DRAFT; this is the only path that ever deducts stock. Invoices created
- * before this workflow existed were backfilled to CONFIRMED without retroactive
- * stock movement (see the migration that added this column).
+ * Idempotent: an invoice that isn't currently DRAFT is rejected outright.
  */
 export async function confirmInvoice(
   invoiceId: string
@@ -495,73 +491,20 @@ export async function confirmInvoice(
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, companyId },
-    include: { items: { include: { part: { select: { id: true, name: true, brand: true } } } } },
+    select: { id: true, invoiceNumber: true, status: true },
   })
   if (!invoice) return { error: "Invoice not found" }
   if (invoice.status === "CONFIRMED") return { error: "Invoice is already confirmed" }
   if (invoice.status === "CANCELLED") return { error: "Invoice is already cancelled" }
 
-  const stockItems = invoice.items.filter((item) => item.partId)
-
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      const shortfalls: StockShortfall[] = []
-      const stocks = await tx.inventoryStock.findMany({
-        where: { partId: { in: stockItems.map((i) => i.partId!) } },
-      })
-      const stockByPart = new Map(stocks.map((s) => [s.partId, s]))
-
-      for (const item of stockItems) {
-        const have = stockByPart.get(item.partId!)?.quantity ?? 0
-        if (have < item.quantity) {
-          shortfalls.push({
-            partId: item.partId!,
-            name: item.part ? [item.part.brand, item.part.name].filter(Boolean).join(" ") : item.description,
-            have,
-            need: item.quantity,
-            short: item.quantity - have,
-          })
-        }
-      }
-
-      if (shortfalls.length > 0) {
-        return { shortfalls }
-      }
-
-      for (const item of stockItems) {
-        const have = stockByPart.get(item.partId!)!.quantity
-        const after = have - item.quantity
-        await tx.inventoryStock.update({ where: { partId: item.partId! }, data: { quantity: after } })
-        await tx.inventoryTransaction.create({
-          data: {
-            companyId,
-            partId: item.partId!,
-            type: "OUT",
-            quantity: -item.quantity,
-            quantityBefore: have,
-            quantityAfter: after,
-            referenceType: "INVOICE",
-            reference: `Invoice ${invoice.invoiceNumber}`,
-            performedById: userId,
-          },
-        })
-      }
-
-      await tx.invoice.update({
-        where: { id: invoiceId },
-        data: { status: "CONFIRMED", confirmedById: userId, confirmedAt: new Date() },
-      })
-
-      return { shortfalls: [] as StockShortfall[] }
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { status: "CONFIRMED", confirmedById: userId, confirmedAt: new Date() },
     })
-
-    if (result.shortfalls.length > 0) {
-      return { error: "Insufficient stock for one or more items", shortfalls: result.shortfalls }
-    }
 
     revalidatePath(`/quotations/invoices/${invoiceId}`)
     revalidatePath("/quotations/invoices")
-    revalidatePath("/stock")
 
     await logActivity({
       companyId,
@@ -580,11 +523,12 @@ export async function confirmInvoice(
 }
 
 /**
- * Cancels an invoice. If it was CONFIRMED (stock already deducted), every
- * stock-linked item's quantity is restored and a REVERSAL transaction is
- * written; if it was still DRAFT, nothing was ever deducted so cancellation
- * is a pure status change. Idempotent for the same reason as confirmInvoice —
- * an already-CANCELLED invoice is rejected outright.
+ * Cancels an invoice. Invoice is inventory-neutral, so this is a pure status
+ * change — nothing is restored here, whatever the invoice's prior status
+ * (historical CONFIRMED invoices that deducted stock under the old rule are
+ * NOT retroactively reconciled by this change; see the migration-boundary
+ * note in the Delivery module report). Idempotent — an already-CANCELLED
+ * invoice is rejected outright.
  */
 export async function cancelInvoice(invoiceId: string): Promise<{ error: string } | { success: true }> {
   const session = await auth()
@@ -595,55 +539,19 @@ export async function cancelInvoice(invoiceId: string): Promise<{ error: string 
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, companyId },
-    include: { items: true },
+    select: { id: true, invoiceNumber: true, status: true },
   })
   if (!invoice) return { error: "Invoice not found" }
   if (invoice.status === "CANCELLED") return { error: "Invoice is already cancelled" }
 
-  const wasConfirmed = invoice.status === "CONFIRMED"
-  const stockItems = invoice.items.filter((item) => item.partId)
-
   try {
-    await prisma.$transaction(async (tx) => {
-      if (wasConfirmed) {
-        const stocks = await tx.inventoryStock.findMany({
-          where: { partId: { in: stockItems.map((i) => i.partId!) } },
-        })
-        const stockByPart = new Map(stocks.map((s) => [s.partId, s]))
-
-        for (const item of stockItems) {
-          const have = stockByPart.get(item.partId!)?.quantity ?? 0
-          const after = have + item.quantity
-          await tx.inventoryStock.upsert({
-            where: { partId: item.partId! },
-            update: { quantity: after },
-            create: { partId: item.partId!, quantity: after },
-          })
-          await tx.inventoryTransaction.create({
-            data: {
-              companyId,
-              partId: item.partId!,
-              type: "REVERSAL",
-              quantity: item.quantity,
-              quantityBefore: have,
-              quantityAfter: after,
-              referenceType: "INVOICE_CANCEL",
-              reference: `Invoice ${invoice.invoiceNumber} cancelled`,
-              performedById: userId,
-            },
-          })
-        }
-      }
-
-      await tx.invoice.update({
-        where: { id: invoiceId },
-        data: { status: "CANCELLED", cancelledById: userId, cancelledAt: new Date() },
-      })
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { status: "CANCELLED", cancelledById: userId, cancelledAt: new Date() },
     })
 
     revalidatePath(`/quotations/invoices/${invoiceId}`)
     revalidatePath("/quotations/invoices")
-    revalidatePath("/stock")
 
     await logActivity({
       companyId,

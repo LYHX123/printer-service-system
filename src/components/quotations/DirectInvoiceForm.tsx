@@ -8,6 +8,7 @@ import type { Resolver } from "react-hook-form"
 import { ImageOff, Trash2 } from "lucide-react"
 import { DirectInvoiceSchema, type DirectInvoiceInput } from "@/lib/schemas"
 import { createDirectInvoice, updateInvoice } from "@/lib/actions/invoices"
+import { createInvoiceFromDelivery } from "@/lib/actions/deliveries"
 import { FormField, Input } from "@/components/ui/input"
 import { MoneyInput } from "@/components/ui/money-input"
 import { CustomerSearchSelect } from "@/components/ui/customer-search-select"
@@ -36,9 +37,11 @@ interface DirectInvoiceFormProps {
   spareParts: SparePartOption[]
   defaultValues?: Partial<DirectInvoiceInput>
   invoiceId?: string
+  /** Set when this form is pre-populated from a Delivery's "Generate Invoice" action — routes submission through createInvoiceFromDelivery instead of the normal create/update actions, and links the resulting Invoice back to the Delivery. */
+  fromDeliveryId?: string
 }
 
-export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoiceId }: DirectInvoiceFormProps) {
+export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoiceId, fromDeliveryId }: DirectInvoiceFormProps) {
   const toast = useToast()
   const { t } = useLanguage()
   const isEdit = Boolean(invoiceId)
@@ -94,7 +97,11 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
   }
 
   async function onSubmit(data: DirectInvoiceInput) {
-    const result = isEdit ? await updateInvoice(invoiceId!, data) : await createDirectInvoice(data)
+    const result = fromDeliveryId
+      ? await createInvoiceFromDelivery(fromDeliveryId, data)
+      : isEdit
+        ? await updateInvoice(invoiceId!, data)
+        : await createDirectInvoice(data)
     if (result?.error) {
       toast.error(result.error === "INVOICE_NUMBER_EXISTS" ? t("invoiceNumberExists") : result.error)
     }

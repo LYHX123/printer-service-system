@@ -3,14 +3,15 @@ import Image from "next/image"
 import { notFound, redirect } from "next/navigation"
 import {
   ChevronLeft, User, ImageOff,
-  Package, Briefcase, FileText, Receipt, Cloud, History,
+  Package, Briefcase, FileText, Receipt, Cloud, History, Truck,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getQuotation, getQuotationDropboxDocuments, getQuotationVersionSnapshot } from "@/lib/data/quotations"
-import { canAccess, canConvertQuotationToInvoice, canExportQuotation, canViewInvoice, canApproveQuotation, canEditQuotationPerm } from "@/lib/permissions"
+import { getDeliveriesForQuotation } from "@/lib/data/deliveries"
+import { canAccess, canConvertQuotationToInvoice, canExportQuotation, canViewInvoice, canApproveQuotation, canEditQuotationPerm, canCreateDelivery, canViewDelivery } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { QuotationStatusBadge, InvoiceStatusBadge } from "@/components/ui/badge"
+import { QuotationStatusBadge, InvoiceStatusBadge, DeliveryInvoiceStatusBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
 import { QuotationVersionSelector } from "@/components/quotations/QuotationVersionSelector"
 import { formatCurrency } from "@/lib/utils"
@@ -88,6 +89,9 @@ export default async function QuotationDetailPage({
 
   const dropboxDocuments = await getQuotationDropboxDocuments(id, companyId)
   const hasFinal = dropboxDocuments.some((d) => d.isFinal)
+
+  const canViewDeliveryModule = canViewDelivery(role, permissions)
+  const deliveries = canViewDeliveryModule ? await getDeliveriesForQuotation(id, companyId) : []
 
   // ─── Resolve which version this page load is showing ────────────────────
   // Query params (?version=N / ?view=final) rather than local state, so the
@@ -226,6 +230,7 @@ export default async function QuotationDetailPage({
             canApprove={canApproveQuotation(role, permissions)}
             existingInvoice={quotation.invoice ? { id: quotation.invoice.id, invoiceNumber: quotation.invoice.invoiceNumber } : null}
             canConvertToInvoice={canConvertQuotationToInvoice(role, permissions)}
+            canCreateDelivery={canCreateDelivery(role, permissions)}
             customerPin={quotation.customer.pinNumber ?? ""}
             defaultVatPercent={Number(quotation.vatPercent)}
             needsDropboxSync={needsDropboxSync}
@@ -384,6 +389,37 @@ export default async function QuotationDetailPage({
               </>
             )}
           </div>
+
+          {/* Deliveries — a Quotation may have several over time (unlike its
+              single Invoice), so this is a list rather than a single-record
+              card. Hidden entirely for a user without Delivery module access. */}
+          {canViewDeliveryModule && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Truck className="h-4 w-4 text-slate-400" />
+                Deliveries
+              </h3>
+              {deliveries.length === 0 ? (
+                <p className="text-sm text-slate-400 italic">No deliveries created yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {deliveries.map((d) => (
+                    <Link
+                      key={d.id}
+                      href={`/delivery/${d.id}`}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2.5 hover:bg-slate-100 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs font-semibold text-blue-600">{d.deliveryNumber}</p>
+                        <p className="text-[11px] text-slate-400">{format(new Date(d.deliveryDate), "dd MMM yyyy")}</p>
+                      </div>
+                      <DeliveryInvoiceStatusBadge invoiced={Boolean(d.invoice)} />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Related Invoice — belongs to the whole Quotation business record
               (quotation.invoice, the live relation), never to whichever

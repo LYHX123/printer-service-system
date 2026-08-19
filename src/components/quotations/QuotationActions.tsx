@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Pencil, CheckCircle, XCircle, Download, FileSpreadsheet, Receipt, ArrowRight, CloudUpload, History } from "lucide-react"
+import { Pencil, CheckCircle, XCircle, Download, FileSpreadsheet, Receipt, ArrowRight, CloudUpload, History, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { QuotationStatusModal } from "./QuotationStatusModal"
 import { GenerateInvoiceModal } from "./GenerateInvoiceModal"
+import { ConvertToDeliveryModal } from "./ConvertToDeliveryModal"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { resyncQuotationDropbox } from "@/lib/actions/quotations"
 import type { QuotationStatus, Role } from "@/types"
@@ -25,6 +26,8 @@ interface QuotationActionsProps {
   /** Null when this quotation has no invoice yet — shows "Create Invoice" instead of "View Invoice". At most one invoice per quotation (enforced by a DB unique constraint). */
   existingInvoice: { id: string; invoiceNumber: string } | null
   canConvertToInvoice: boolean
+  /** Whether the viewer holds delivery.create — gates the "Convert to Delivery" button itself (server-enforced too; this is UI-only). */
+  canCreateDelivery: boolean
   customerPin: string
   defaultVatPercent: number
   /** True when the version/FINAL currently being viewed is missing its Dropbox XLSX and/or PDF — shows the "Sync to Dropbox" retry button. Always false while viewing a historical version (see viewMode). */
@@ -46,6 +49,7 @@ export function QuotationActions({
   canApprove: canApprovePermission,
   existingInvoice,
   canConvertToInvoice,
+  canCreateDelivery,
   customerPin,
   defaultVatPercent,
   needsDropboxSync,
@@ -60,6 +64,7 @@ export function QuotationActions({
   const { t } = useLanguage()
   const [statusModal, setStatusModal] = useState<ModalTargetStatus | null>(null)
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
   const [isSyncing, startSyncing] = useTransition()
 
   const isCurrent = viewMode === "current"
@@ -185,6 +190,16 @@ export function QuotationActions({
               </Button>
             )
           ))}
+
+        {/* Convert to Delivery — unlike Generate Invoice, not capped at one:
+            a quotation may be delivered in several batches over time, and
+            not gated to Approved-only (a Delivery is an inventory-movement
+            document, not the customer-facing financial artifact Invoice is). */}
+        {viewMode !== "historical" && canCreateDelivery && (
+          <Button size="sm" variant="outline" icon={<Truck className="h-3.5 w-3.5" />} onClick={() => setDeliveryModalOpen(true)}>
+            Convert to Delivery
+          </Button>
+        )}
       </div>
 
       {statusModal && (
@@ -205,6 +220,12 @@ export function QuotationActions({
           defaultVatPercent={defaultVatPercent}
         />
       )}
+
+      <ConvertToDeliveryModal
+        isOpen={deliveryModalOpen}
+        onClose={() => setDeliveryModalOpen(false)}
+        quotationId={quotationId}
+      />
     </>
   )
 }

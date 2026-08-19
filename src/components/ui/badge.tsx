@@ -328,3 +328,15 @@ export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
   const { t } = useLanguage()
   return <Badge className={INVOICE_STATUS_STYLES[status]}>{t(INVOICE_STATUS_TRANSLATION_KEYS[status])}</Badge>
 }
+
+// ─── Delivery Invoice Status Badge ────────────────────────────────────────────
+// Derived, not stored — a Delivery's Uninvoiced/Invoiced status is just
+// whether Delivery.invoiceId is set (see getDelivery in src/lib/data/deliveries.ts).
+
+export function DeliveryInvoiceStatusBadge({ invoiced }: { invoiced: boolean }) {
+  return invoiced ? (
+    <Badge className="bg-green-100 text-green-700">Invoiced</Badge>
+  ) : (
+    <Badge className="bg-slate-100 text-slate-600">Uninvoiced</Badge>
+  )
+}

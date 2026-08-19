@@ -42,6 +42,8 @@ export const AUDIT_ENTITY_TYPES = {
   QUOTATION: "Quotation",
   INVOICE: "Invoice",
   INVOICE_DOCUMENT: "InvoiceDocument",
+  DELIVERY: "Delivery",
+  DELIVERY_DOCUMENT: "DeliveryDocument",
   LEDGER_ENTRY: "LedgerEntry",
   SALES_LEDGER_ENTRY: "SalesLedgerEntry",
   SHOP_ACCOUNT_ENTRY: "ShopAccountEntry",

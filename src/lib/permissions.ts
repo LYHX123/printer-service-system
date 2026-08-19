@@ -14,6 +14,7 @@ export type PermissionKey =
   | "customers.view" | "customers.create" | "customers.edit" | "customers.delete" | "customers.files.upload"
   | "quotations.view" | "quotations.create" | "quotations.edit" | "quotations.delete" | "quotations.export" | "quotations.convertToInvoice" | "quotations.approve"
   | "invoice.view" | "invoice.create" | "invoice.edit" | "invoice.delete" | "invoice.confirm" | "invoice.cancel" | "invoice.createSalesRecord"
+  | "delivery.view" | "delivery.create" | "delivery.edit" | "delivery.delete" | "delivery.sync" | "delivery.convertToInvoice"
   | "stock.equipment.view" | "stock.equipment.create" | "stock.equipment.edit" | "stock.equipment.delete" | "stock.equipment.adjust"
   | "stock.consumption.view" | "stock.consumption.create" | "stock.consumption.edit" | "stock.consumption.delete" | "stock.consumption.adjust"
   | "stock.parts.view" | "stock.parts.create" | "stock.parts.edit" | "stock.parts.delete" | "stock.parts.adjust"
@@ -77,6 +78,17 @@ export const PERMISSION_TREE: PermNode[] = [
       { key: "invoice.confirm", en: "Confirm", zh: "确认" },
       { key: "invoice.cancel", en: "Cancel", zh: "取消" },
       { key: "invoice.createSalesRecord", en: "Create Sales Record", zh: "加入销售台账" },
+    ],
+  },
+  {
+    key: "delivery", en: "Delivery", zh: "送货单",
+    leaves: [
+      { key: "delivery.view", en: "View", zh: "查看" },
+      { key: "delivery.create", en: "Create", zh: "新建" },
+      { key: "delivery.edit", en: "Edit", zh: "编辑" },
+      { key: "delivery.delete", en: "Delete", zh: "删除" },
+      { key: "delivery.sync", en: "Sync to Dropbox", zh: "同步到 Dropbox" },
+      { key: "delivery.convertToInvoice", en: "Convert to Invoice", zh: "生成发票" },
     ],
   },
   {
@@ -295,7 +307,7 @@ export function hasAnyPermission(role: Role, permissions: string[], prefix: stri
 // "has anything in this module" is the right question, not a specific action.
 
 export type Module =
-  | "dashboard" | "customers" | "jobs" | "quotations" | "invoice"
+  | "dashboard" | "customers" | "jobs" | "quotations" | "invoice" | "delivery"
   | "inventory" | "ledger" | "tasks" | "users" | "settings"
 
 const MODULE_PREFIX: Record<Module, string> = {
@@ -304,6 +316,7 @@ const MODULE_PREFIX: Record<Module, string> = {
   jobs: "jobs",
   quotations: "quotations.",
   invoice: "invoice.",
+  delivery: "delivery.",
   inventory: "stock.",
   ledger: "ledger.",
   tasks: "tasks.",
@@ -312,13 +325,14 @@ const MODULE_PREFIX: Record<Module, string> = {
 }
 
 export const ALL_MODULES: Module[] = [
-  "dashboard", "quotations", "invoice", "customers", "inventory", "ledger", "tasks", "users", "settings",
+  "dashboard", "quotations", "invoice", "delivery", "customers", "inventory", "ledger", "tasks", "users", "settings",
 ]
 
 export const MODULE_LABELS: Record<Module, { en: string; zh: string }> = {
   dashboard: { en: "Dashboard", zh: "仪表盘" },
   quotations: { en: "Quotations", zh: "报价单" },
   invoice: { en: "Invoice", zh: "发票" },
+  delivery: { en: "Delivery", zh: "送货单" },
   customers: { en: "Customers", zh: "客户" },
   jobs: { en: "Jobs", zh: "工单" },
   inventory: { en: "Stock", zh: "库存" },
@@ -364,6 +378,13 @@ export const canDeleteInvoice = (role: Role, p: string[]) => hasPermission(role,
 export const canConfirmInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.confirm")
 export const canCancelInvoice = (role: Role, p: string[]) => hasPermission(role, p, "invoice.cancel")
 export const canCreateSalesRecord = (role: Role, p: string[]) => hasPermission(role, p, "invoice.createSalesRecord")
+
+export const canViewDelivery = (role: Role, p: string[]) => hasPermission(role, p, "delivery.view")
+export const canCreateDelivery = (role: Role, p: string[]) => hasPermission(role, p, "delivery.create")
+export const canEditDelivery = (role: Role, p: string[]) => hasPermission(role, p, "delivery.edit")
+export const canDeleteDelivery = (role: Role, p: string[]) => hasPermission(role, p, "delivery.delete")
+export const canSyncDelivery = (role: Role, p: string[]) => hasPermission(role, p, "delivery.sync")
+export const canConvertDeliveryToInvoice = (role: Role, p: string[]) => hasPermission(role, p, "delivery.convertToInvoice")
 
 export type StockBucket = "equipment" | "consumption" | "parts"
 export const canViewStock = (role: Role, p: string[], bucket: StockBucket) => hasPermission(role, p, `stock.${bucket}.view` as PermissionKey)

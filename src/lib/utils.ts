@@ -58,3 +58,7 @@ export function generateInvoiceNumber(date: Date, sequence: number): string {
   const month = String(date.getMonth() + 1).padStart(2, "0")
   return `INV${year}${month}-${String(sequence).padStart(3, "0")}`
 }
+
+export function generateDeliveryNumber(sequence: number): string {
+  return `DL${String(sequence).padStart(5, "0")}`
+}

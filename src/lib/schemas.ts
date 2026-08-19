@@ -222,6 +222,35 @@ export const DirectInvoiceSchema = z.object({
 
 export type DirectInvoiceInput = z.infer<typeof DirectInvoiceSchema>
 
+// ─── Delivery ─────────────────────────────────────────────────────────────────
+
+/** Delivery items are always stock-linked (no arbitrary free text) and carry no price — Delivery is a pure inventory-movement document. */
+export const DeliveryItemInputSchema = z.object({
+  partId: z.string().min(1, "Stock item is required"),
+  quantity: z.coerce.number().int().min(1, "Min 1"),
+})
+
+export type DeliveryItemInput = z.infer<typeof DeliveryItemInputSchema>
+
+/** Manual Delivery creation/edit. Used for both create and edit — deliveryNumber is server-generated, never part of this form. */
+export const DeliverySchema = z.object({
+  deliveryDate: z.string().min(1, "Delivery date is required"),
+  customerId: z.string().min(1, "Customer is required"),
+  customerBranchId: z.string().optional().or(z.literal("")),
+  reference: z.string().max(150).optional().or(z.literal("")),
+  items: z.array(DeliveryItemInputSchema).min(1, "Add at least one stock item"),
+})
+
+export type DeliveryInput = z.infer<typeof DeliverySchema>
+
+/** "Convert to Delivery" from a Quotation — the only user input needed since items/customer/qty are all reused from the Quotation. */
+export const ConvertQuotationToDeliverySchema = z.object({
+  deliveryDate: z.string().min(1, "Delivery date is required"),
+  reference: z.string().max(150).optional().or(z.literal("")),
+})
+
+export type ConvertQuotationToDeliveryInput = z.infer<typeof ConvertQuotationToDeliverySchema>
+
 // ─── Repair Report ────────────────────────────────────────────────────────────
 
 export const JobPartInputSchema = z.object({
