@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { DeliveryInvoiceStatusBadge, InvoiceStatusBadge } from "@/components/ui/badge"
 import { DeliveryActions } from "@/components/delivery/DeliveryActions"
+import { T } from "@/components/ui/T"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import type { Role } from "@/types"
@@ -45,7 +46,7 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     <div>
       <Link href="/delivery" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Delivery
+        <T k="delivery" />
       </Link>
 
       <PageHeader
@@ -59,10 +60,10 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <a href={pdfDownloadUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" icon={<Download className="h-3.5 w-3.5" />}>Download PDF</Button>
+              <Button size="sm" icon={<Download className="h-3.5 w-3.5" />}><T k="downloadPdf" /></Button>
             </a>
             <a href={excelDownloadUrl}>
-              <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}>Download Excel</Button>
+              <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}><T k="downloadExcel" /></Button>
             </a>
             <DeliveryActions
               deliveryId={delivery.id}
@@ -81,31 +82,35 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
         {/* Left sidebar */}
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-4">Customer</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4"><T k="customer" /></h3>
             <div className="flex items-start gap-2 text-sm">
               <User className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
               <div>
                 <p className="font-medium text-slate-900">{delivery.customer.companyName}</p>
                 {delivery.customer.name && <p className="text-xs text-slate-500">{delivery.customer.name}</p>}
-                {delivery.customerBranch && <p className="text-xs text-slate-400">Project: {delivery.customerBranch.name}</p>}
+                {delivery.customerBranch && (
+                  <p className="text-xs text-slate-400">
+                    <T k="projectLabel" />: {delivery.customerBranch.name}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Details</h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3"><T k="details" /></h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-slate-500">Created By</dt>
+                <dt className="text-slate-500"><T k="createdBy" /></dt>
                 <dd className="text-slate-700">{delivery.createdBy.name}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-slate-500">Date</dt>
+                <dt className="text-slate-500"><T k="date" /></dt>
                 <dd className="text-slate-700">{format(new Date(delivery.deliveryDate), "dd MMM yyyy")}</dd>
               </div>
               {delivery.reference && (
                 <div className="flex justify-between">
-                  <dt className="text-slate-500">Reference</dt>
+                  <dt className="text-slate-500"><T k="reference" /></dt>
                   <dd className="text-slate-700">{delivery.reference}</dd>
                 </div>
               )}
@@ -118,14 +123,14 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <FileText className="h-4 w-4 text-slate-400" />
-                Source Quotation
+                <T k="sourceQuotationLabel" />
               </h3>
               {delivery.quotation ? (
                 <Link href={`/quotations/${delivery.quotation.id}`} className="font-mono text-xs font-semibold text-blue-600 hover:underline">
                   {delivery.quotation.quotationNumber}
                 </Link>
               ) : (
-                <p className="text-sm text-slate-400 italic">Manual delivery — no source quotation.</p>
+                <p className="text-sm text-slate-400 italic"><T k="manualDeliveryNoQuotation" /></p>
               )}
             </div>
           )}
@@ -135,13 +140,13 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-slate-400" />
-                Linked Invoice
+                <T k="linkedInvoiceHeading" />
               </h3>
               {delivery.invoice ? (
                 <>
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <dt className="text-slate-500">Invoice No.</dt>
+                      <dt className="text-slate-500"><T k="invoiceNoLabel" /></dt>
                       <dd>
                         <Link href={`/quotations/invoices/${delivery.invoice.id}`} className="font-mono text-xs font-semibold text-blue-600 hover:underline">
                           {delivery.invoice.invoiceNumber}
@@ -149,20 +154,20 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
                       </dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-slate-500">Total</dt>
+                      <dt className="text-slate-500"><T k="total" /></dt>
                       <dd className="text-slate-700">{formatCurrency(Number(delivery.invoice.totalAmount))}</dd>
                     </div>
                     <div className="flex items-center justify-between">
-                      <dt className="text-slate-500">Status</dt>
+                      <dt className="text-slate-500"><T k="status" /></dt>
                       <dd><InvoiceStatusBadge status={delivery.invoice.status} /></dd>
                     </div>
                   </dl>
                   <Link href={`/quotations/invoices/${delivery.invoice.id}`} className="mt-3 block">
-                    <Button variant="outline" size="sm" className="w-full">View Invoice</Button>
+                    <Button variant="outline" size="sm" className="w-full"><T k="viewInvoice" /></Button>
                   </Link>
                 </>
               ) : (
-                <p className="text-sm text-slate-400 italic">Not yet invoiced.</p>
+                <p className="text-sm text-slate-400 italic"><T k="notYetInvoiced" /></p>
               )}
             </div>
           )}
@@ -171,11 +176,11 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <Cloud className="h-4 w-4 text-slate-400" />
-              Dropbox Files
+              <T k="dropboxFiles" />
             </h3>
             {!pdfDoc && !xlsxDoc ? (
               <p className="text-sm text-slate-400 italic">
-                {delivery.customer.shortName?.trim() ? "Not yet synced to Dropbox." : "Customer has no Short Name set — required for Dropbox sync."}
+                <T k={delivery.customer.shortName?.trim() ? "notYetSyncedToDropbox" : "customerShortNameRequiredForDeliverySync"} />
               </p>
             ) : (
               <div className="space-y-2 text-sm">
@@ -196,15 +201,15 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <Package className="h-4 w-4 text-slate-400" />
-              Delivery Items
+              <T k="deliveryItemsHeading" />
             </h3>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="text-xs font-semibold text-slate-500 uppercase border-b border-slate-100">
-                    <th className="pb-2 text-left">Item</th>
-                    <th className="pb-2 text-right">Unit</th>
-                    <th className="pb-2 text-right">Quantity</th>
+                    <th className="pb-2 text-left"><T k="itemColumnLabel" /></th>
+                    <th className="pb-2 text-right"><T k="unit" /></th>
+                    <th className="pb-2 text-right"><T k="quantity" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -223,7 +228,7 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
               <FileText className="h-4 w-4 text-slate-400" />
-              Received By
+              <T k="receivedBy" />
             </h3>
             <div className="mt-3 h-8 w-64 border-b border-slate-300" />
           </div>

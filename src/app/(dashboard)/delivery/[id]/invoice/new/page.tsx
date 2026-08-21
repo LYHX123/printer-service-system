@@ -8,6 +8,7 @@ import { getSparePartOptions } from "@/lib/data/inventory"
 import { canConvertDeliveryToInvoice } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { DirectInvoiceForm } from "@/components/quotations/DirectInvoiceForm"
+import { GenerateInvoiceFromDeliveryTitle } from "@/components/ui/T"
 import type { Role } from "@/types"
 
 /**
@@ -43,7 +44,7 @@ export default async function DeliveryToInvoicePage({ params }: { params: Promis
         <ChevronLeft className="h-4 w-4" />
         {delivery.deliveryNumber}
       </Link>
-      <PageHeader title={`Generate Invoice from ${delivery.deliveryNumber}`} />
+      <PageHeader title={<GenerateInvoiceFromDeliveryTitle number={delivery.deliveryNumber} />} />
       <DirectInvoiceForm
         customers={customers}
         spareParts={spareParts}

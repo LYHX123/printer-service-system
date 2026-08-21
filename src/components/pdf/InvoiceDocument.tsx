@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "fs"
 import path from "path"
 import { format } from "date-fns"
 import type { InvoicePdfData, InvoiceItemWithPart } from "@/lib/data/invoices"
+import { resolveInvoiceItemNoLabel } from "@/lib/invoiceExcel/buildData"
 
 const MIN_VISIBLE_ROWS = 8
 
@@ -253,7 +254,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoicePdfData }) {
           {rows.map((item, index) => (
             <View key={item?.id ?? `blank-${index}`} style={styles.tableRow}>
               <Text style={styles.cellNo}>{index + 1}</Text>
-              <Text style={styles.cellItemNo}>{item?.part?.partNumber ?? ""}</Text>
+              <Text style={styles.cellItemNo}>{item ? resolveInvoiceItemNoLabel(item) : ""}</Text>
               <Text style={styles.cellDesc}>{item?.description ?? ""}</Text>
               <Text style={styles.cellUnit}>{item?.unit ?? ""}</Text>
               <Text style={styles.cellQty}>{item ? item.quantity : ""}</Text>

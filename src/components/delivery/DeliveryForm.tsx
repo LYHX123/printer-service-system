@@ -14,6 +14,7 @@ import { Select } from "@/components/ui/select"
 import { CustomerSearchSelect } from "@/components/ui/customer-search-select"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { todayLocalDate } from "@/lib/utils"
 import { selectOnFocus } from "@/lib/input-helpers"
 import type { SparePartOption } from "@/lib/data/inventory"
@@ -43,6 +44,7 @@ interface DeliveryFormProps {
 
 export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId }: DeliveryFormProps) {
   const toast = useToast()
+  const { t } = useLanguage()
   const isEdit = Boolean(deliveryId)
 
   const {
@@ -103,12 +105,12 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
       <div className="space-y-5">
         {/* Customer */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-slate-900">Customer</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{t("customer")}</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <FormField label="Delivery Date" htmlFor="deliveryDate" required error={errors.deliveryDate?.message}>
+            <FormField label={t("deliveryDateLabel")} htmlFor="deliveryDate" required error={errors.deliveryDate?.message}>
               <Input id="deliveryDate" type="date" {...register("deliveryDate")} />
             </FormField>
-            <FormField label="Customer" htmlFor="customerId" required error={errors.customerId?.message}>
+            <FormField label={t("customer")} htmlFor="customerId" required error={errors.customerId?.message}>
               <Controller
                 control={control}
                 name="customerId"
@@ -121,7 +123,7 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
                       field.onChange(customerId)
                       handleCustomerChange()
                     }}
-                    placeholder="Search customer by name…"
+                    placeholder={t("searchCustomerByNamePlaceholder")}
                     error={errors.customerId?.message}
                   />
                 )}
@@ -130,9 +132,9 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
           </div>
 
           {selectedCustomer && selectedCustomer.branches.length > 0 && (
-            <FormField label="Project" htmlFor="customerBranchId">
+            <FormField label={t("projectLabel")} htmlFor="customerBranchId">
               <Select id="customerBranchId" {...register("customerBranchId")}>
-                <option value="">Head Office</option>
+                <option value="">{t("headOffice")}</option>
                 {selectedCustomer.branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -142,26 +144,26 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
             </FormField>
           )}
 
-          <FormField label="Reference (optional)" htmlFor="reference" error={errors.reference?.message}>
-            <Input id="reference" placeholder="e.g. customer PO number" {...register("reference")} />
+          <FormField label={t("referenceOptionalLabel")} htmlFor="reference" error={errors.reference?.message}>
+            <Input id="reference" placeholder={t("referencePlaceholder")} {...register("reference")} />
           </FormField>
         </div>
 
         {/* Stock Items */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-900">Delivery Items</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{t("deliveryItemsHeading")}</h2>
 
           <StockItemSearch spareParts={spareParts} onSelect={addStockItem} />
 
           {errors.items?.message && <p className="text-xs text-red-600">{errors.items.message}</p>}
 
           {fields.length === 0 ? (
-            <p className="text-sm text-slate-400 italic py-2">No items added yet. Search for a stock item above to add it.</p>
+            <p className="text-sm text-slate-400 italic py-2">{t("noItemsAdded")}</p>
           ) : (
             <div className="space-y-3">
               <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 pb-1 border-b border-slate-100">
-                <div className="col-span-8">Item</div>
-                <div className="col-span-3 text-right">Quantity</div>
+                <div className="col-span-8">{t("itemColumnLabel")}</div>
+                <div className="col-span-3 text-right">{t("quantity")}</div>
                 <div className="col-span-1" />
               </div>
               {fields.map((field, index) => {
@@ -180,7 +182,7 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-medium text-slate-900 truncate">
-                            {part ? (part.brand ? `${part.brand} — ${part.name}` : part.name) : "Unknown item"}
+                            {part ? (part.brand ? `${part.brand} — ${part.name}` : part.name) : t("unknownItem")}
                           </p>
                           {part && (
                             <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
@@ -191,7 +193,9 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
                         {part && (
                           <p className="text-xs text-slate-400 truncate">
                             {part.model ? `${part.model} · ` : ""}
-                            {part.stock?.quantity ?? 0} {part.unit || "units"} in stock
+                            {t("inStockCount")
+                              .replace("{qty}", String(part.stock?.quantity ?? 0))
+                              .replace("{unit}", part.unit || t("genericUnitsFallback"))}
                           </p>
                         )}
                       </div>
@@ -203,7 +207,7 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
                         <Input
                           type="number"
                           min="1"
-                          placeholder="Qty"
+                          placeholder={t("qtyPlaceholder")}
                           onFocus={selectOnFocus}
                           {...register(`items.${index}.quantity`)}
                           error={errors.items?.[index]?.quantity?.message}
@@ -229,10 +233,10 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
 
       <div className="flex justify-end gap-3 mt-4">
         <Button type="button" variant="outline" onClick={() => history.back()}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" loading={isSubmitting}>
-          {isEdit ? "Save" : "Create"}
+          {isEdit ? t("save") : t("create")}
         </Button>
       </div>
     </form>

@@ -50,7 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true, module: "dashboard" },
   { href: "/customers", labelKey: "customers", label: "Customers", icon: Users, module: "customers" },
   { href: "/quotations", labelKey: "quotations", label: "Quotations", icon: FileText, module: "quotations" },
-  { href: "/delivery", labelKey: null, label: "Delivery", icon: Truck, module: "delivery" },
+  { href: "/delivery", labelKey: "delivery", label: "Delivery", icon: Truck, module: "delivery" },
   { href: "/invoice", labelKey: "invoice", label: "Invoice", icon: Receipt, module: "invoice", matchHrefs: ["/quotations/invoices"] },
   { href: "/stock", labelKey: "inventory", label: "Stock", icon: Package, module: "inventory" },
   { href: "/ledger", labelKey: "ledger", label: "Ledger", icon: BookOpen, module: "ledger", permPrefix: "ledger.general.|ledger.sales." },

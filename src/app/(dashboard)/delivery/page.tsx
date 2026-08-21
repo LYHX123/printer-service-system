@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Table } from "@/components/ui/table"
 import { DeliveryInvoiceStatusBadge } from "@/components/ui/badge"
 import { DeliveryListActions } from "@/components/delivery/DeliveryListActions"
+import { T, TInput } from "@/components/ui/T"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import type { Role } from "@/types"
@@ -29,29 +30,29 @@ export default async function DeliveryPage({
   return (
     <div>
       <PageHeader
-        title="Delivery"
-        subtitle="Delivery notes and inventory movement"
+        title={<T k="delivery" />}
+        subtitle={<T k="deliveryDesc" />}
         actions={
           canCreateDelivery(role, permissions) && (
             <Link href="/delivery/new">
-              <Button icon={<Plus className="h-4 w-4" />}>Create Delivery</Button>
+              <Button icon={<Plus className="h-4 w-4" />}><T k="createDelivery" /></Button>
             </Link>
           )
         }
       />
 
       <form method="get" className="filter-bar mb-4 flex flex-wrap gap-2">
-        <input
+        <TInput
           name="search"
           type="search"
           defaultValue={search}
-          placeholder="Search deliveries…"
-          className="h-9 w-64 rounded-lg border border-slate-300 px-3 text-sm"
+          placeholderKey="searchDeliveriesPlaceholder"
+          className="h-9 w-64"
         />
-        <Button type="submit" variant="secondary" size="sm">Filter</Button>
+        <Button type="submit" variant="secondary" size="sm"><T k="filter" /></Button>
         {search && (
           <Link href="/delivery">
-            <Button variant="ghost" size="sm">Clear</Button>
+            <Button variant="ghost" size="sm"><T k="clear" /></Button>
           </Link>
         )}
       </form>
@@ -60,7 +61,7 @@ export default async function DeliveryPage({
         columns={[
           {
             key: "deliveryNumber",
-            label: "Delivery No.",
+            label: <T k="deliveryNumberLabel" />,
             render: (row) => (
               <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
                 {row.deliveryNumber}
@@ -69,7 +70,7 @@ export default async function DeliveryPage({
           },
           {
             key: "customer",
-            label: "Customer",
+            label: <T k="customer" />,
             render: (row) => (
               <div>
                 <span className="text-sm font-medium text-slate-900">{row.customer.companyName}</span>
@@ -79,26 +80,26 @@ export default async function DeliveryPage({
           },
           {
             key: "quotation",
-            label: "Source",
+            label: <T k="source" />,
             render: (row) =>
               row.quotation ? (
                 <Link href={`/quotations/${row.quotation.id}`} className="text-xs font-mono text-blue-600 hover:underline">
                   {row.quotation.quotationNumber}
                 </Link>
               ) : (
-                <span className="text-xs text-slate-400 italic">Manual</span>
+                <span className="text-xs text-slate-400 italic"><T k="manual" /></span>
               ),
           },
           {
             key: "deliveryDate",
-            label: "Date",
+            label: <T k="date" />,
             render: (row) => (
               <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(row.deliveryDate), "dd MMM yyyy")}</span>
             ),
           },
           {
             key: "status",
-            label: "Status",
+            label: <T k="status" />,
             render: (row) => <DeliveryInvoiceStatusBadge invoiced={Boolean(row.invoice)} />,
           },
           {
@@ -118,11 +119,11 @@ export default async function DeliveryPage({
         ]}
         data={deliveries}
         keyExtractor={(row) => row.id}
-        emptyTitle="No deliveries found"
+        emptyTitle={<T k="noDeliveriesFound" />}
         emptyDescription={
           <span className="inline-flex items-center gap-1.5">
             <Truck className="h-3.5 w-3.5" />
-            Create a delivery manually or convert one from a Quotation.
+            <T k="createDeliveryManuallyDesc" />
           </span>
         }
       />

@@ -197,7 +197,7 @@ export function QuotationActions({
             document, not the customer-facing financial artifact Invoice is). */}
         {viewMode !== "historical" && canCreateDelivery && (
           <Button size="sm" variant="outline" icon={<Truck className="h-3.5 w-3.5" />} onClick={() => setDeliveryModalOpen(true)}>
-            Convert to Delivery
+            {t("convertToDeliveryTitle")}
           </Button>
         )}
       </div>

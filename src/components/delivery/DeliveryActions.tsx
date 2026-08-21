@@ -7,6 +7,7 @@ import { Pencil, Trash2, Receipt, ArrowRight, CloudUpload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { deleteDelivery, resyncDeliveryDropbox } from "@/lib/actions/deliveries"
 
 interface DeliveryActionsProps {
@@ -31,6 +32,7 @@ export function DeliveryActions({
 }: DeliveryActionsProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t } = useLanguage()
   const [isPending, startTransition] = useTransition()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -49,7 +51,7 @@ export function DeliveryActions({
         toast.error(result.error)
         return
       }
-      toast.success("Synced to Dropbox")
+      toast.success(t("syncedToDropboxToast"))
       router.refresh()
     } finally {
       setIsSyncing(false)
@@ -63,7 +65,7 @@ export function DeliveryActions({
         toast.error(result.error)
         return
       }
-      toast.success("Delivery deleted")
+      toast.success(t("deliveryDeletedToast"))
       router.push("/delivery")
     })
   }
@@ -73,32 +75,32 @@ export function DeliveryActions({
       <div className="flex flex-wrap items-center gap-2">
         {canSyncDropbox && needsDropboxSync && (
           <Button size="sm" variant="outline" icon={<CloudUpload className="h-3.5 w-3.5" />} loading={isSyncing} onClick={handleSync}>
-            Sync to Dropbox
+            {t("syncToDropbox")}
           </Button>
         )}
         {canEditNow && (
           <Link href={`/delivery/${deliveryId}/edit`}>
             <Button size="sm" variant="outline" icon={<Pencil className="h-3.5 w-3.5" />}>
-              Edit
+              {t("edit")}
             </Button>
           </Link>
         )}
         {canDeleteNow && (
           <Button size="sm" variant="outline" icon={<Trash2 className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)}>
-            Delete
+            {t("delete")}
           </Button>
         )}
         {canConvertToInvoice &&
           (invoice ? (
             <Link href={`/quotations/invoices/${invoice.id}`}>
               <Button size="sm" variant="outline" icon={<ArrowRight className="h-3.5 w-3.5" />}>
-                View Invoice
+                {t("viewInvoice")}
               </Button>
             </Link>
           ) : (
             <Link href={`/delivery/${deliveryId}/invoice/new`}>
               <Button size="sm" icon={<Receipt className="h-3.5 w-3.5" />}>
-                Generate Invoice
+                {t("generateInvoice")}
               </Button>
             </Link>
           ))}
@@ -107,15 +109,15 @@ export function DeliveryActions({
       <Modal
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title="Delete Delivery"
-        description="This will permanently delete this delivery and restore the stock quantities it deducted. This cannot be undone."
+        title={t("deleteDeliveryTitle")}
+        description={t("deleteDeliveryConfirmDesc")}
         footer={
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={isPending}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="button" variant="destructive" loading={isPending} onClick={handleDelete}>
-              Delete
+              {t("delete")}
             </Button>
           </div>
         }

@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/modal"
 import { FormField, Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { todayLocalDate } from "@/lib/utils"
 
 interface ConvertToDeliveryModalProps {
@@ -20,6 +21,7 @@ interface ConvertToDeliveryModalProps {
 
 export function ConvertToDeliveryModal({ isOpen, onClose, quotationId }: ConvertToDeliveryModalProps) {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const defaultValues: ConvertQuotationToDeliveryInput = {
     deliveryDate: todayLocalDate(),
@@ -61,25 +63,25 @@ export function ConvertToDeliveryModal({ isOpen, onClose, quotationId }: Convert
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Convert to Delivery"
-      description="Creates a new Delivery from this quotation's items and quantities, and deducts stock immediately. The quotation itself is not changed."
+      title={t("convertToDeliveryTitle")}
+      description={t("convertToDeliveryDesc")}
       footer={
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button type="submit" form="convert-to-delivery-form" loading={isSubmitting}>
-            Convert to Delivery
+            {t("convertToDeliveryTitle")}
           </Button>
         </div>
       }
     >
       <form id="convert-to-delivery-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <FormField label="Delivery Date" htmlFor="deliveryDate" required error={errors.deliveryDate?.message}>
+        <FormField label={t("deliveryDateLabel")} htmlFor="deliveryDate" required error={errors.deliveryDate?.message}>
           <Input id="deliveryDate" type="date" {...register("deliveryDate")} />
         </FormField>
-        <FormField label="Reference (optional)" htmlFor="reference" error={errors.reference?.message}>
-          <Input id="reference" placeholder="e.g. customer PO number" {...register("reference")} />
+        <FormField label={t("referenceOptionalLabel")} htmlFor="reference" error={errors.reference?.message}>
+          <Input id="reference" placeholder={t("referencePlaceholder")} {...register("reference")} />
         </FormField>
       </form>
     </Modal>

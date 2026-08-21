@@ -2,6 +2,7 @@ import { format } from "date-fns"
 import { getStockType, isStockType } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
 import type { InvoicePdfData } from "@/lib/data/invoices"
+import type { PartCategory } from "@/types"
 
 export interface InvoiceExcelItem {
   itemName: string
@@ -26,6 +27,25 @@ export interface InvoiceExcelData {
 /** EQUIPMENT/CONSUMPTION display as-is; PARTS displays singular ("PART"), never "PARTS". Matches quotationExcel's mapping exactly. */
 function stockTypeToItemName(stockType: StockType): string {
   return stockType === "PARTS" ? "PART" : stockType
+}
+
+/**
+ * The Item No / Item Name column's category label (EQUIPMENT/CONSUMPTION/PART)
+ * for one invoice item — same frozen-snapshot-then-live-part fallback chain as
+ * buildInvoiceExcelData, exported so the react-pdf fallback renderer
+ * (components/pdf/InvoiceDocument.tsx) shows the identical value instead of
+ * drifting to something else (e.g. the part number).
+ */
+export function resolveInvoiceItemNoLabel(item: {
+  stockCategory?: string | null
+  description?: string | null
+  nameSnapshot?: string | null
+  part?: { name: string; category: PartCategory } | null
+}): string {
+  const name = item.nameSnapshot ?? item.part?.name ?? item.description ?? ""
+  const snapshotStockType = item.stockCategory ?? undefined
+  const stockType = (isStockType(snapshotStockType) ? snapshotStockType : null) ?? (item.part ? getStockType(item.part.category) : null)
+  return (stockType ? stockTypeToItemName(stockType) : name).toUpperCase()
 }
 
 /**
@@ -57,9 +77,7 @@ export function buildInvoiceExcelData(invoice: InvoicePdfData): InvoiceExcelData
 
     // ITEM NAME shows the Stock Category (EQUIPMENT/CONSUMPTION/PART), not
     // the product name — see the matching comment in quotationExcel/buildData.ts.
-    const snapshotStockType = item.stockCategory ?? undefined
-    const stockType = (isStockType(snapshotStockType) ? snapshotStockType : null) ?? (item.part ? getStockType(item.part.category) : null)
-    const itemName = (stockType ? stockTypeToItemName(stockType) : name).toUpperCase()
+    const itemName = resolveInvoiceItemNoLabel(item)
 
     return {
       itemName,

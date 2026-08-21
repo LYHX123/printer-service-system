@@ -7,6 +7,7 @@ import { getSparePartOptions } from "@/lib/data/inventory"
 import { canCreateDelivery } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { DeliveryForm } from "@/components/delivery/DeliveryForm"
+import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
 export default async function NewDeliveryPage() {
@@ -23,9 +24,9 @@ export default async function NewDeliveryPage() {
     <div>
       <Link href="/delivery" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Delivery
+        <T k="delivery" />
       </Link>
-      <PageHeader title="Create Delivery" />
+      <PageHeader title={<T k="createDelivery" />} />
       <DeliveryForm customers={customers} spareParts={spareParts} />
     </div>
   )

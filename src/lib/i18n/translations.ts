@@ -613,6 +613,37 @@ export type TranslationKey =
   | "amountReceivedLockedHint"
   | "salesLedgerDetail"
   | "backToSalesLedger"
+  // Delivery
+  | "delivery"
+  | "deliveryDesc"
+  | "createDelivery"
+  | "searchDeliveriesPlaceholder"
+  | "deliveryNumberLabel"
+  | "noDeliveriesFound"
+  | "createDeliveryManuallyDesc"
+  | "deliveryDateLabel"
+  | "searchCustomerByNamePlaceholder"
+  | "headOffice"
+  | "projectLabel"
+  | "referenceOptionalLabel"
+  | "referencePlaceholder"
+  | "deliveryItemsHeading"
+  | "itemColumnLabel"
+  | "unknownItem"
+  | "qtyPlaceholder"
+  | "inStockCount"
+  | "genericUnitsFallback"
+  | "deliveryDeletedToast"
+  | "deleteDeliveryTitle"
+  | "deleteDeliveryConfirmDesc"
+  | "syncedToDropboxToast"
+  | "generateInvoiceFromDeliveryTitle"
+  | "manualDeliveryNoQuotation"
+  | "linkedInvoiceHeading"
+  | "notYetInvoiced"
+  | "customerShortNameRequiredForDeliverySync"
+  | "convertToDeliveryTitle"
+  | "convertToDeliveryDesc"
   // Notification popup
   | "overdueTasksLabel"
   | "taskOverdueNotice"
@@ -1119,6 +1150,37 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     amountReceivedLockedHint: "Computed from Receipt Allocations — edit via the Income record instead",
     salesLedgerDetail: "Sales Ledger Detail",
     backToSalesLedger: "Sales Ledger",
+    // Delivery
+    delivery: "Delivery",
+    deliveryDesc: "Delivery notes and inventory movement",
+    createDelivery: "Create Delivery",
+    searchDeliveriesPlaceholder: "Search deliveries…",
+    deliveryNumberLabel: "Delivery No.",
+    noDeliveriesFound: "No deliveries found",
+    createDeliveryManuallyDesc: "Create a delivery manually or convert one from a Quotation.",
+    deliveryDateLabel: "Delivery Date",
+    searchCustomerByNamePlaceholder: "Search customer by name…",
+    headOffice: "Head Office",
+    projectLabel: "Project",
+    referenceOptionalLabel: "Reference (optional)",
+    referencePlaceholder: "e.g. customer PO number",
+    deliveryItemsHeading: "Delivery Items",
+    itemColumnLabel: "Item",
+    unknownItem: "Unknown item",
+    qtyPlaceholder: "Qty",
+    inStockCount: "{qty} {unit} in stock",
+    genericUnitsFallback: "units",
+    deliveryDeletedToast: "Delivery deleted",
+    deleteDeliveryTitle: "Delete Delivery",
+    deleteDeliveryConfirmDesc: "This will permanently delete this delivery and restore the stock quantities it deducted. This cannot be undone.",
+    syncedToDropboxToast: "Synced to Dropbox",
+    generateInvoiceFromDeliveryTitle: "Generate Invoice from {number}",
+    manualDeliveryNoQuotation: "Manual delivery — no source quotation.",
+    linkedInvoiceHeading: "Linked Invoice",
+    notYetInvoiced: "Not yet invoiced.",
+    customerShortNameRequiredForDeliverySync: "Customer has no Short Name set — required for Dropbox sync.",
+    convertToDeliveryTitle: "Convert to Delivery",
+    convertToDeliveryDesc: "Creates a new Delivery from this quotation's items and quantities, and deducts stock immediately. The quotation itself is not changed.",
     // Notification popup
     overdueTasksLabel: "Overdue Tasks",
     taskOverdueNotice: "Task overdue",
@@ -1853,6 +1915,37 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     amountReceivedLockedHint: "由收款分配自动计算 — 请通过对应的收入记录修改",
     salesLedgerDetail: "销售台账详情",
     backToSalesLedger: "销售台账",
+    // Delivery
+    delivery: "送货单",
+    deliveryDesc: "送货单与库存变动记录",
+    createDelivery: "新建送货单",
+    searchDeliveriesPlaceholder: "搜索送货单…",
+    deliveryNumberLabel: "送货单号",
+    noDeliveriesFound: "未找到送货单",
+    createDeliveryManuallyDesc: "手动新建送货单，或从报价单转换生成。",
+    deliveryDateLabel: "送货日期",
+    searchCustomerByNamePlaceholder: "按名称搜索客户…",
+    headOffice: "总部",
+    projectLabel: "项目",
+    referenceOptionalLabel: "参考（选填）",
+    referencePlaceholder: "例如：客户订单号",
+    deliveryItemsHeading: "送货项目",
+    itemColumnLabel: "品名",
+    unknownItem: "未知品项",
+    qtyPlaceholder: "数量",
+    inStockCount: "库存 {qty} {unit}",
+    genericUnitsFallback: "个",
+    deliveryDeletedToast: "送货单已删除",
+    deleteDeliveryTitle: "删除送货单",
+    deleteDeliveryConfirmDesc: "此操作将永久删除该送货单，并恢复其已扣减的库存数量，且无法撤销。",
+    syncedToDropboxToast: "已同步到 Dropbox",
+    generateInvoiceFromDeliveryTitle: "从 {number} 生成发票",
+    manualDeliveryNoQuotation: "手动创建的送货单 — 无来源报价单。",
+    linkedInvoiceHeading: "关联发票",
+    notYetInvoiced: "尚未开具发票。",
+    customerShortNameRequiredForDeliverySync: "该客户未设置简称（Short Name）— 同步到 Dropbox 需要此项。",
+    convertToDeliveryTitle: "转换为送货单",
+    convertToDeliveryDesc: "根据该报价单的项目和数量新建一张送货单，并立即扣减库存。报价单本身不会被修改。",
     // Notification popup
     overdueTasksLabel: "超期任务",
     taskOverdueNotice: "任务已超期",

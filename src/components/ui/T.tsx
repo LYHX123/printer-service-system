@@ -15,6 +15,11 @@ export function NoResultsFor({ search }: { search: string }) {
   return <>{t("noResultsFor").replace("{search}", search)}</>
 }
 
+export function GenerateInvoiceFromDeliveryTitle({ number }: { number: string }) {
+  const { t } = useLanguage()
+  return <>{t("generateInvoiceFromDeliveryTitle").replace("{number}", number)}</>
+}
+
 export function TInput({
   placeholderKey,
   ...props
