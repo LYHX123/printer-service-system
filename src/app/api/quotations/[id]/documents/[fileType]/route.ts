@@ -3,9 +3,17 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canAccess } from "@/lib/permissions"
 import { getQuotationDocumentTemporaryLink, DropboxError } from "@/lib/dropbox"
+import { redirectRelative } from "@/lib/http"
 import type { Role } from "@/types"
 
 const FILE_TYPE_MAP = { pdf: "PDF", xlsx: "XLSX" } as const
+
+// The on-demand generation route is named "excel" (not "xlsx") — see
+// src/app/api/quotations/[id]/excel/route.ts. Building the fallback
+// straight from `fileTypeParam` sent a "xlsx" download to a route that
+// doesn't exist (/api/quotations/[id]/xlsx), 404ing even once the redirect
+// origin itself was fixed.
+const FALLBACK_ROUTE_SEGMENT = { pdf: "pdf", xlsx: "excel" } as const
 
 /**
  * Single stable link for the header's "Download PDF/Excel" buttons,
@@ -49,10 +57,11 @@ export async function GET(
     select: { storageKey: true, storageProvider: true },
   })
 
-  const fallbackUrl = new URL(`/api/quotations/${quotationId}/${fileTypeParam.toLowerCase()}`, _request.url)
+  const fallbackSegment = FALLBACK_ROUTE_SEGMENT[fileTypeParam.toLowerCase() as keyof typeof FALLBACK_ROUTE_SEGMENT]
+  const fallbackPath = `/api/quotations/${quotationId}/${fallbackSegment}`
 
   if (!document || document.storageProvider !== "DROPBOX") {
-    return NextResponse.redirect(fallbackUrl)
+    return redirectRelative(fallbackPath)
   }
 
   try {
@@ -64,7 +73,7 @@ export async function GET(
     if (notFound) {
       // Dropbox file is gone but a local regeneration still works fine — never
       // dead-end the user's download because of stale Dropbox state.
-      return NextResponse.redirect(fallbackUrl)
+      return redirectRelative(fallbackPath)
     }
     return NextResponse.json({ error: "Failed to fetch document from Dropbox" }, { status: 502 })
   }

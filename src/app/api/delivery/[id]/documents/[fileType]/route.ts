@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { canAccess } from "@/lib/permissions"
 import { getDeliveryDocumentTemporaryLink, DropboxError } from "@/lib/dropbox"
+import { redirectRelative } from "@/lib/http"
 import type { Role } from "@/types"
 
 const FILE_TYPE_MAP = { pdf: "PDF", xlsx: "XLSX" } as const
@@ -24,7 +25,7 @@ const FALLBACK_ROUTE_SEGMENT = { pdf: "pdf", xlsx: "excel" } as const
  * route exactly.
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string; fileType: string }> }
 ) {
   const session = await auth()
@@ -53,10 +54,10 @@ export async function GET(
   })
 
   const fallbackSegment = FALLBACK_ROUTE_SEGMENT[fileTypeParam.toLowerCase() as keyof typeof FALLBACK_ROUTE_SEGMENT]
-  const fallbackUrl = new URL(`/api/delivery/${deliveryId}/${fallbackSegment}`, request.url)
+  const fallbackPath = `/api/delivery/${deliveryId}/${fallbackSegment}`
 
   if (!document || document.storageProvider !== "DROPBOX") {
-    return NextResponse.redirect(fallbackUrl)
+    return redirectRelative(fallbackPath)
   }
 
   try {
@@ -68,7 +69,7 @@ export async function GET(
     if (notFound) {
       // Dropbox file is gone but a local regeneration still works fine —
       // never dead-end the user's download because of stale Dropbox state.
-      return NextResponse.redirect(fallbackUrl)
+      return redirectRelative(fallbackPath)
     }
     return NextResponse.json({ error: "Failed to fetch document from Dropbox" }, { status: 502 })
   }
