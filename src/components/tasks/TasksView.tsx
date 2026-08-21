@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { completeTask, reopenTask, deleteTask, deleteTaskStep, removeTaskParticipant } from "@/lib/actions/tasks"
+import { completeTask, reopenTask, deleteTask, deleteTaskStep, removeTaskParticipant, markTaskAsRead } from "@/lib/actions/tasks"
 import {
   canCreateTask,
   canAddTaskStep,
@@ -231,6 +231,25 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Opening a task (including the initial auto-selected one on desktop) marks
+  // it as viewed for the current user only — every other participant's read
+  // state is untouched. Only refreshes the router when the task actually was
+  // unread, so re-opening an already-read task never triggers a pointless
+  // Sidebar/list re-fetch.
+  useEffect(() => {
+    if (!selectedId) return
+    let cancelled = false
+    markTaskAsRead(selectedId).then((result) => {
+      if (!cancelled && result?.success && result.wasUnread) {
+        router.refresh()
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId])
+
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? null
   const userCanCreate = canCreateTask(currentUserRole)
 
@@ -369,13 +388,21 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
                       )}
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <span
-                          className={cn(
-                            "text-sm font-medium leading-snug",
-                            isCompleted ? "text-slate-400 line-through" : "text-slate-900"
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                          {task.unread && (
+                            <span
+                              aria-label={t("taskUnreadIndicator")}
+                              className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+                            />
                           )}
-                        >
-                          {task.title}
+                          <span
+                            className={cn(
+                              "text-sm font-medium leading-snug",
+                              isCompleted ? "text-slate-400 line-through" : "text-slate-900"
+                            )}
+                          >
+                            {task.title}
+                          </span>
                         </span>
                         <TaskStatusBadge status={task.status} />
                       </div>

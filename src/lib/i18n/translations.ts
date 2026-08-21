@@ -500,6 +500,7 @@ export type TranslationKey =
   | "taskNoTasksYet"
   | "taskNoTasksDesc"
   | "taskNoTasksAssigned"
+  | "taskUnreadIndicator"
   | "taskStatusActive"
   | "taskStatusCompleted"
   | "taskCreatedByLabel"
@@ -1038,6 +1039,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskNoTasksYet: "No tasks yet",
     taskNoTasksDesc: "Create the first task to get started.",
     taskNoTasksAssigned: "You have no tasks assigned to you.",
+    taskUnreadIndicator: "Unread",
     taskStatusActive: "Active",
     taskStatusCompleted: "Completed",
     taskCreatedByLabel: "Created by",
@@ -1803,6 +1805,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     taskNoTasksYet: "暂无任务",
     taskNoTasksDesc: "创建第一个任务开始使用",
     taskNoTasksAssigned: "您没有被分配的任务",
+    taskUnreadIndicator: "未读",
     taskStatusActive: "进行中",
     taskStatusCompleted: "已完成",
     taskCreatedByLabel: "创建人",

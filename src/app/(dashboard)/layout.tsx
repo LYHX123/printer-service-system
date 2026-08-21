@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/layout/DashboardShell"
 import { canAccess } from "@/lib/permissions"
 import { getLowStockAlerts } from "@/lib/data/inventory"
-import { getOverdueTasks, getActiveTaskCount } from "@/lib/data/tasks"
+import { getOverdueTasks, getActiveTaskCount, hasUnreadTasks } from "@/lib/data/tasks"
 import { AlertsNotification } from "@/components/inventory/LowStockNotification"
 import type { Role } from "@/types"
 
@@ -26,7 +26,7 @@ export default async function DashboardLayout({
 
   const canViewTasks = canAccess(user.role, "tasks", user.modulePermissions)
 
-  const [lowStockAlerts, overdueTaskAlerts, activeTaskCount] = await Promise.all([
+  const [lowStockAlerts, overdueTaskAlerts, activeTaskCount, taskUnread] = await Promise.all([
     canAccess(user.role, "inventory", user.modulePermissions)
       ? getLowStockAlerts(user.companyId)
       : Promise.resolve([]),
@@ -36,11 +36,14 @@ export default async function DashboardLayout({
     canViewTasks
       ? getActiveTaskCount(user.companyId, user.id, user.role)
       : Promise.resolve(null),
+    canViewTasks
+      ? hasUnreadTasks(user.companyId, user.id)
+      : Promise.resolve(false),
   ])
 
   return (
     <>
-      <DashboardShell user={user} taskCount={activeTaskCount}>{children}</DashboardShell>
+      <DashboardShell user={user} taskCount={activeTaskCount} taskUnread={taskUnread}>{children}</DashboardShell>
       <AlertsNotification
         lowStockAlerts={lowStockAlerts}
         overdueTaskAlerts={overdueTaskAlerts}

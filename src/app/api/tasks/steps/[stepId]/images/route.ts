@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getTaskStepForAuth } from "@/lib/data/tasks"
+import { getTaskStepForAuth, touchTaskActivity } from "@/lib/data/tasks"
 import { canUploadTaskStepImage } from "@/lib/permissions"
 import { saveTaskStepImage } from "@/lib/uploads"
 import { ALLOWED_IMAGE_TYPES, MAX_PHOTO_SIZE } from "@/lib/constants"
@@ -52,6 +52,8 @@ export async function POST(
     },
     include: { uploadedBy: { select: { id: true, name: true } } },
   })
+
+  await touchTaskActivity(step.taskId, userId)
 
   revalidatePath("/tasks")
 

@@ -13,8 +13,9 @@ import {
   canManageTaskStep,
   canManageTaskParticipants,
   isTaskParticipant,
+  canViewTask,
 } from "@/lib/permissions"
-import { getTaskStepForAuth } from "@/lib/data/tasks"
+import { getTaskStepForAuth, touchTaskActivity, markTaskViewed } from "@/lib/data/tasks"
 import { deleteTaskStepImage } from "@/lib/uploads"
 import { logActivity, AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "@/lib/audit"
 import type { CreateTaskInput, AddTaskStepInput, AddTaskParticipantsInput } from "@/lib/schemas"
@@ -54,11 +55,21 @@ export async function createTask(data: CreateTaskInput) {
   }
 
   try {
+    // Shared timestamp for createdAt/lastActivityAt/the creator's own
+    // TaskReadState — using one JS Date (rather than letting each field fall
+    // back to its own DB-side now()) guarantees lastActivityAt is never
+    // observed as later than the creator's lastViewedAt, so the creator never
+    // sees an unread badge for the task they just created. This holds
+    // regardless of whether the creator also added themselves as an explicit
+    // TaskParticipant — see the schema's TaskReadState comment.
+    const now = new Date()
     const task = await prisma.task.create({
       data: {
         companyId,
         title,
         createdById: userId,
+        createdAt: now,
+        lastActivityAt: now,
         participants: {
           create: uniqueParticipantIds.map((uid) => ({ userId: uid })),
         },
@@ -69,6 +80,9 @@ export async function createTask(data: CreateTaskInput) {
             order: 1,
             createdById: userId,
           },
+        },
+        readStates: {
+          create: { userId, lastViewedAt: now },
         },
       },
       include: { steps: true },
@@ -125,6 +139,8 @@ export async function addTaskStep(taskId: string, data: AddTaskStepInput) {
       data: { taskId, title, description: description || null, order: nextOrder, createdById: userId },
     })
 
+    await touchTaskActivity(taskId, userId)
+
     revalidate()
 
     await logActivity({
@@ -179,6 +195,10 @@ export async function updateTaskStep(stepId: string, data: AddTaskStepInput) {
         performedById: userId,
         metadata: { taskId: step.taskId, changes },
       })
+      // Only a real field change counts as business activity — a no-op save
+      // (identical title/description resubmitted) must never manufacture an
+      // unread badge for the other participants.
+      await touchTaskActivity(step.taskId, userId)
     }
 
     revalidate()
@@ -225,6 +245,8 @@ export async function deleteTaskStep(stepId: string) {
       },
     })
 
+    await touchTaskActivity(step.taskId, userId)
+
     revalidate()
     return { success: true as const }
   } catch {
@@ -256,6 +278,8 @@ export async function completeTask(taskId: string) {
       where: { id: taskId },
       data: { status: "COMPLETED", completedAt: new Date() },
     })
+
+    await touchTaskActivity(taskId, userId)
 
     revalidate()
 
@@ -291,6 +315,8 @@ export async function reopenTask(taskId: string) {
       where: { id: taskId },
       data: { status: "ACTIVE", completedAt: null },
     })
+
+    await touchTaskActivity(taskId, userId)
 
     revalidate()
 
@@ -404,6 +430,8 @@ export async function addTaskParticipants(taskId: string, data: AddTaskParticipa
       skipDuplicates: true,
     })
 
+    await touchTaskActivity(taskId, userId)
+
     for (const u of validUsers) {
       await logActivity({
         companyId,
@@ -459,6 +487,8 @@ export async function removeTaskParticipant(taskId: string, participantUserId: s
 
     await prisma.taskParticipant.delete({ where: { id: participant.id } })
 
+    await touchTaskActivity(taskId, userId)
+
     await logActivity({
       companyId,
       entityType: "Task",
@@ -472,5 +502,41 @@ export async function removeTaskParticipant(taskId: string, participantUserId: s
     return { success: true as const }
   } catch {
     return { error: "Failed to remove participant" }
+  }
+}
+
+/**
+ * Marks a task as viewed by the current user (upserts TaskReadState). Called
+ * when a user opens a task's detail — clears the Sidebar/list unread marker
+ * for them only; every other participant's read state is untouched. The
+ * companyId + canViewTask authorization checks below run before any write,
+ * so a read state can never be created for a task the caller can't see
+ * (including a taskId belonging to another company, which simply won't be
+ * found by the companyId-scoped lookup).
+ */
+export async function markTaskAsRead(taskId: string) {
+  const session = await auth()
+  if (!session?.user) return { error: "Unauthorized" }
+  const role = session.user.role as Role
+  if (!canAccess(role, "tasks", session.user.modulePermissions)) return { error: "Forbidden" }
+
+  const companyId = session.user.companyId as string
+  const userId = session.user.id as string
+
+  try {
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, companyId },
+      include: { participants: { select: { userId: true } } },
+    })
+    if (!task) return { error: "Task not found" }
+
+    if (!canViewTask(role, userId, { createdById: task.createdById, participants: task.participants })) {
+      return { error: "Forbidden" }
+    }
+
+    const { wasUnread } = await markTaskViewed(taskId, userId, task.lastActivityAt)
+    return { success: true as const, wasUnread }
+  } catch {
+    return { error: "Failed to mark task as read" }
   }
 }

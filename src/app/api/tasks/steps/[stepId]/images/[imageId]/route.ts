@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getTaskStepForAuth } from "@/lib/data/tasks"
+import { getTaskStepForAuth, touchTaskActivity } from "@/lib/data/tasks"
 import { canDeleteTaskStepImage } from "@/lib/permissions"
 import { deleteTaskStepImage } from "@/lib/uploads"
 import type { Role } from "@/types"
@@ -35,6 +35,8 @@ export async function DELETE(
 
   await deleteTaskStepImage(image.url)
   await prisma.taskStepImage.delete({ where: { id: imageId } })
+
+  await touchTaskActivity(step.taskId, userId)
 
   revalidatePath("/tasks")
 

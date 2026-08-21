@@ -26,9 +26,10 @@ interface DashboardShellProps {
   children: ReactNode
   user: ShellUser
   taskCount?: number | null
+  taskUnread?: boolean
 }
 
-export function DashboardShell({ children, user, taskCount = null }: DashboardShellProps) {
+export function DashboardShell({ children, user, taskCount = null, taskUnread = false }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const useCompactBottomPadding = COMPACT_BOTTOM_PADDING_ROUTES.some((route) => pathname === route)
@@ -40,6 +41,7 @@ export function DashboardShell({ children, user, taskCount = null }: DashboardSh
           role={user.role}
           modulePermissions={user.modulePermissions}
           taskCount={taskCount}
+          taskUnread={taskUnread}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

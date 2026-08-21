@@ -247,6 +247,7 @@ model User {
   createdShopAccountEntries ShopAccountEntry[]
   createdTasks              Task[]                 @relation("TaskCreatedBy")
   taskParticipations        TaskParticipant[]
+  taskReadStates            TaskReadState[]
   createdTaskSteps          TaskStep[]             @relation("TaskStepCreatedBy")
   uploadedTaskStepImages    TaskStepImage[]
   createdInvoices           Invoice[]
@@ -1144,19 +1145,26 @@ model ShopAccountEntry {
 // ─── Task Module ─────────────────────────────────────────────────────────────
 
 model Task {
-  id          String     @id @default(uuid())
-  companyId   String
-  title       String
-  status      TaskStatus @default(ACTIVE)
-  createdById String
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  completedAt DateTime?
+  id             String     @id @default(uuid())
+  companyId      String
+  title          String
+  status         TaskStatus @default(ACTIVE)
+  createdById    String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  completedAt    DateTime?
+  // Timestamp of the most recent real business action on this task (step
+  // added/edited/deleted, image added/removed, status change, participant
+  // added/removed — see touchTaskActivity in src/lib/data/tasks.ts). Drives
+  // per-user unread detection together with TaskReadState.lastViewedAt;
+  // never bumped by plain reads or unrelated field churn.
+  lastActivityAt DateTime   @default(now())
 
   company      Company           @relation(fields: [companyId], references: [id])
   createdBy    User              @relation("TaskCreatedBy", fields: [createdById], references: [id])
   participants TaskParticipant[]
   steps        TaskStep[]
+  readStates   TaskReadState[]
 }
 
 model TaskParticipant {
@@ -1168,6 +1176,26 @@ model TaskParticipant {
   user User @relation(fields: [userId], references: [id])
 
   @@unique([taskId, userId])
+}
+
+// Per-user "last viewed" marker for a Task — the read side of the unread
+// notification feature. A task is unread for a user when it has no row here,
+// or when Task.lastActivityAt is later than this row's lastViewedAt.
+// Deliberately per (task, user) rather than a global Task.isUnread flag,
+// since the same task is independently read/unread for each participant.
+model TaskReadState {
+  id           String   @id @default(uuid())
+  taskId       String
+  userId       String
+  lastViewedAt DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([userId])
 }
 
 model TaskStep {

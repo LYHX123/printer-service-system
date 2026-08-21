@@ -66,6 +66,8 @@ interface SidebarProps {
   role: Role
   modulePermissions: string[]
   taskCount?: number | null
+  /** Shows a small red unread-activity dot next to the Tasks nav label — independent of `taskCount` (the active-task count badge). */
+  taskUnread?: boolean
   open: boolean
   onClose: () => void
 }
@@ -103,9 +105,9 @@ function getActiveHref(items: NavItem[], pathname: string): string | undefined {
   return best?.itemHref
 }
 
-export function Sidebar({ role, modulePermissions, taskCount = null, open, onClose }: SidebarProps) {
+export function Sidebar({ role, modulePermissions, taskCount = null, taskUnread = false, open, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   return (
     <>
@@ -168,12 +170,20 @@ export function Sidebar({ role, modulePermissions, taskCount = null, open, onClo
                           : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                       )}
                     >
-                      <item.icon
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          isActive ? "text-blue-400" : "text-slate-500"
+                      <span className="relative inline-flex shrink-0">
+                        <item.icon
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            isActive ? "text-blue-400" : "text-slate-500"
+                          )}
+                        />
+                        {item.href === "/tasks" && taskUnread && (
+                          <span
+                            aria-label={language === "zh" ? "有未读任务" : "Unread tasks"}
+                            className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500"
+                          />
                         )}
-                      />
+                      </span>
                       <span className="flex-1 truncate">
                         {item.labelKey ? t(item.labelKey) : item.label}
                       </span>
