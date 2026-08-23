@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import { getStockType, isStockType } from "@/lib/stock-types"
+import { getStockType, isStockType, resolveDocumentItemNoLabel } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
 import type { DeliveryPdfData } from "@/lib/data/deliveries"
 
@@ -12,21 +12,13 @@ export interface DeliveryExcelItem {
 }
 
 /**
- * The Delivery Note's "ITEM NO." column shows the Stock item's CATEGORY,
- * abbreviated differently from Invoice/Quotation Excel's own ITEM_NAME
- * mapping (which spells out "CONSUMPTION" in full) — Delivery specifically
- * wants "CONSUM". The "No." column (plain 1, 2, 3…) is separate — see
- * generate.ts's NO_COLUMN.
+ * The Delivery Note's "ITEM NO." column shows the Stock item's CATEGORY
+ * abbreviation (EQUIPMENT/CONSUM/PART/COMMON) — now the same shared mapping
+ * Invoice and Quotation Excel/PDF use (see resolveDocumentItemNoLabel). The
+ * "No." column (plain 1, 2, 3…) is separate — see generate.ts's NO_COLUMN.
  */
 function stockTypeToDeliveryItemCode(stockType: StockType): string {
-  switch (stockType) {
-    case "EQUIPMENT":
-      return "EQUIPMENT"
-    case "CONSUMPTION":
-      return "CONSUM"
-    case "PARTS":
-      return "PART"
-  }
+  return resolveDocumentItemNoLabel(stockType)
 }
 
 export interface DeliveryExcelData {

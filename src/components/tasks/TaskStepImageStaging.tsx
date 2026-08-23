@@ -2,7 +2,7 @@
 
 import { type Dispatch, type SetStateAction } from "react"
 import { X } from "lucide-react"
-import { FileUploader } from "@/components/ui/file-uploader"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export interface StagedImage {
@@ -20,7 +20,7 @@ export function TaskStepImageStaging({ images, onChange, disabled }: TaskStepIma
   const { t } = useLanguage()
 
   function addFile(file: File) {
-    // Functional update: FileUploader may call this multiple times in quick succession
+    // Functional update: FileDropzone may call this multiple times in quick succession
     // (one per selected file) before React re-renders, so a stale `images` closure would drop entries.
     onChange((prev) => [...prev, { file, previewUrl: URL.createObjectURL(file) }])
   }
@@ -33,7 +33,13 @@ export function TaskStepImageStaging({ images, onChange, disabled }: TaskStepIma
 
   return (
     <div>
-      <FileUploader onUpload={addFile} label={t("taskUploadImages")} disabled={disabled} multiple />
+      <FileDropzone
+        onFilesSelected={(files) => files.forEach(addFile)}
+        label={t("taskUploadImages")}
+        disabled={disabled}
+        multiple
+        helperText={t("acceptedImageTypes")}
+      />
       {images.length > 0 && (
         <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
           {images.map((img, i) => (

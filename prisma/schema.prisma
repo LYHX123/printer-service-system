@@ -97,6 +97,7 @@ enum PartCategory {
   CCTV_PART
   PROJECTOR_PART
   GENERAL
+  COMMON_PRODUCT
 }
 
 enum ContractType {

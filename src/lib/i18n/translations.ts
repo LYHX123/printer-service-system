@@ -197,9 +197,18 @@ export type TranslationKey =
   | "consumptionEmptyDesc"
   | "partsEmptyTitle"
   | "partsEmptyDesc"
+  | "commonProductEmptyTitle"
+  | "commonProductEmptyDesc"
   | "addEquipmentItem"
   | "addConsumptionItem"
   | "addPartItem"
+  | "addCommonProductItem"
+  | "commonProductSingular"
+  | "commonProductPlural"
+  | "stockTypeEquipmentLabel"
+  | "stockTypeConsumptionLabel"
+  | "stockTypePartsLabel"
+  | "stockTypeCommonProductLabel"
   // List pages — empty states & filters
   | "noCustomersFound"
   | "registerFirstCustomer"
@@ -671,6 +680,7 @@ export type TranslationKey =
   | "equipmentQuantityLabel"
   | "consumptionQuantityLabel"
   | "partsQuantityLabel"
+  | "commonProductQuantityLabel"
   | "currentMonthIncomeLabel"
   | "currentMonthExpenseLabel"
   | "currentMonthShopExpenseLabel"
@@ -773,6 +783,16 @@ export type TranslationKey =
   | "historicalDataUnavailable"
   | "backToCurrentVersion"
   | "confirmApprove"
+  // File Dropzone (shared component)
+  | "dragDropFiles"
+  | "clickToBrowse"
+  | "removeFile"
+  | "invalidFileType"
+  | "fileTooLarge"
+  | "tooManyFiles"
+  | "acceptedImageTypes"
+  | "acceptedDocumentTypes"
+  | "acceptedEtrTypes"
 
 export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -965,9 +985,18 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     consumptionEmptyDesc: "Add your first consumption item to start tracking inventory.",
     partsEmptyTitle: "No part found",
     partsEmptyDesc: "Add your first part to start tracking inventory.",
+    commonProductEmptyTitle: "No common product found",
+    commonProductEmptyDesc: "Add your first common product to start tracking inventory.",
     addEquipmentItem: "Add Equipment Item",
     addConsumptionItem: "Add Consumption Item",
     addPartItem: "Add Part Item",
+    addCommonProductItem: "Add Common Product",
+    commonProductSingular: "Common Product",
+    commonProductPlural: "Common Products",
+    stockTypeEquipmentLabel: "Equipment",
+    stockTypeConsumptionLabel: "Consumption",
+    stockTypePartsLabel: "Parts",
+    stockTypeCommonProductLabel: "Common Product",
     // List pages — empty states & filters
     noCustomersFound: "No customers found",
     registerFirstCustomer: "Register your first customer to get started.",
@@ -1439,6 +1468,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipmentQuantityLabel: "Equipment Quantity",
     consumptionQuantityLabel: "Consumption Quantity",
     partsQuantityLabel: "Parts Quantity",
+    commonProductQuantityLabel: "Common Product Quantity",
     currentMonthIncomeLabel: "Current Month Income",
     currentMonthExpenseLabel: "Current Month Expense",
     currentMonthShopExpenseLabel: "Current Month Shop Expense",
@@ -1540,6 +1570,15 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     historicalDataUnavailable: "Historical data snapshot unavailable for this version.",
     backToCurrentVersion: "Back to Current Version",
     confirmApprove: "Are you sure you want to approve this quotation?",
+    dragDropFiles: "Drag & drop files here",
+    clickToBrowse: "or click to browse",
+    removeFile: "Remove file",
+    invalidFileType: "This file type is not supported",
+    fileTooLarge: "File exceeds the size limit",
+    tooManyFiles: "Too many files selected",
+    acceptedImageTypes: "JPG, PNG, WEBP — max 5MB",
+    acceptedDocumentTypes: "JPG, PNG, WEBP, PDF, DOC, DOCX — max 10MB",
+    acceptedEtrTypes: "PDF, JPG, PNG — max 10MB",
   },
   zh: {
     // Common
@@ -1731,9 +1770,18 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     consumptionEmptyDesc: "添加您的第一个耗材以开始跟踪库存。",
     partsEmptyTitle: "未找到零件",
     partsEmptyDesc: "添加您的第一个零件以开始跟踪库存。",
+    commonProductEmptyTitle: "未找到通用产品",
+    commonProductEmptyDesc: "添加您的第一个通用产品以开始跟踪库存。",
     addEquipmentItem: "新增设备",
     addConsumptionItem: "新增耗材",
     addPartItem: "新增零件",
+    addCommonProductItem: "新增通用产品",
+    commonProductSingular: "通用产品",
+    commonProductPlural: "通用产品",
+    stockTypeEquipmentLabel: "设备",
+    stockTypeConsumptionLabel: "耗材",
+    stockTypePartsLabel: "配件",
+    stockTypeCommonProductLabel: "通用产品",
     // List pages — empty states & filters
     noCustomersFound: "未找到客户",
     registerFirstCustomer: "注册第一个客户以开始使用。",
@@ -2203,6 +2251,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     equipmentQuantityLabel: "设备库存数量",
     consumptionQuantityLabel: "耗材库存数量",
     partsQuantityLabel: "零件库存数量",
+    commonProductQuantityLabel: "通用产品库存数量",
     currentMonthIncomeLabel: "本月收入",
     currentMonthExpenseLabel: "本月支出",
     currentMonthShopExpenseLabel: "本月店铺支出",
@@ -2304,5 +2353,14 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     historicalDataUnavailable: "该版本的历史数据快照不可用。",
     backToCurrentVersion: "返回当前版本",
     confirmApprove: "确定要批准这份报价单吗？",
+    dragDropFiles: "将文件拖拽到此处上传",
+    clickToBrowse: "或点击选择文件",
+    removeFile: "移除文件",
+    invalidFileType: "不支持此文件类型",
+    fileTooLarge: "文件大小超过限制",
+    tooManyFiles: "选择的文件数量过多",
+    acceptedImageTypes: "支持 JPG、PNG、WEBP — 最大 5MB",
+    acceptedDocumentTypes: "支持 JPG、PNG、WEBP、PDF、DOC、DOCX — 最大 10MB",
+    acceptedEtrTypes: "支持 PDF、JPG、PNG — 最大 10MB",
   },
 }

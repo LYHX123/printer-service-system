@@ -20,7 +20,7 @@ import { formatCurrency, todayLocalDate } from "@/lib/utils"
 import { selectOnFocus } from "@/lib/input-helpers"
 import { DEFAULT_VAT_PERCENT } from "@/lib/constants"
 import type { SparePartOption } from "@/lib/data/inventory"
-import { getStockType, STOCK_TYPE_LABELS } from "@/lib/stock-types"
+import { getStockType, STOCK_TYPE_TRANSLATION_KEYS } from "@/lib/stock-types"
 import { StockItemSearch } from "./StockItemSearch"
 
 interface CustomerProjectOption {
@@ -286,7 +286,7 @@ export function QuotationForm({
                           </p>
                           {part && (
                             <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                              {STOCK_TYPE_LABELS[getStockType(part.category)]}
+                              {t(STOCK_TYPE_TRANSLATION_KEYS[getStockType(part.category)])}
                             </span>
                           )}
                         </div>

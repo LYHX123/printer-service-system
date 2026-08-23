@@ -1,7 +1,6 @@
 import { format } from "date-fns"
-import { getStockType, isStockType } from "@/lib/stock-types"
-import type { StockType } from "@/lib/stock-types"
-import type { QuotationPdfData } from "@/lib/data/quotations"
+import { getStockType, isStockType, resolveDocumentItemNoLabel } from "@/lib/stock-types"
+import type { QuotationPdfData, QuotationItemWithPart } from "@/lib/data/quotations"
 
 export interface QuotationExcelItem {
   itemName: string
@@ -25,9 +24,19 @@ export interface QuotationExcelData {
   items: QuotationExcelItem[]
 }
 
-/** EQUIPMENT/CONSUMPTION display as-is; PARTS displays singular ("PART"), never "PARTS". */
-function stockTypeToItemName(stockType: StockType): string {
-  return stockType === "PARTS" ? "PART" : stockType
+/**
+ * The Item No / Item Name column's category label (EQUIPMENT/CONSUM/PART/
+ * COMMON, see resolveDocumentItemNoLabel) for one quotation item — same
+ * frozen-snapshot-then-live-part fallback chain as buildQuotationExcelData,
+ * exported so the react-pdf renderer (components/pdf/QuotationDocument.tsx)
+ * shows the identical value instead of drifting to something else (e.g. the
+ * part number). Mirrors invoiceExcel/buildData.ts's resolveInvoiceItemNoLabel.
+ */
+export function resolveQuotationItemNoLabel(item: QuotationItemWithPart): string {
+  const name = item.nameSnapshot ?? item.part?.name ?? item.description ?? ""
+  const snapshotStockType = item.stockCategory ?? undefined
+  const stockType = (isStockType(snapshotStockType) ? snapshotStockType : null) ?? (item.part ? getStockType(item.part.category) : null)
+  return (stockType ? resolveDocumentItemNoLabel(stockType) : name).toUpperCase()
 }
 
 /**
@@ -59,15 +68,11 @@ export function buildQuotationExcelData(quotation: QuotationPdfData): QuotationE
     const unit = item.unitSnapshot ?? item.part?.unit ?? ""
     const pictureUrl = item.pictureSnapshot ?? item.part?.imageUrl ?? null
 
-    // ITEM NAME shows the Stock Category (EQUIPMENT/CONSUMPTION/PART), not
-    // the product name — the product name lives in DESCRIPTION instead.
-    // stockCategory is a frozen snapshot (see actions/quotations.ts); if a
-    // historical row predates that snapshot, fall back to the live linked
-    // SparePart's category; if the SparePart itself is gone too, fall back
-    // to the old free-text name so a historical Quotation can still export.
-    const snapshotStockType = item.stockCategory ?? undefined
-    const stockType = (isStockType(snapshotStockType) ? snapshotStockType : null) ?? (item.part ? getStockType(item.part.category) : null)
-    const itemName = (stockType ? stockTypeToItemName(stockType) : name).toUpperCase()
+    // ITEM NAME shows the Stock Category abbreviation (EQUIPMENT/CONSUM/PART/
+    // COMMON), not the product name — the product name lives in DESCRIPTION
+    // instead. See resolveQuotationItemNoLabel for the frozen-snapshot ->
+    // live-part -> free-text fallback chain.
+    const itemName = resolveQuotationItemNoLabel(item)
 
     return {
       itemName,

@@ -1,11 +1,11 @@
 import Link from "next/link"
 import Image from "next/image"
 import { redirect } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, ImageOff, ArrowLeftRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, Package, ImageOff, ArrowLeftRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { canAccess, canViewStock, canCreateStock, canEditStock, canAdjustStock, canDeleteStock } from "@/lib/permissions"
-import { getSpareParts, getStockTypeCounts, getStockLevel } from "@/lib/data/inventory"
-import { getLowStockThreshold, stockTypeToBucket } from "@/lib/stock-types"
+import { getSpareParts, getStockTypeCounts, getEffectiveStockLevel } from "@/lib/data/inventory"
+import { stockTypeToBucket } from "@/lib/stock-types"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { T, TInput } from "@/components/ui/T"
@@ -15,7 +15,7 @@ import { SparePartActions } from "@/components/inventory/SparePartActions"
 import {
   STOCK_TYPES,
   CATEGORIES_FOR_STOCK_TYPE,
-  STOCK_TYPE_LABELS,
+  STOCK_TYPE_TRANSLATION_KEYS,
   ADD_ITEM_TRANSLATION_KEYS,
   EMPTY_STATE_TRANSLATION_KEYS,
   stockColumnClass,
@@ -30,6 +30,7 @@ const STOCK_TYPE_ICONS: Record<StockType, LucideIcon> = {
   EQUIPMENT: Laptop,
   CONSUMPTION: Droplet,
   PARTS: Wrench,
+  COMMON_PRODUCT: Package,
 }
 
 export default async function StockPage({
@@ -60,7 +61,7 @@ export default async function StockPage({
             </Link>
           }
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {viewableTypes.map((st) => {
             const Icon = STOCK_TYPE_ICONS[st]
             return (
@@ -75,7 +76,7 @@ export default async function StockPage({
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-blue-400 transition-colors" />
                 </div>
-                <h3 className="mt-4 text-base font-semibold text-slate-900">{STOCK_TYPE_LABELS[st]}</h3>
+                <h3 className="mt-4 text-base font-semibold text-slate-900"><T k={STOCK_TYPE_TRANSLATION_KEYS[st]} /></h3>
                 <p className="mt-1 text-sm text-slate-500">
                   {counts[st]} <T k={stockCountTranslationKey(st, counts[st])} />
                 </p>
@@ -112,7 +113,7 @@ export default async function StockPage({
       </Link>
 
       <PageHeader
-        title={STOCK_TYPE_LABELS[stockType]}
+        title={<T k={STOCK_TYPE_TRANSLATION_KEYS[stockType]} />}
         subtitle={<>{parts.length} <T k={stockCountTranslationKey(stockType, parts.length)} /></>}
         actions={
           canAddNew && (
@@ -216,7 +217,7 @@ export default async function StockPage({
             className: stockColumnClass("status"),
             headerClassName: stockColumnClass("status"),
             render: (row) => (
-              <StockLevelBadge level={getStockLevel(row.stock?.quantity ?? 0, getLowStockThreshold(row.category))} />
+              <StockLevelBadge level={getEffectiveStockLevel(row.category, row.stock?.quantity ?? 0)} />
             ),
           },
           {

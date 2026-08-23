@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
-import { Plus, Trash2, Upload, X as XIcon } from "lucide-react"
+import { Plus, Trash2, X as XIcon } from "lucide-react"
 import { CustomerWithProjectsSchema, type CustomerWithProjectsInput } from "@/lib/schemas"
 import { createCustomer, updateCustomer } from "@/lib/actions/customers"
 import { FormField, Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_STANDARD_DOCUMENT_TYPES } from "@/lib/constants"
@@ -53,14 +54,6 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
 
   function stageFile(type: (typeof CUSTOMER_STANDARD_DOCUMENT_TYPES)[number], file: File | undefined) {
     if (!file) return
-    if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
-      toast.error(t("documentTypeNotAllowed"))
-      return
-    }
-    if (file.size > MAX_DOCUMENT_SIZE) {
-      toast.error(t("documentTooLarge"))
-      return
-    }
     setStagedDocs((prev) => ({ ...prev, [type]: file }))
   }
 
@@ -255,18 +248,14 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
                           {t("cancel")}
                         </Button>
                       )}
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept={ALLOWED_DOCUMENT_TYPES.join(",")}
-                          onChange={(e) => stageFile(type, e.target.files?.[0])}
-                        />
-                        <span className="inline-flex h-9 sm:h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                          <Upload className="h-3.5 w-3.5" />
-                          {file ? t("replace") : t("uploadFile")}
-                        </span>
-                      </label>
+                      <FileDropzone
+                        onFilesSelected={(files) => stageFile(type, files[0])}
+                        allowedTypes={ALLOWED_DOCUMENT_TYPES}
+                        maxSize={MAX_DOCUMENT_SIZE}
+                        compact
+                        label={file ? t("replace") : t("uploadFile")}
+                        className="w-44"
+                      />
                     </div>
                   </div>
                 )

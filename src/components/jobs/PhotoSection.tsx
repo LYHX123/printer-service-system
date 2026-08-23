@@ -3,11 +3,12 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
-import { FileUploader } from "@/components/ui/file-uploader"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { Modal } from "@/components/ui/modal"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { format } from "date-fns"
 import type { JobPhoto, PhotoType, User } from "@/types"
 
@@ -22,30 +23,37 @@ interface PhotoSectionProps {
 export function PhotoSection({ jobId, photoType, title, photos, canDelete }: PhotoSectionProps) {
   const router = useRouter()
   const toast = useToast()
+  const { t } = useLanguage()
   const [caption, setCaption] = useState("")
   const [lightbox, setLightbox] = useState<(JobPhoto & { uploadedBy: Pick<User, "id" | "name"> }) | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   async function handleUpload(file: File) {
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("photoType", photoType)
-    if (caption) formData.append("caption", caption)
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("photoType", photoType)
+      if (caption) formData.append("caption", caption)
 
-    const res = await fetch(`/api/jobs/${jobId}/photos`, {
-      method: "POST",
-      body: formData,
-    })
+      const res = await fetch(`/api/jobs/${jobId}/photos`, {
+        method: "POST",
+        body: formData,
+      })
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      toast.error(data.error ?? "Failed to upload photo")
-      return
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error ?? "Failed to upload photo")
+        return
+      }
+
+      setCaption("")
+      toast.success("Photo uploaded")
+      router.refresh()
+    } finally {
+      setUploading(false)
     }
-
-    setCaption("")
-    toast.success("Photo uploaded")
-    router.refresh()
   }
 
   async function handleDelete(photoId: string) {
@@ -77,7 +85,12 @@ export function PhotoSection({ jobId, photoType, title, photos, canDelete }: Pho
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
           />
-          <FileUploader onUpload={handleUpload} label={`Upload ${title.toLowerCase()} photo`} />
+          <FileDropzone
+            onFilesSelected={(files) => handleUpload(files[0])}
+            label={`Upload ${title.toLowerCase()} photo`}
+            loading={uploading}
+            helperText={t("acceptedImageTypes")}
+          />
         </div>
       )}
 

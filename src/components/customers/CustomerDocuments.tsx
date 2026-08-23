@@ -1,13 +1,14 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Plus, Download, Trash2, FileText, Upload, RefreshCw } from "lucide-react"
+import { Plus, Download, Trash2, FileText } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { FormField } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES, CUSTOMER_STANDARD_DOCUMENT_TYPES } from "@/lib/constants"
@@ -85,28 +86,10 @@ interface StandardDocumentSlotProps {
 function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onChanged }: StandardDocumentSlotProps) {
   const toast = useToast()
   const { t } = useLanguage()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
-  function pickFile() {
-    fileInputRef.current?.click()
-  }
-
-  async function handleFileChosen(replacingId: string | null) {
-    const file = fileInputRef.current?.files?.[0]
-    if (!file) return
-    if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
-      toast.error(t("documentTypeNotAllowed"))
-      if (fileInputRef.current) fileInputRef.current.value = ""
-      return
-    }
-    if (file.size > MAX_DOCUMENT_SIZE) {
-      toast.error(t("documentTooLarge"))
-      if (fileInputRef.current) fileInputRef.current.value = ""
-      return
-    }
-
+  async function handleFileChosen(file: File, replacingId: string | null) {
     setBusy(true)
     try {
       await uploadCustomerDocument(customerId, file, type)
@@ -123,7 +106,6 @@ function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onC
       toast.error(err instanceof Error ? err.message : t("documentUploadFailed"))
     } finally {
       setBusy(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
 
@@ -148,13 +130,6 @@ function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onC
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept={ALLOWED_DOCUMENT_TYPES.join(",")}
-        onChange={() => handleFileChosen(doc ? doc.id : null)}
-      />
       <div className="flex min-w-0 items-center gap-3">
         <FileText className={`h-8 w-8 shrink-0 ${doc ? "text-slate-300" : "text-slate-200"}`} />
         <div className="min-w-0">
@@ -193,16 +168,15 @@ function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onC
           </a>
         )}
         {canUpload && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            icon={doc ? <RefreshCw className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
+          <FileDropzone
+            onFilesSelected={(files) => handleFileChosen(files[0], doc ? doc.id : null)}
+            allowedTypes={ALLOWED_DOCUMENT_TYPES}
+            maxSize={MAX_DOCUMENT_SIZE}
             loading={busy && !confirmingDelete}
-            onClick={pickFile}
-          >
-            {doc ? t("replace") : t("uploadFile")}
-          </Button>
+            compact
+            label={doc ? t("replace") : t("uploadFile")}
+            className="w-44"
+          />
         )}
         {canDelete && doc && (
           confirmingDelete ? (
@@ -237,8 +211,8 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   // Uploads go to Dropbox under this customer's Short Name — without one there's
   // nowhere to put the file, so uploading (not viewing/deleting existing docs) is
   // gated on it in addition to the usual permission check.
@@ -265,29 +239,22 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
   function openModal() {
     setDocumentType("OTHER")
     setProjectId("")
+    setPendingFile(null)
     setModalOpen(true)
   }
 
   async function handleUpload() {
-    const file = fileInputRef.current?.files?.[0]
-    if (!file) {
+    if (!pendingFile) {
       toast.error(t("pleaseChooseFile"))
-      return
-    }
-    if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
-      toast.error(t("documentTypeNotAllowed"))
-      return
-    }
-    if (file.size > MAX_DOCUMENT_SIZE) {
-      toast.error(t("documentTooLarge"))
       return
     }
 
     setUploading(true)
     try {
-      await uploadCustomerDocument(customerId, file, documentType, projectId || undefined)
+      await uploadCustomerDocument(customerId, pendingFile, documentType, projectId || undefined)
       toast.success(t("documentUploaded"))
       setModalOpen(false)
+      setPendingFile(null)
       refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("documentUploadFailed"))
@@ -435,12 +402,14 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
       >
         <div className="space-y-4">
           <FormField label="File" htmlFor="documentFile">
-            <input
-              ref={fileInputRef}
-              id="documentFile"
-              type="file"
-              accept={ALLOWED_DOCUMENT_TYPES.join(",")}
-              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+            <FileDropzone
+              onFilesSelected={(files) => setPendingFile(files[0])}
+              allowedTypes={ALLOWED_DOCUMENT_TYPES}
+              maxSize={MAX_DOCUMENT_SIZE}
+              helperText={t("acceptedDocumentTypes")}
+              value={pendingFile ? [pendingFile] : []}
+              onRemove={() => setPendingFile(null)}
+              disabled={uploading}
             />
           </FormField>
           <FormField label={t("documentType")} htmlFor="documentType" required>

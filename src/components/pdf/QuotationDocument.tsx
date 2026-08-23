@@ -4,6 +4,7 @@ import path from "path"
 import { format } from "date-fns"
 import type { QuotationPdfData } from "@/lib/data/quotations"
 import type { QuotationItemWithPart } from "@/lib/data/quotations"
+import { resolveQuotationItemNoLabel } from "@/lib/quotationExcel/buildData"
 
 const MIN_VISIBLE_ROWS = 5
 
@@ -274,7 +275,7 @@ export function QuotationDocument({ quotation }: { quotation: QuotationPdfData }
             return (
               <View key={item?.id ?? `blank-${index}`} style={styles.tableRow}>
                 <Text style={styles.cellNo}>{index + 1}</Text>
-                <Text style={styles.cellItemNo}>{item?.part?.partNumber ?? ""}</Text>
+                <Text style={styles.cellItemNo}>{item ? resolveQuotationItemNoLabel(item) : ""}</Text>
                 <Text style={styles.cellDesc}>
                   {item
                     ? item.part

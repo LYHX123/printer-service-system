@@ -18,6 +18,7 @@ export type PermissionKey =
   | "stock.equipment.view" | "stock.equipment.create" | "stock.equipment.edit" | "stock.equipment.delete" | "stock.equipment.adjust"
   | "stock.consumption.view" | "stock.consumption.create" | "stock.consumption.edit" | "stock.consumption.delete" | "stock.consumption.adjust"
   | "stock.parts.view" | "stock.parts.create" | "stock.parts.edit" | "stock.parts.delete" | "stock.parts.adjust"
+  | "stock.commonProduct.view" | "stock.commonProduct.create" | "stock.commonProduct.edit" | "stock.commonProduct.delete" | "stock.commonProduct.adjust"
   | "ledger.general.view" | "ledger.general.create" | "ledger.general.edit" | "ledger.general.delete" | "ledger.general.export"
   | "ledger.sales.view" | "ledger.sales.create" | "ledger.sales.edit" | "ledger.sales.delete" | "ledger.sales.export"
   | "ledger.shop.view" | "ledger.shop.create" | "ledger.shop.edit" | "ledger.shop.delete" | "ledger.shop.export"
@@ -122,6 +123,16 @@ export const PERMISSION_TREE: PermNode[] = [
           { key: "stock.parts.edit", en: "Edit", zh: "编辑" },
           { key: "stock.parts.delete", en: "Delete", zh: "删除" },
           { key: "stock.parts.adjust", en: "Adjust Quantity", zh: "调整数量" },
+        ],
+      },
+      {
+        key: "stock.commonProduct", en: "Common Product", zh: "通用产品",
+        leaves: [
+          { key: "stock.commonProduct.view", en: "View", zh: "查看" },
+          { key: "stock.commonProduct.create", en: "Create", zh: "新建" },
+          { key: "stock.commonProduct.edit", en: "Edit", zh: "编辑" },
+          { key: "stock.commonProduct.delete", en: "Delete", zh: "删除" },
+          { key: "stock.commonProduct.adjust", en: "Adjust Quantity", zh: "调整数量" },
         ],
       },
     ],
@@ -386,7 +397,7 @@ export const canDeleteDelivery = (role: Role, p: string[]) => hasPermission(role
 export const canSyncDelivery = (role: Role, p: string[]) => hasPermission(role, p, "delivery.sync")
 export const canConvertDeliveryToInvoice = (role: Role, p: string[]) => hasPermission(role, p, "delivery.convertToInvoice")
 
-export type StockBucket = "equipment" | "consumption" | "parts"
+export type StockBucket = "equipment" | "consumption" | "parts" | "commonProduct"
 export const canViewStock = (role: Role, p: string[], bucket: StockBucket) => hasPermission(role, p, `stock.${bucket}.view` as PermissionKey)
 export const canCreateStock = (role: Role, p: string[], bucket: StockBucket) => hasPermission(role, p, `stock.${bucket}.create` as PermissionKey)
 export const canEditStock = (role: Role, p: string[], bucket: StockBucket) => hasPermission(role, p, `stock.${bucket}.edit` as PermissionKey)
@@ -412,7 +423,7 @@ export const canViewLedgerHub = (role: Role, p: string[]) =>
 
 /** Every stock bucket the caller has at least view access to. */
 export function getViewableStockBuckets(role: Role, p: string[]): StockBucket[] {
-  const buckets: StockBucket[] = ["equipment", "consumption", "parts"]
+  const buckets: StockBucket[] = ["equipment", "consumption", "parts", "commonProduct"]
   return buckets.filter((b) => canViewStock(role, p, b))
 }
 

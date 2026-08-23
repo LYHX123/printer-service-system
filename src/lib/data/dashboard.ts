@@ -100,13 +100,13 @@ export async function getInvoiceCount(companyId: string): Promise<number> {
   return prisma.invoice.count({ where: { companyId } })
 }
 
-/** Sums InventoryStock.quantity per Stock bucket (Equipment/Consumption/Parts) — a total-units count, not a record count. */
+/** Sums InventoryStock.quantity per Stock bucket (Equipment/Consumption/Parts/Common Product) — a total-units count, not a record count. */
 export async function getStockQuantityTotals(companyId: string): Promise<Record<StockType, number>> {
   const rows = await prisma.inventoryStock.findMany({
     where: { part: { companyId, isActive: true } },
     select: { quantity: true, part: { select: { category: true } } },
   })
-  const totals: Record<StockType, number> = { EQUIPMENT: 0, CONSUMPTION: 0, PARTS: 0 }
+  const totals: Record<StockType, number> = { EQUIPMENT: 0, CONSUMPTION: 0, PARTS: 0, COMMON_PRODUCT: 0 }
   for (const row of rows) {
     totals[getStockType(row.part.category)] += row.quantity
   }

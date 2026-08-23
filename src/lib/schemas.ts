@@ -345,6 +345,7 @@ export const SparePartSchema = z.object({
     "CCTV_PART",
     "PROJECTOR_PART",
     "GENERAL",
+    "COMMON_PRODUCT",
   ]),
   brand: z.string().min(1, "Brand is required").max(100),
   supplier: z.string().max(150).optional().or(z.literal("")),

@@ -1,10 +1,11 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Cloud, Download, RefreshCw, Trash2, Upload } from "lucide-react"
+import { Cloud, Download, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ALLOWED_ETR_TYPES, MAX_DOCUMENT_SIZE } from "@/lib/constants"
@@ -49,28 +50,10 @@ export function InvoiceEtrCard({ invoiceId, doc, canManage }: InvoiceEtrCardProp
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
-  function pickFile() {
-    fileInputRef.current?.click()
-  }
-
-  async function handleFileChosen() {
-    const file = fileInputRef.current?.files?.[0]
-    if (!file) return
-    if (!ALLOWED_ETR_TYPES.includes(file.type)) {
-      toast.error(t("etrTypeNotAllowed"))
-      if (fileInputRef.current) fileInputRef.current.value = ""
-      return
-    }
-    if (file.size > MAX_DOCUMENT_SIZE) {
-      toast.error(t("documentTooLarge"))
-      if (fileInputRef.current) fileInputRef.current.value = ""
-      return
-    }
-
+  async function handleFileChosen(file: File) {
     setBusy(true)
     try {
       await uploadEtr(invoiceId, file)
@@ -80,7 +63,6 @@ export function InvoiceEtrCard({ invoiceId, doc, canManage }: InvoiceEtrCardProp
       toast.error(err instanceof Error ? err.message : t("etrUploadFailed"))
     } finally {
       setBusy(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
 
@@ -111,14 +93,6 @@ export function InvoiceEtrCard({ invoiceId, doc, canManage }: InvoiceEtrCardProp
         {t("etrTaxInvoice")}
       </h3>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept={ALLOWED_ETR_TYPES.join(",")}
-        onChange={handleFileChosen}
-      />
-
       {doc ? (
         <div className="space-y-2 text-sm">
           <p className="truncate text-xs font-medium text-slate-900">{doc.dropboxFileName ?? "—"}</p>
@@ -138,18 +112,6 @@ export function InvoiceEtrCard({ invoiceId, doc, canManage }: InvoiceEtrCardProp
                 {t("download")}
               </Button>
             </a>
-            {canManage && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                icon={<RefreshCw className="h-3.5 w-3.5" />}
-                loading={busy && !confirmingDelete}
-                onClick={pickFile}
-              >
-                {t("replace")}
-              </Button>
-            )}
             {canManage && (
               confirmingDelete ? (
                 <div className="flex items-center gap-2 text-xs">
@@ -175,21 +137,33 @@ export function InvoiceEtrCard({ invoiceId, doc, canManage }: InvoiceEtrCardProp
               )
             )}
           </div>
+
+          {canManage && (
+            <FileDropzone
+              onFilesSelected={(files) => handleFileChosen(files[0])}
+              allowedTypes={ALLOWED_ETR_TYPES}
+              maxSize={MAX_DOCUMENT_SIZE}
+              helperText={t("acceptedEtrTypes")}
+              loading={busy}
+              label={t("replace")}
+              compact
+              className="pt-1"
+            />
+          )}
         </div>
       ) : (
         <div className="space-y-2">
           <p className="text-sm text-slate-400 italic">{t("documentNotUploaded")}</p>
           {canManage && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              icon={<Upload className="h-3.5 w-3.5" />}
+            <FileDropzone
+              onFilesSelected={(files) => handleFileChosen(files[0])}
+              allowedTypes={ALLOWED_ETR_TYPES}
+              maxSize={MAX_DOCUMENT_SIZE}
+              helperText={t("acceptedEtrTypes")}
               loading={busy}
-              onClick={pickFile}
-            >
-              {t("uploadFile")}
-            </Button>
+              label={t("uploadFile")}
+              compact
+            />
           )}
         </div>
       )}

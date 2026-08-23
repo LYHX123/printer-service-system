@@ -1,17 +1,18 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
-import { Building2, Upload } from "lucide-react"
+import { Building2 } from "lucide-react"
 import { CompanySettingsSchema, type CompanySettingsInput } from "@/lib/schemas"
 import { updateCompanySettings } from "@/lib/actions/settings"
 import { FormField, Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 
@@ -35,7 +36,6 @@ interface CompanySettingsFormProps {
 export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsFormProps) {
   const toast = useToast()
   const { t } = useLanguage()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [logo, setLogo] = useState(logoUrl)
   const [uploading, setUploading] = useState(false)
 
@@ -57,10 +57,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
     }
   }
 
-  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  async function handleLogoUpload(file: File) {
     setUploading(true)
     try {
       const formData = new FormData()
@@ -75,7 +72,6 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
       toast.success(t("logoUpdated"))
     } finally {
       setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
 
@@ -91,25 +87,14 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
               <Building2 className="h-8 w-8 text-slate-300" />
             )}
           </div>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handleLogoChange}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              icon={<Upload className="h-3.5 w-3.5" />}
+          <div className="max-w-xs flex-1">
+            <FileDropzone
+              onFilesSelected={(files) => handleLogoUpload(files[0])}
               loading={uploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {t("uploadLogo")}
-            </Button>
-            <p className="mt-1 text-xs text-slate-500">{t("logoFormatHint")}</p>
+              compact
+              label={t("uploadLogo")}
+              helperText={t("logoFormatHint")}
+            />
           </div>
         </div>
 

@@ -6,7 +6,7 @@ import { canCreateStock } from "@/lib/permissions"
 import { PageHeader } from "@/components/ui/page-header"
 import { T } from "@/components/ui/T"
 import { InventoryForm } from "@/components/inventory/InventoryForm"
-import { isStockType, STOCK_TYPE_LABELS, DEFAULT_CATEGORY_FOR_STOCK_TYPE, ADD_ITEM_TRANSLATION_KEYS, stockTypeToBucket } from "@/lib/stock-types"
+import { isStockType, STOCK_TYPE_TRANSLATION_KEYS, DEFAULT_CATEGORY_FOR_STOCK_TYPE, ADD_ITEM_TRANSLATION_KEYS, stockTypeToBucket } from "@/lib/stock-types"
 import type { Role } from "@/types"
 
 export default async function NewSparePartPage({
@@ -26,7 +26,7 @@ export default async function NewSparePartPage({
     <div>
       <Link href={`/stock?type=${type}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <ChevronLeft className="h-4 w-4" />
-        Back to {STOCK_TYPE_LABELS[type]}
+        Back to <T k={STOCK_TYPE_TRANSLATION_KEYS[type]} />
       </Link>
       <PageHeader title={<T k={ADD_ITEM_TRANSLATION_KEYS[type]} />} />
       <InventoryForm stockType={type} defaultValues={{ category: DEFAULT_CATEGORY_FOR_STOCK_TYPE[type] }} />

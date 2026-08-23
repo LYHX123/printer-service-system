@@ -11,10 +11,10 @@ import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { TransactionTypeBadge } from "@/components/ui/badge"
-import { TInput } from "@/components/ui/T"
+import { T, TInput } from "@/components/ui/T"
 import { TRANSACTION_TYPE_LABELS } from "@/types"
 import type { TransactionType, Role } from "@/types"
-import { STOCK_TYPES, CATEGORIES_FOR_STOCK_TYPE, STOCK_TYPE_LABELS, getStockType, isStockType, stockTypeToBucket } from "@/lib/stock-types"
+import { STOCK_TYPES, CATEGORIES_FOR_STOCK_TYPE, STOCK_TYPE_LABELS, STOCK_TYPE_TRANSLATION_KEYS, getStockType, isStockType, stockTypeToBucket } from "@/lib/stock-types"
 
 const TRANSACTION_TYPES = Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]
 
@@ -119,7 +119,7 @@ export default async function StockMovementsPage({
             label: "Stock Category",
             render: (row) => (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                {STOCK_TYPE_LABELS[getStockType(row.part.category)]}
+                <T k={STOCK_TYPE_TRANSLATION_KEYS[getStockType(row.part.category)]} />
               </span>
             ),
           },

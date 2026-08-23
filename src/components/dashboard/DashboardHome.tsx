@@ -48,7 +48,7 @@ interface DashboardHomeProps {
   invoiceMetrics: InvoiceDashboardMetrics | null
   activeTaskCount: number | null
   overdueTaskCount: number | null
-  stockTotals: { EQUIPMENT: number; CONSUMPTION: number; PARTS: number } | null
+  stockTotals: { EQUIPMENT: number; CONSUMPTION: number; PARTS: number; COMMON_PRODUCT: number } | null
   lowStockCount: number | null
   lowStockAlerts: LowStockAlert[]
   overdueTaskAlerts: OverdueTaskAlert[]
@@ -236,6 +236,7 @@ export function DashboardHome({
             <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("equipmentQuantityLabel")} value={stockTotals?.EQUIPMENT ?? 0} icon={<Laptop className="h-5 w-5 text-blue-600" />} href="/stock?type=EQUIPMENT" />
             <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("consumptionQuantityLabel")} value={stockTotals?.CONSUMPTION ?? 0} icon={<Droplet className="h-5 w-5 text-cyan-600" />} iconBg="bg-cyan-50" href="/stock?type=CONSUMPTION" />
             <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("partsQuantityLabel")} value={stockTotals?.PARTS ?? 0} icon={<Wrench className="h-5 w-5 text-slate-600" />} iconBg="bg-slate-100" href="/stock?type=PARTS" />
+            <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("commonProductQuantityLabel")} value={stockTotals?.COMMON_PRODUCT ?? 0} icon={<Package className="h-5 w-5 text-purple-600" />} iconBg="bg-purple-50" href="/stock?type=COMMON_PRODUCT" />
             <MetricCard className={DASHBOARD_CARD_CLASS} iconSizeClassName={DASHBOARD_ICON_SIZE_CLASS} pinValueBottom valueClassName={COUNT_VALUE_CLASS} labelWrap label={t("lowStockItemsLabel")} value={lowStockCount ?? 0} icon={<AlertTriangle className="h-5 w-5 text-amber-600" />} iconBg="bg-amber-50" href="/stock" />
           </div>
         </section>

@@ -12,11 +12,12 @@ import { createSparePart, updateSparePart } from "@/lib/actions/inventory"
 import { FormField, Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { FileUploader } from "@/components/ui/file-uploader"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { STOCK_TYPE_LABELS } from "@/lib/stock-types"
+import { T } from "@/components/ui/T"
+import { STOCK_TYPE_TRANSLATION_KEYS } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
 
 interface InventoryFormProps {
@@ -53,6 +54,7 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
   const [formError, setFormError] = useState<string | null>(null)
   const [removingImage, setRemovingImage] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [pictureUploading, setPictureUploading] = useState(false)
 
   const {
     register,
@@ -103,12 +105,15 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
 
   async function handlePictureSelect(file: File) {
     if (isEdit) {
+      setPictureUploading(true)
       try {
         const url = await uploadSparePartImage(partId!, file)
         setImage(`${url}?t=${Date.now()}`)
         toast.success(t("pictureUpdated"))
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to upload picture")
+      } finally {
+        setPictureUploading(false)
       }
       return
     }
@@ -144,7 +149,7 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
       <input type="hidden" {...register("category")} />
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-slate-900">{STOCK_TYPE_LABELS[stockType]}</h2>
+        <h2 className="text-sm font-semibold text-slate-900"><T k={STOCK_TYPE_TRANSLATION_KEYS[stockType]} /></h2>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("brand")} htmlFor="brand" required error={errors.brand?.message}>
@@ -205,7 +210,11 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
               )}
             </button>
             <div className="flex-1 space-y-2">
-              <FileUploader onUpload={handlePictureSelect} label="Drag & drop a picture, or click to browse" />
+              <FileDropzone
+                onFilesSelected={(files) => handlePictureSelect(files[0])}
+                loading={pictureUploading}
+                helperText={t("acceptedImageTypes")}
+              />
               {image && (
                 <Button
                   type="button"

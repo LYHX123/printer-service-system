@@ -354,6 +354,7 @@ export const PART_CATEGORY_LABELS: Record<PartCategory, string> = {
   CCTV_PART: "CCTV Part",
   PROJECTOR_PART: "Projector Part",
   GENERAL: "General",
+  COMMON_PRODUCT: "Common Product",
 }
 
 // ─── Equipment-adaptive UI helpers ────────────────────────────────────────────

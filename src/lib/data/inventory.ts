@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { getStockType, getLowStockThreshold, type StockType, type LowStockAlert } from "@/lib/stock-types"
+import { getStockType, getLowStockThreshold, isLowStockEligible, type StockType, type LowStockAlert } from "@/lib/stock-types"
 import type {
   SparePart,
   InventoryStock,
@@ -16,6 +16,23 @@ export function getStockLevel(quantity: number, threshold: number): StockLevel {
   if (quantity <= 0) return "out"
   if (quantity <= threshold) return "low"
   return "in_stock"
+}
+
+/**
+ * Same as getStockLevel, but stock-type-aware: Common Product is excluded
+ * from low-stock evaluation entirely (see isLowStockEligible) and always
+ * reads as "in_stock", regardless of quantity — it's ad-hoc procurement
+ * stock, not company-held inventory, so 0 is a normal resting state, never a
+ * warning. This is the single gate every low-stock surface (Dashboard count,
+ * the floating alerts notification, the Stock list's status badge, the Low
+ * Stock report, and the stockLevel filter below) goes through — the
+ * threshold algorithm itself (getStockLevel/getLowStockThreshold) is
+ * untouched for Equipment/Consumption/Parts.
+ */
+export function getEffectiveStockLevel(category: PartCategory, quantity: number): StockLevel {
+  const stockType = getStockType(category)
+  if (!isLowStockEligible(stockType)) return "in_stock"
+  return getStockLevel(quantity, getLowStockThreshold(category))
 }
 
 export type SparePartListItem = SparePart & { stock: InventoryStock | null }
@@ -52,7 +69,7 @@ export async function getSpareParts(
 
   return parts.filter((p) => {
     const qty = p.stock?.quantity ?? 0
-    return getStockLevel(qty, getLowStockThreshold(p.category)) === stockLevel
+    return getEffectiveStockLevel(p.category, qty) === stockLevel
   })
 }
 
@@ -134,7 +151,7 @@ export async function getLowStockParts(companyId: string, categories?: PartCateg
     include: { stock: true },
     orderBy: { name: "asc" },
   })
-  return parts.filter((p) => getStockLevel(p.stock?.quantity ?? 0, getLowStockThreshold(p.category)) !== "in_stock")
+  return parts.filter((p) => getEffectiveStockLevel(p.category, p.stock?.quantity ?? 0) !== "in_stock")
 }
 
 export async function getLowStockCount(companyId: string): Promise<number> {
@@ -150,7 +167,7 @@ export async function getLowStockAlerts(companyId: string): Promise<LowStockAler
   })
 
   return parts
-    .filter((p) => (p.stock?.quantity ?? 0) <= getLowStockThreshold(p.category))
+    .filter((p) => getEffectiveStockLevel(p.category, p.stock?.quantity ?? 0) !== "in_stock")
     .map((p) => {
       const quantity = p.stock?.quantity ?? 0
       return {
@@ -173,7 +190,7 @@ export async function getStockTypeCounts(companyId: string): Promise<Record<Stoc
     _count: { _all: true },
   })
 
-  const counts: Record<StockType, number> = { EQUIPMENT: 0, CONSUMPTION: 0, PARTS: 0 }
+  const counts: Record<StockType, number> = { EQUIPMENT: 0, CONSUMPTION: 0, PARTS: 0, COMMON_PRODUCT: 0 }
   for (const row of grouped) {
     counts[getStockType(row.category)] += row._count._all
   }

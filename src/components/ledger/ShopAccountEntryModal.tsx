@@ -14,7 +14,7 @@ import { MoneyInput } from "@/components/ui/money-input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { FileUploader } from "@/components/ui/file-uploader"
+import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE } from "@/lib/constants"
@@ -282,14 +282,13 @@ export function ShopAccountEntryModal({ isOpen, onClose, categories, defaultType
               </Button>
             </div>
           ) : (
-            <FileUploader
-              onUpload={handleFileSelect}
+            <FileDropzone
+              onFilesSelected={(files) => handleFileSelect(files[0])}
               label={t("attachmentUploadLabel")}
               allowedTypes={ALLOWED_DOCUMENT_TYPES}
               maxSize={MAX_DOCUMENT_SIZE}
-              acceptLabel="JPG, PNG, WEBP, PDF — max 10MB"
-              typeErrorMessage="Only JPG, PNG, WEBP, and PDF files are allowed"
-              disabled={attachmentBusy}
+              helperText={t("acceptedDocumentTypes")}
+              loading={attachmentBusy}
             />
           )}
         </div>
