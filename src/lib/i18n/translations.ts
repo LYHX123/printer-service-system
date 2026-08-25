@@ -10,6 +10,9 @@ export const DEFAULT_LANGUAGE: Language = "en"
 export type TranslationKey =
   // Common
   | "dashboard"
+  | "more"
+  | "language"
+  | "taskDetailTitle"
   | "customers"
   | "equipment"
   | "jobs"
@@ -708,6 +711,7 @@ export type TranslationKey =
   | "mainAddress"
   | "notes"
   | "companyInformation"
+  | "dropboxFolder"
   | "headOfficeContact"
   | "projectsAndContacts"
   | "addProject"
@@ -798,6 +802,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   en: {
     // Common
     dashboard: "Dashboard",
+    more: "More",
+    language: "Language",
+    taskDetailTitle: "Task Detail",
     customers: "Customers",
     equipment: "Equipment",
     jobs: "Jobs",
@@ -1495,9 +1502,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     mainAddress: "Main Address",
     notes: "Notes",
     companyInformation: "Company Information",
+    dropboxFolder: "Dropbox Folder",
     headOfficeContact: "Head Office Contact",
     projectsAndContacts: "Projects & Contacts",
-    addProject: "+ Add Project",
+    addProject: "Add Project",
     editProject: "Edit Project",
     removeProject: "Remove Project",
     projectName: "Project Name",
@@ -1583,6 +1591,9 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
   zh: {
     // Common
     dashboard: "仪表盘",
+    more: "更多",
+    language: "语言",
+    taskDetailTitle: "任务详情",
     customers: "客户",
     equipment: "设备",
     jobs: "工单",
@@ -2278,9 +2289,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     mainAddress: "总部地址",
     notes: "备注",
     companyInformation: "公司信息",
+    dropboxFolder: "Dropbox 文件夹",
     headOfficeContact: "总部联系方式",
     projectsAndContacts: "项目与联系人",
-    addProject: "+ 添加项目",
+    addProject: "添加项目",
     editProject: "编辑项目",
     removeProject: "移除项目",
     projectName: "项目名称",

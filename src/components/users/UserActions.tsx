@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Ban, CheckCircle, ShieldCheck, Pencil, LockOpen } from "lucide-react"
+import { Ban, CheckCircle, ShieldCheck, Pencil, LockOpen, UserCog } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { Resolver } from "react-hook-form"
@@ -19,6 +19,7 @@ import {
   updateUserProfile,
 } from "@/lib/actions/users"
 import { PermissionsEditor } from "@/components/users/PermissionsEditor"
+import { AppActionMenu } from "@/components/app-ui/AppActionMenu"
 import { UpdateUserProfileSchema, type UpdateUserProfileInput } from "@/lib/schemas"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { ROLE_LABELS } from "@/types"
@@ -41,6 +42,8 @@ interface UserActionsProps {
   canEditUsers: boolean
   /** Whether the VIEWER can change roles and permissions. */
   canManagePermissions: boolean
+  /** "menu" renders a single compact ⋮ overflow menu (including Edit Role, via its own small modal) instead of a row of buttons + an always-visible role select — same handlers/modals either way. */
+  variant?: "buttons" | "menu"
 }
 
 export function UserActions({
@@ -56,6 +59,7 @@ export function UserActions({
   position,
   canEditUsers,
   canManagePermissions,
+  variant = "buttons",
 }: UserActionsProps) {
   const router = useRouter()
   const toast = useToast()
@@ -70,6 +74,7 @@ export function UserActions({
   const [unlockOpen, setUnlockOpen] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [roleModalOpen, setRoleModalOpen] = useState(false)
 
   const {
     register,
@@ -135,70 +140,43 @@ export function UserActions({
     router.refresh()
   }
 
-  return (
-    <div className="flex items-center justify-end gap-2">
-      {/* Role selector */}
+  function renderRoleSelector(className: string) {
+    return (
       <Select
+        id="role-select"
         value={role}
         disabled={isSelf || updatingRole || !canManagePermissions}
         onChange={(e) => handleRoleChange(e.target.value as Role)}
-        className="w-36 py-1.5 text-xs"
+        className={className}
       >
         {ROLES.map((r) => (
           <option key={r} value={r}>{ROLE_LABELS[r]}</option>
         ))}
       </Select>
+    )
+  }
+  const roleSelector = renderRoleSelector("w-36 py-1.5 text-xs")
 
-      {/* Permissions */}
-      {canManagePermissions && (
-        <Button
-          variant="outline"
-          size="sm"
-          icon={<ShieldCheck className="h-3.5 w-3.5" />}
-          onClick={() => { setTempPermissions(modulePermissions); setPermissionsOpen(true) }}
-        >
-          {t("editPermissions")}
-        </Button>
-      )}
-
-      {/* Edit profile */}
-      {canEditUsers && (
-        <Button
-          variant="outline"
-          size="sm"
-          icon={<Pencil className="h-3.5 w-3.5" />}
-          onClick={() => {
-            reset({ name, phone: phone ?? "", department: department ?? "", position: position ?? "", newPassword: "" })
-            setEditOpen(true)
-          }}
-        >
-          {t("editProfile")}
-        </Button>
-      )}
-
-      {/* Unlock (only when locked) */}
-      {isLocked && canEditUsers && (
-        <Button
-          variant="outline"
-          size="sm"
-          icon={<LockOpen className="h-3.5 w-3.5" />}
-          onClick={() => setUnlockOpen(true)}
-          className="text-amber-700 border-amber-300 hover:bg-amber-50"
-        >
-          {t("unlock")}
-        </Button>
-      )}
-
-      {/* Disable / Enable */}
-      {canEditUsers && (isActive ? (
-        <Button variant="outline" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)} disabled={isSelf}>
-          {t("disable")}
-        </Button>
-      ) : (
-        <Button variant="outline" size="sm" icon={<CheckCircle className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)}>
-          {t("enable")}
-        </Button>
-      ))}
+  const modals = (
+    <>
+      {/* Edit Role modal — mobile ⋮ menu entry point; the select itself is the
+          exact same control/handler as the always-visible desktop select, just
+          relocated so a mobile card doesn't need to permanently reserve width
+          for it. */}
+      <Modal
+        isOpen={roleModalOpen}
+        onClose={() => setRoleModalOpen(false)}
+        title={t("role")}
+        footer={
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" onClick={() => setRoleModalOpen(false)}>{t("cancel")}</Button>
+          </div>
+        }
+      >
+        <FormField label={t("role")} htmlFor="role-select">
+          {renderRoleSelector("w-full")}
+        </FormField>
+      </Modal>
 
       {/* Disable/Enable confirmation modal */}
       <Modal
@@ -281,6 +259,100 @@ export function UserActions({
           </FormField>
         </form>
       </Modal>
+    </>
+  )
+
+  if (variant === "menu") {
+    const menuItems = [
+      ...(canManagePermissions
+        ? [{ label: t("role"), icon: <UserCog />, onClick: () => setRoleModalOpen(true), disabled: isSelf }]
+        : []),
+      ...(canManagePermissions
+        ? [{ label: t("editPermissions"), icon: <ShieldCheck />, onClick: () => { setTempPermissions(modulePermissions); setPermissionsOpen(true) } }]
+        : []),
+      ...(canEditUsers
+        ? [{
+            label: t("editProfile"),
+            icon: <Pencil />,
+            onClick: () => {
+              reset({ name, phone: phone ?? "", department: department ?? "", position: position ?? "", newPassword: "" })
+              setEditOpen(true)
+            },
+          }]
+        : []),
+      ...(isLocked && canEditUsers ? [{ label: t("unlock"), icon: <LockOpen />, onClick: () => setUnlockOpen(true) }] : []),
+      ...(canEditUsers
+        ? [
+            isActive
+              ? { label: t("disable"), icon: <Ban />, onClick: () => setConfirmOpen(true), disabled: isSelf, destructive: true }
+              : { label: t("enable"), icon: <CheckCircle />, onClick: () => setConfirmOpen(true) },
+          ]
+        : []),
+    ]
+    return (
+      <div className="flex items-center justify-end gap-2">
+        <AppActionMenu ariaLabel={t("actions")} items={menuItems} />
+        {modals}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {roleSelector}
+
+      {/* Permissions */}
+      {canManagePermissions && (
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+          onClick={() => { setTempPermissions(modulePermissions); setPermissionsOpen(true) }}
+        >
+          {t("editPermissions")}
+        </Button>
+      )}
+
+      {/* Edit profile */}
+      {canEditUsers && (
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<Pencil className="h-3.5 w-3.5" />}
+          onClick={() => {
+            reset({ name, phone: phone ?? "", department: department ?? "", position: position ?? "", newPassword: "" })
+            setEditOpen(true)
+          }}
+        >
+          {t("editProfile")}
+        </Button>
+      )}
+
+      {/* Unlock (only when locked) */}
+      {isLocked && canEditUsers && (
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<LockOpen className="h-3.5 w-3.5" />}
+          onClick={() => setUnlockOpen(true)}
+          className="text-amber-700 border-amber-300 hover:bg-amber-50"
+        >
+          {t("unlock")}
+        </Button>
+      )}
+
+      {/* Disable / Enable */}
+      {canEditUsers && (isActive ? (
+        <Button variant="outline" size="sm" icon={<Ban className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)} disabled={isSelf}>
+          {t("disable")}
+        </Button>
+      ) : (
+        <Button variant="outline" size="sm" icon={<CheckCircle className="h-3.5 w-3.5" />} onClick={() => setConfirmOpen(true)}>
+          {t("enable")}
+        </Button>
+      ))}
+
+      {modals}
     </div>
   )
 }

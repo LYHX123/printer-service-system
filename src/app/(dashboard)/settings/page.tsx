@@ -5,10 +5,12 @@ import { auth } from "@/lib/auth"
 import { getCompanySettings } from "@/lib/data/settings"
 import { canManageSettings } from "@/lib/permissions"
 import { getDropboxConnectionStatus } from "@/lib/dropbox"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm"
 import { DropboxIntegrationCard } from "@/components/settings/DropboxIntegrationCard"
 import { SystemInitializationPanel } from "@/components/settings/SystemInitializationPanel"
+import { AppSectionLabel } from "@/components/app-ui/AppSectionLabel"
 import { T } from "@/components/ui/T"
 import type { Role } from "@/types"
 
@@ -35,6 +37,60 @@ export default async function SettingsPage({
       ? ({ type: "success", message: "Dropbox connected" } as const)
       : null
 
+  const formDefaults = {
+    name: company.name,
+    address: company.address ?? "",
+    phone: company.phone ?? "",
+    email: company.email ?? "",
+    website: company.website ?? "",
+    kraPin: company.kraPin ?? "",
+    vatPercent: Number(company.vatPercent),
+    currency: company.currency,
+    timezone: company.timezone,
+  }
+
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-5">
+        <section>
+          <AppSectionLabel><T k="companySettings" /></AppSectionLabel>
+          <CompanySettingsForm defaultValues={formDefaults} logoUrl={company.logoUrl} />
+        </section>
+
+        <section>
+          <AppSectionLabel><T k="dropboxIntegration" /></AppSectionLabel>
+          <DropboxIntegrationCard status={dropboxStatus} initialToast={dropboxToast} />
+        </section>
+
+        {role === "ADMIN" && (
+          <section>
+            <AppSectionLabel><T k="systemInitializationTitle" /></AppSectionLabel>
+            <Link
+              href="/settings/audit-log"
+              className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100">
+                  <ScrollText className="h-4 w-4 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900"><T k="auditLog" /></p>
+                  <p className="text-xs text-slate-500"><T k="auditLogCardDesc" /></p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-400" />
+            </Link>
+            <div className="mt-2">
+              <SystemInitializationPanel isProduction={process.env.NODE_ENV === "production"} />
+            </div>
+          </section>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -42,17 +98,7 @@ export default async function SettingsPage({
         subtitle={<T k="companySettingsDesc" />}
       />
       <CompanySettingsForm
-        defaultValues={{
-          name: company.name,
-          address: company.address ?? "",
-          phone: company.phone ?? "",
-          email: company.email ?? "",
-          website: company.website ?? "",
-          kraPin: company.kraPin ?? "",
-          vatPercent: Number(company.vatPercent),
-          currency: company.currency,
-          timezone: company.timezone,
-        }}
+        defaultValues={formDefaults}
         logoUrl={company.logoUrl}
       />
       <DropboxIntegrationCard status={dropboxStatus} initialToast={dropboxToast} />

@@ -9,11 +9,16 @@ import { auth } from "@/lib/auth"
 import { getQuotation, getQuotationDropboxDocuments, getQuotationVersionSnapshot } from "@/lib/data/quotations"
 import { getDeliveriesForQuotation } from "@/lib/data/deliveries"
 import { canAccess, canConvertQuotationToInvoice, canExportQuotation, canViewInvoice, canApproveQuotation, canEditQuotationPerm, canCreateDelivery, canViewDelivery } from "@/lib/permissions"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { QuotationStatusBadge, InvoiceStatusBadge, DeliveryInvoiceStatusBadge } from "@/components/ui/badge"
 import { QuotationActions } from "@/components/quotations/QuotationActions"
 import { QuotationVersionSelector } from "@/components/quotations/QuotationVersionSelector"
+import { AppDetailSection } from "@/components/app-ui/AppDetailSection"
+import { AppDetailRow } from "@/components/app-ui/AppDetailRow"
+import { AppMoneyValue } from "@/components/app-ui/AppMoneyValue"
+import { AppCard } from "@/components/app-ui/AppCard"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { T } from "@/components/ui/T"
@@ -175,6 +180,244 @@ export default async function QuotationDetailPage({
   // itself, even though they can see this Quotation — the whole "Related
   // Invoice" card is skipped entirely rather than shown in a degraded form.
   const canViewInvoiceModule = canViewInvoice(role, permissions)
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-4">
+        <Link href="/quotations" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 active:text-slate-800">
+          <ChevronLeft className="h-4 w-4" />
+          <T k="quotations" />
+        </Link>
+
+        <AppDetailSection>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-sm font-bold text-slate-900">{quotation.quotationNumber}</span>
+            <QuotationStatusBadge status={quotation.status} />
+          </div>
+          <div className="mt-2.5">
+            <QuotationVersionSelector
+              quotationId={id}
+              currentVersion={quotation.currentVersion}
+              hasFinal={hasFinal}
+              value={viewMode === "final" ? "final" : viewedVersionNumber}
+            />
+          </div>
+          {viewMode === "historical" && (
+            <p className="mt-2 rounded-lg bg-amber-100 px-2.5 py-1.5 text-xs font-semibold text-amber-800">
+              VERSION {viewedVersionNumber} — <T k="historical" />
+            </p>
+          )}
+          {viewMode === "final" && (
+            <p className="mt-2 rounded-lg bg-green-100 px-2.5 py-1.5 text-xs font-semibold text-green-800">
+              FINAL — Approved · Based on Version {viewedVersionNumber}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-slate-400">
+            {format(new Date(quotation.createdAt), "dd MMM yyyy")}
+            {display.validUntil && (
+              <> · <T k="validUntil" /> {format(new Date(display.validUntil), "dd MMM yyyy")}</>
+            )}
+          </p>
+        </AppDetailSection>
+
+        {quotation.convertedJob && (
+          <div className="flex items-center gap-2.5 rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+            <Briefcase className="h-4 w-4 text-green-600 shrink-0" />
+            <span className="text-sm text-green-800">
+              <T k="convertedToJob" />{" "}
+              <span className="font-semibold text-green-700">{quotation.convertedJob.jobNumber}</span>
+            </span>
+          </div>
+        )}
+
+        {viewMode !== "current" && (
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+            <span className="flex items-center gap-2 text-xs text-slate-600">
+              <History className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              {viewMode === "final" ? "Viewing FINAL, Approved document" : `Viewing Version ${viewedVersionNumber} (read-only)`}
+            </span>
+            <Link href={`/quotations/${id}`} className="shrink-0 text-xs font-medium text-blue-600">
+              <T k="backToCurrentVersion" />
+            </Link>
+          </div>
+        )}
+
+        <AppDetailSection title="Actions">
+          <QuotationActions
+            quotationId={quotation.id}
+            status={quotation.status}
+            role={role}
+            canEdit={canEditQuotationPerm(role, permissions)}
+            canApprove={canApproveQuotation(role, permissions)}
+            existingInvoice={quotation.invoice ? { id: quotation.invoice.id, invoiceNumber: quotation.invoice.invoiceNumber } : null}
+            canConvertToInvoice={canConvertQuotationToInvoice(role, permissions)}
+            canCreateDelivery={canCreateDelivery(role, permissions)}
+            customerPin={quotation.customer.pinNumber ?? ""}
+            defaultVatPercent={Number(quotation.vatPercent)}
+            needsDropboxSync={needsDropboxSync}
+            canSyncDropbox={canExportQuotation(role, permissions)}
+            viewMode={viewMode}
+            syncTargetVersion={viewMode === "current" ? quotation.currentVersion : undefined}
+            pdfDownloadUrl={pdfDownloadUrl}
+            excelDownloadUrl={excelDownloadUrl}
+          />
+        </AppDetailSection>
+
+        <AppDetailSection title={<T k="customer" />}>
+          {snapshotUnavailable ? (
+            <p className="text-sm text-slate-400 italic"><T k="historicalDataUnavailable" /></p>
+          ) : (
+            <>
+              <Link href={`/customers/${display.customer.id}/edit`} className="text-[15px] font-semibold text-slate-900">
+                {display.customer.companyName}
+              </Link>
+              {(display.contactName ?? display.customer.name) && (
+                <AppDetailRow label={<T k="mainContactName" />} value={display.contactName ?? display.customer.name} />
+              )}
+              {display.contactPhone && <AppDetailRow label={<T k="mainContactPhone" />} value={display.contactPhone} />}
+              {display.customer.pinNumber && <AppDetailRow label={<T k="pinNumber" />} value={display.customer.pinNumber} />}
+            </>
+          )}
+        </AppDetailSection>
+
+        <AppDetailSection title="Quotation Items">
+          {snapshotUnavailable ? (
+            <p className="text-sm text-slate-400 italic"><T k="historicalDataUnavailable" /></p>
+          ) : display.items.length === 0 ? (
+            <p className="text-sm text-slate-400 italic">No items added yet.</p>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {display.items.map((item) => (
+                <div key={item.id} className="flex items-center gap-2.5 py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                    {item.imageUrl ? (
+                      <Image src={item.imageUrl} alt={item.name ?? ""} width={36} height={36} className="h-full w-full object-cover" unoptimized />
+                    ) : (
+                      <ImageOff className="h-3.5 w-3.5 text-slate-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {item.name ? (item.brand ? `${item.brand} — ${item.name}` : item.name) : item.description}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {item.quantity} × {formatCurrency(item.unitPrice)}
+                    </p>
+                  </div>
+                  <AppMoneyValue amount={item.subtotal} className="shrink-0 text-sm" />
+                </div>
+              ))}
+            </div>
+          )}
+        </AppDetailSection>
+
+        {!snapshotUnavailable && (
+          <AppDetailSection title={<T k="costSummary" />}>
+            <AppDetailRow label={<T k="subtotal" />} value={formatCurrency(display.subtotal)} />
+            {display.vatPercent > 0 && (
+              <AppDetailRow label={<>{<T k="vat" />} ({display.vatPercent}%)</>} value={formatCurrency(vatAmount)} />
+            )}
+            <div className="mt-1 border-t border-slate-100 pt-2">
+              <AppDetailRow label={<span className="font-semibold text-slate-900"><T k="total" /></span>} value={<AppMoneyValue amount={display.totalCost} className="text-base" />} />
+            </div>
+          </AppDetailSection>
+        )}
+
+        {!snapshotUnavailable && display.remarks && (
+          <AppDetailSection title={<T k="remarks" />}>
+            <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{display.remarks}</p>
+          </AppDetailSection>
+        )}
+
+        {!snapshotUnavailable && display.internalNotes && (
+          <section>
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-700"><T k="internalNotes" /></h3>
+              <p className="text-sm text-amber-900 whitespace-pre-line leading-relaxed">{display.internalNotes}</p>
+            </div>
+          </section>
+        )}
+
+        <AppDetailSection title={<T k="dropboxFiles" />}>
+          {dropboxDocuments.length === 0 ? (
+            <p className="text-sm text-slate-400 italic">
+              {quotation.customer.shortName?.trim() ? <T k="notYetSyncedToDropbox" /> : <T k="quotationShortNameRequiredForSync" />}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {needsDropboxSync && quotation.customer.shortName?.trim() && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  {targetXlsxSynced ? <T k="pdfConversionUnavailableBanner" /> : <T k="dropboxSyncFailedBanner" />}
+                </p>
+              )}
+              {dropboxVersionGroups.map((group) => (
+                <div key={group.key}>
+                  <Link href={group.href} className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {group.label}
+                  </Link>
+                  <div className="space-y-1.5">
+                    {group.docs.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-slate-500">{doc.fileType}</p>
+                          <p className="truncate text-xs font-medium text-slate-900">{doc.dropboxFileName ?? "—"}</p>
+                        </div>
+                        {doc.dropboxPath && (
+                          <a href={`/api/quotations/${id}/documents/version/${doc.id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-medium text-blue-600">
+                            <T k="download" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </AppDetailSection>
+
+        {canViewDeliveryModule && (
+          <AppDetailSection title="Deliveries">
+            {deliveries.length === 0 ? (
+              <p className="text-sm text-slate-400 italic">No deliveries created yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {deliveries.map((d) => (
+                  <AppCard key={d.id} href={`/delivery/${d.id}`} className="border-slate-100 bg-slate-50">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-mono text-xs font-semibold text-blue-600">{d.deliveryNumber}</p>
+                        <p className="text-[11px] text-slate-400">{format(new Date(d.deliveryDate), "dd MMM yyyy")}</p>
+                      </div>
+                      <DeliveryInvoiceStatusBadge invoiced={Boolean(d.invoice)} />
+                    </div>
+                  </AppCard>
+                ))}
+              </div>
+            )}
+          </AppDetailSection>
+        )}
+
+        {canViewInvoiceModule && (
+          <AppDetailSection title={<T k="relatedInvoiceLabel" />}>
+            {quotation.invoice ? (
+              <AppCard href={`/quotations/invoices/${quotation.invoice.id}`} className="border-slate-100 bg-slate-50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold text-blue-600">{quotation.invoice.invoiceNumber}</span>
+                  <InvoiceStatusBadge status={quotation.invoice.status} />
+                </div>
+                <AppDetailRow label={<T k="date" />} value={format(new Date(quotation.invoice.date), "dd MMM yyyy")} />
+                <AppDetailRow label={<T k="total" />} value={formatCurrency(Number(quotation.invoice.totalAmount))} />
+              </AppCard>
+            ) : (
+              <p className="text-sm text-slate-400 italic"><T k="noInvoiceGeneratedYet" /></p>
+            )}
+          </AppDetailSection>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>

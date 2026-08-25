@@ -48,7 +48,12 @@ export function Badge({ children, className }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        // shrink-0 + whitespace-nowrap: a badge must never be squeezed by a
+        // flex sibling and must never wrap its own text — without this, a
+        // badge crammed into a narrow flex row (e.g. a compact mobile card)
+        // could wrap, and for CJK text with no natural break points that
+        // renders as one character per line instead of a pill.
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium",
         className
       )}
     >

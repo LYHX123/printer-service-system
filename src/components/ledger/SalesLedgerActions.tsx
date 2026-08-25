@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { setSalesLedgerEntryArchived, deleteSalesLedgerEntry } from "@/lib/actions/ledger"
 import { SalesLedgerModal } from "./SalesLedgerModal"
+import { AppActionMenu } from "@/components/app-ui/AppActionMenu"
 import type { SalesLedgerListItem } from "@/lib/data/ledger"
 
 interface SalesLedgerActionsProps {
@@ -18,9 +19,11 @@ interface SalesLedgerActionsProps {
   canDelete?: boolean
   /** True on the Sales Ledger detail page itself — a View button there would just link to the current page. */
   hideView?: boolean
+  /** "menu" renders a compact ⋮ overflow menu instead of the button row — used where the App-mode card itself is already the tap-to-view target, so View is redundant. */
+  variant?: "buttons" | "menu"
 }
 
-export function SalesLedgerActions({ entry, canEdit = true, canDelete = true, hideView = false }: SalesLedgerActionsProps) {
+export function SalesLedgerActions({ entry, canEdit = true, canDelete = true, hideView = false, variant = "buttons" }: SalesLedgerActionsProps) {
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
@@ -51,6 +54,45 @@ export function SalesLedgerActions({ entry, canEdit = true, canDelete = true, hi
       setConfirmDeleteOpen(false)
       router.refresh()
     })
+  }
+
+  if (variant === "menu") {
+    return (
+      <>
+        <AppActionMenu
+          ariaLabel={t("actions")}
+          items={[
+            ...(canEdit ? [{ label: t("edit"), icon: <Pencil />, onClick: () => setEditOpen(true) }] : []),
+            ...(entry.isArchived
+              ? canEdit
+                ? [{ label: t("restoreRecord"), icon: <ArchiveRestore />, onClick: restoreArchived, disabled: isPending }]
+                : []
+              : canDelete
+                ? [{ label: t("delete"), icon: <Trash2 />, onClick: () => setConfirmDeleteOpen(true), destructive: true }]
+                : []),
+          ]}
+        />
+        {canEdit && <SalesLedgerModal isOpen={editOpen} onClose={() => setEditOpen(false)} entry={entry} />}
+        <Modal
+          isOpen={confirmDeleteOpen}
+          onClose={() => setConfirmDeleteOpen(false)}
+          title={t("delete")}
+          description={t("deleteSalesRecordConfirm")}
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setConfirmDeleteOpen(false)} disabled={isPending}>
+                {t("cancel")}
+              </Button>
+              <Button type="button" variant="destructive" loading={isPending} onClick={handleDelete}>
+                {t("delete")}
+              </Button>
+            </div>
+          }
+        >
+          <div />
+        </Modal>
+      </>
+    )
   }
 
   return (

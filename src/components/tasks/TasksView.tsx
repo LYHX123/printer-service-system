@@ -3,27 +3,19 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { format } from "date-fns"
-import { Plus, CheckCircle2, RotateCcw, Trash2, Pencil, Users, Clock, ChevronRight, ChevronLeft, X } from "lucide-react"
+import { Plus, CheckCircle2, Users, Clock, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
-import { completeTask, reopenTask, deleteTask, deleteTaskStep, removeTaskParticipant, markTaskAsRead } from "@/lib/actions/tasks"
-import {
-  canCreateTask,
-  canAddTaskStep,
-  canCompleteTask,
-  canReopenTask,
-  canManageTaskStep,
-  canManageTaskParticipants,
-} from "@/lib/permissions"
+import { useAppMode } from "@/components/platform/AppModeProvider"
+import { canCreateTask } from "@/lib/permissions"
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal"
-import { AddStepModal } from "@/components/tasks/AddStepModal"
-import { EditStepModal } from "@/components/tasks/EditStepModal"
-import { AddParticipantModal } from "@/components/tasks/AddParticipantModal"
-import { TaskStepImages } from "@/components/tasks/TaskStepImages"
-import type { TaskWithDetails, TaskStepItem } from "@/lib/data/tasks"
+import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel"
+import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge"
+import { AppCard } from "@/components/app-ui/AppCard"
+import { AppListMeta } from "@/components/app-ui/AppListMeta"
+import { OVERDUE_DAYS } from "@/lib/task-constants"
+import type { TaskWithDetails } from "@/lib/data/tasks"
 import type { Role } from "@/types"
 
 interface UserOption {
@@ -37,100 +29,6 @@ interface TasksViewProps {
   users: UserOption[]
   currentUserId: string
   currentUserRole: Role
-}
-
-function TaskStatusBadge({ status }: { status: "ACTIVE" | "COMPLETED" }) {
-  const { t } = useLanguage()
-  return status === "COMPLETED" ? (
-    <Badge className="bg-emerald-100 text-emerald-700">{t("taskStatusCompleted")}</Badge>
-  ) : (
-    <Badge className="bg-blue-100 text-blue-700">{t("taskStatusActive")}</Badge>
-  )
-}
-
-function WorkflowNode({
-  step,
-  isLast,
-  isFirst,
-  canManageImages,
-  canManageNode,
-  onEdit,
-  onDelete,
-  isDeleting,
-}: {
-  step: TaskWithDetails["steps"][number]
-  isLast: boolean
-  isFirst: boolean
-  canManageImages: boolean
-  canManageNode: boolean
-  onEdit: () => void
-  onDelete: () => void
-  isDeleting: boolean
-}) {
-  const { t } = useLanguage()
-  return (
-    <div className="animate-task-step flex gap-3">
-      <div className="flex flex-col items-center">
-        <div
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold",
-            isFirst
-              ? "border-blue-500 bg-blue-500 text-white"
-              : "border-slate-300 bg-white text-slate-500"
-          )}
-        >
-          {step.order}
-        </div>
-        {!isLast && <div className="w-0.5 flex-1 bg-slate-200 my-1 min-h-[2rem]" />}
-      </div>
-
-      <div
-        className={cn(
-          "flex-1 rounded-xl border bg-white shadow-sm mb-4",
-          isFirst ? "border-blue-200" : "border-slate-200"
-        )}
-      >
-        <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-1 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-900 text-sm break-words">{step.title}</h3>
-          {canManageNode && (
-            <div className="flex shrink-0 items-center gap-0.5 -mr-1">
-              <button
-                type="button"
-                onClick={onEdit}
-                disabled={isDeleting}
-                aria-label={t("edit")}
-                title={t("edit")}
-                className="rounded-md p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:pointer-events-none disabled:opacity-50"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={isDeleting}
-                aria-label={t("delete")}
-                title={t("delete")}
-                className="rounded-md p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:pointer-events-none disabled:opacity-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="px-4 py-3 space-y-2">
-          {step.description && (
-            <p className="text-sm text-slate-600 whitespace-pre-wrap">{step.description}</p>
-          )}
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span>{t("taskBy")} {step.createdBy.name}</span>
-            <span>·</span>
-            <span>{format(new Date(step.createdAt), "dd MMM yyyy, HH:mm")}</span>
-          </div>
-          <TaskStepImages stepId={step.id} images={step.images} canManage={canManageImages} />
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function EmptyState() {
@@ -169,24 +67,24 @@ function NoTasksState({ canCreate, onCreate }: { canCreate: boolean; onCreate: (
 export function TasksView({ tasks, users, currentUserId, currentUserRole }: TasksViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const toast = useToast()
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
+  const isAppMode = useAppMode()
+  // Lazy-initialized once (not `Date.now()` inline during render, which
+  // React's purity rules flag) — a stable "as of page load" reference is
+  // exactly what "N days inactive" needs; it doesn't have to tick live.
+  const [now] = useState(() => Date.now())
 
   // A `?taskId=` deep link (from the Dashboard's overdue-task alerts/recent-tasks
   // list) is resolved directly into the initial state below rather than via a
   // post-mount effect, so it applies on the very first render, on any viewport.
+  // App mode never uses this — a task card there navigates straight to its
+  // own /tasks/[id] page instead of selecting inline.
   const linkedTaskId = searchParams.get("taskId")
   const hasValidDeepLink = Boolean(linkedTaskId && tasks.some((task) => task.id === linkedTaskId))
   const [selectedId, setSelectedId] = useState<string | null>(
     hasValidDeepLink ? linkedTaskId : (tasks[0]?.id ?? null)
   )
   const [createOpen, setCreateOpen] = useState(false)
-  const [addStepOpen, setAddStepOpen] = useState(false)
-  const [addParticipantOpen, setAddParticipantOpen] = useState(false)
-  const [editingStep, setEditingStep] = useState<TaskStepItem | null>(null)
-  const [isActing, setIsActing] = useState(false)
-  const [deletingStepId, setDeletingStepId] = useState<string | null>(null)
-  const [removingParticipantId, setRemovingParticipantId] = useState<string | null>(null)
 
   const listRef = useRef<HTMLElement>(null)
   const detailRef = useRef<HTMLElement>(null)
@@ -197,7 +95,8 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
 
   // Below `lg`, list and detail are stacked in normal document flow (no
   // sticky/hide-swap panes), so "selecting" a task scrolls its detail into
-  // view instead of swapping panes.
+  // view instead of swapping panes. (Desktop/tablet only — App mode never
+  // calls this, it navigates to /tasks/[id] instead.)
   function selectTask(taskId: string) {
     setSelectedId(taskId)
     if (isMobileViewport()) {
@@ -231,116 +130,8 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Opening a task (including the initial auto-selected one on desktop) marks
-  // it as viewed for the current user only — every other participant's read
-  // state is untouched. Only refreshes the router when the task actually was
-  // unread, so re-opening an already-read task never triggers a pointless
-  // Sidebar/list re-fetch.
-  useEffect(() => {
-    if (!selectedId) return
-    let cancelled = false
-    markTaskAsRead(selectedId).then((result) => {
-      if (!cancelled && result?.success && result.wasUnread) {
-        router.refresh()
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId])
-
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? null
   const userCanCreate = canCreateTask(currentUserRole)
-
-  async function handleComplete() {
-    if (!selectedTask) return
-    setIsActing(true)
-    const result = await completeTask(selectedTask.id)
-    setIsActing(false)
-    if (result?.error) { toast.error(result.error); return }
-    toast.success(t("taskCompletedSuccess"))
-    router.refresh()
-  }
-
-  async function handleReopen() {
-    if (!selectedTask) return
-    setIsActing(true)
-    const result = await reopenTask(selectedTask.id)
-    setIsActing(false)
-    if (result?.error) { toast.error(result.error); return }
-    toast.success(t("taskReopenedSuccess"))
-    router.refresh()
-  }
-
-  async function handleDelete() {
-    if (!selectedTask) return
-    const confirmMsg = language === "zh"
-      ? `确定要删除任务"${selectedTask.title}"？此操作不可撤销。`
-      : `Delete task "${selectedTask.title}"? This cannot be undone.`
-    if (!window.confirm(confirmMsg)) return
-    setIsActing(true)
-    const result = await deleteTask(selectedTask.id)
-    setIsActing(false)
-    if (result?.error) { toast.error(result.error); return }
-    toast.success(t("taskDeletedSuccess"))
-    setSelectedId(tasks.find((task) => task.id !== selectedTask.id)?.id ?? null)
-    router.refresh()
-  }
-
-  async function handleDeleteStep(step: TaskStepItem) {
-    const confirmMsg = `${t("confirmDeleteProgressNodeQuestion")}\n${t("actionCannotBeUndone")}`
-    if (!window.confirm(confirmMsg)) return
-    setDeletingStepId(step.id)
-    const result = await deleteTaskStep(step.id)
-    setDeletingStepId(null)
-    if (result?.error) {
-      toast.error(result.error === "Forbidden" ? t("noPermissionForAction") : result.error)
-      return
-    }
-    toast.success(t("progressNodeDeleted"))
-    router.refresh()
-  }
-
-  async function handleRemoveParticipant(participantUserId: string) {
-    if (!selectedTask) return
-    if (!window.confirm(t("confirmRemoveParticipantQuestion"))) return
-    setRemovingParticipantId(participantUserId)
-    const result = await removeTaskParticipant(selectedTask.id, participantUserId)
-    setRemovingParticipantId(null)
-    if (result?.error) { toast.error(result.error); return }
-    toast.success(t("participantRemovedSuccess"))
-    router.refresh()
-  }
-
-  const userCanAddStep = selectedTask
-    ? canAddTaskStep(currentUserId, {
-        status: selectedTask.status,
-        createdById: selectedTask.createdById,
-        participants: selectedTask.participants,
-      })
-    : false
-
-  const userCanComplete = selectedTask
-    ? canCompleteTask(currentUserId, {
-        status: selectedTask.status,
-        createdById: selectedTask.createdById,
-        participants: selectedTask.participants,
-      })
-    : false
-
-  const userCanReopen = canReopenTask(currentUserRole)
-  const userCanDelete = userCanCreate
-
-  const userCanManageParticipants = selectedTask
-    ? canManageTaskParticipants(currentUserRole, currentUserId, {
-        status: selectedTask.status,
-        createdById: selectedTask.createdById,
-      })
-    : false
-  const participantCandidateUsers = selectedTask
-    ? users.filter((u) => !selectedTask.participants.some((p) => p.userId === u.id))
-    : []
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-start">
@@ -348,13 +139,23 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
           desktop it gets its own independent scroll region (sticky + max-h),
           mirroring the right panel, so scrolling one never moves the other
           and the currently-selected task stays reachable without dragging
-          the whole page. */}
+          the whole page. In App mode this is the ENTIRE page — no detail
+          pane is rendered alongside it (see below). */}
       <aside
         ref={listRef}
-        className="flex w-full flex-col border-r border-slate-200 bg-white lg:w-2/5 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
+        className={cn(
+          "flex w-full flex-col border-r border-slate-200 bg-white",
+          !isAppMode && "lg:w-2/5 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
+        )}
       >
         <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:sticky lg:top-0 lg:z-10">
-          <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
+          {isAppMode ? (
+            <p className="text-sm text-slate-500">
+              {tasks.length} {t("tasks")}
+            </p>
+          ) : (
+            <h2 className="font-semibold text-slate-800">{t("tasks")}</h2>
+          )}
           {userCanCreate && (
             <Button
               size="sm"
@@ -366,9 +167,61 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
           )}
         </div>
 
-        <div>
+        <div className={isAppMode ? "p-3" : undefined}>
           {tasks.length === 0 ? (
             <NoTasksState canCreate={userCanCreate} onCreate={() => setCreateOpen(true)} />
+          ) : isAppMode ? (
+            <div className="space-y-2">
+              {tasks.map((task) => {
+                const isCompleted = task.status === "COMPLETED"
+                const isOverdue =
+                  !isCompleted &&
+                  now - new Date(task.lastActivityAt).getTime() >= OVERDUE_DAYS * 24 * 60 * 60 * 1000
+                return (
+                  <AppCard
+                    key={task.id}
+                    onClick={() => router.push(`/tasks/${task.id}`)}
+                    className={isCompleted ? "opacity-60" : undefined}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        {task.unread && (
+                          <span
+                            aria-label={t("taskUnreadIndicator")}
+                            className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+                          />
+                        )}
+                        <span
+                          className={cn(
+                            "truncate text-[14px] font-semibold leading-snug",
+                            isCompleted ? "text-slate-400 line-through" : "text-slate-900"
+                          )}
+                        >
+                          {task.title}
+                        </span>
+                      </span>
+                      {isOverdue ? (
+                        <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-700">
+                          {t("taskOverdueNotice")}
+                        </span>
+                      ) : (
+                        <span className="shrink-0">
+                          <TaskStatusBadge status={task.status} />
+                        </span>
+                      )}
+                    </div>
+                    {task.participants.length > 0 && (
+                      <AppListMeta icon={<Users />} className="mt-1">
+                        {task.participants.map((p) => p.user.name).join(", ")}
+                      </AppListMeta>
+                    )}
+                    <AppListMeta icon={<Clock />} className="mt-0.5">
+                      {format(new Date(task.createdAt), "dd MMM yyyy")}
+                    </AppListMeta>
+                  </AppCard>
+                )
+              })}
+            </div>
           ) : (
             <ul className="divide-y divide-slate-100">
               {tasks.map((task) => {
@@ -427,190 +280,31 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
         </div>
       </aside>
 
-      {/* Right Panel: Task Detail. Sticky + internally scrolling on desktop
-          (the one place a nested scrollbar is intentional); stacked, normal
-          flow, no sticky on phones/tablets. */}
-      <main
-        ref={detailRef}
-        className="flex min-w-0 flex-1 flex-col bg-slate-50 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
-      >
-        {!selectedTask ? (
-          <EmptyState />
-        ) : (
-          <>
-            <div className="border-b border-slate-200 bg-white px-6 py-4 lg:sticky lg:top-0 lg:z-10">
-              <button
-                type="button"
-                onClick={backToList}
-                className="mb-3 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 lg:hidden"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                {t("tasks")}
-              </button>
-              <div className="flex items-start justify-between gap-4 max-lg:flex-col max-lg:items-stretch max-lg:gap-3">
-                <div className="min-w-0 max-lg:w-full">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h1 className="text-lg font-bold text-slate-900 break-words whitespace-normal max-lg:w-full max-lg:text-xl max-lg:font-semibold max-lg:leading-snug">
-                      {selectedTask.title}
-                    </h1>
-                    <TaskStatusBadge status={selectedTask.status} />
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    {t("taskCreatedByLabel")} {selectedTask.createdBy.name} · {format(new Date(selectedTask.createdAt), "dd MMM yyyy")}
-                    {selectedTask.completedAt && (
-                      <> · {t("taskStatusCompleted")} {format(new Date(selectedTask.completedAt), "dd MMM yyyy")}</>
-                    )}
-                  </p>
-                  {selectedTask.participants.length > 0 && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                      <Users className="h-3 w-3" />
-                      <span>{selectedTask.participants.map((p) => p.user.name).join(", ")}</span>
-                    </div>
-                  )}
-                </div>
+      {/* Right Panel: Task Detail. Desktop/tablet only — App mode shows only
+          the list above; tapping a task navigates to its own /tasks/[id]
+          page instead. Sticky + internally scrolling on desktop (the one
+          place a nested scrollbar is intentional); stacked, normal flow, no
+          sticky on tablets. */}
+      {!isAppMode && (
+        <main
+          ref={detailRef}
+          className="flex min-w-0 flex-1 flex-col bg-slate-50 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
+        >
+          {!selectedTask ? (
+            <EmptyState />
+          ) : (
+            <TaskDetailPanel
+              task={selectedTask}
+              users={users}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              onBack={backToList}
+              onDeleted={() => setSelectedId(tasks.find((task) => task.id !== selectedTask.id)?.id ?? null)}
+            />
+          )}
+        </main>
+      )}
 
-                <div className="flex items-center gap-2 shrink-0 max-lg:w-full max-lg:flex-wrap">
-                  {selectedTask.status === "ACTIVE" && (
-                    <>
-                      {userCanAddStep && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          icon={<Plus className="h-3.5 w-3.5" />}
-                          onClick={() => setAddStepOpen(true)}
-                        >
-                          {t("taskAddNextStep")}
-                        </Button>
-                      )}
-                      {userCanComplete && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                          loading={isActing}
-                          onClick={handleComplete}
-                        >
-                          {t("taskMarkCompleted")}
-                        </Button>
-                      )}
-                    </>
-                  )}
-                  {selectedTask.status === "COMPLETED" && userCanReopen && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon={<RotateCcw className="h-3.5 w-3.5" />}
-                      loading={isActing}
-                      onClick={handleReopen}
-                    >
-                      {t("taskReopen")}
-                    </Button>
-                  )}
-                  {userCanDelete && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-400 hover:text-red-600 hover:bg-red-50"
-                      icon={<Trash2 className="h-3.5 w-3.5" />}
-                      loading={isActing}
-                      onClick={handleDelete}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="border-b border-slate-200 bg-white px-6 py-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {t("taskParticipantsLabel")}
-                </h3>
-                {userCanManageParticipants && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    icon={<Plus className="h-3.5 w-3.5" />}
-                    onClick={() => setAddParticipantOpen(true)}
-                  >
-                    {t("addParticipant")}
-                  </Button>
-                )}
-              </div>
-              {selectedTask.participants.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">{t("taskNoParticipantsYet")}</p>
-              ) : (
-                <div className="overflow-hidden rounded-lg border border-slate-200 divide-y divide-slate-100">
-                  {selectedTask.participants.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                      <span className="text-slate-700">{p.user.name}</span>
-                      {userCanManageParticipants && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveParticipant(p.userId)}
-                          disabled={removingParticipantId === p.userId}
-                          className="text-xs font-medium text-red-500 hover:text-red-700 disabled:pointer-events-none disabled:opacity-50"
-                        >
-                          {removingParticipantId === p.userId ? (
-                            "…"
-                          ) : (
-                            <span className="inline-flex items-center gap-1">
-                              <X className="h-3 w-3" />
-                              {t("removeParticipant")}
-                            </span>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-6">
-              {selectedTask.steps.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <p className="text-sm text-slate-400">{t("taskNoSteps")}</p>
-                </div>
-              ) : (
-                <div className="max-w-2xl mx-auto">
-                  {selectedTask.steps.map((step, idx) => (
-                    <WorkflowNode
-                      key={step.id}
-                      step={step}
-                      isFirst={idx === 0}
-                      isLast={idx === selectedTask.steps.length - 1}
-                      canManageImages={userCanAddStep || currentUserRole === "ADMIN"}
-                      canManageNode={canManageTaskStep(currentUserRole, currentUserId, step, selectedTask)}
-                      onEdit={() => setEditingStep(step)}
-                      onDelete={() => handleDeleteStep(step)}
-                      isDeleting={deletingStepId === step.id}
-                    />
-                  ))}
-
-                  {selectedTask.status === "ACTIVE" && userCanAddStep && (
-                    <div className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-slate-300 text-slate-400">
-                          <Plus className="h-4 w-4" />
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setAddStepOpen(true)}
-                        className="flex-1 mb-4 rounded-xl border-2 border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-400 hover:border-blue-300 hover:text-blue-500 transition-colors text-left"
-                      >
-                        {t("taskAddNextStepHint")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </main>
-
-      {/* Modals */}
       <CreateTaskModal
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
@@ -618,30 +312,13 @@ export function TasksView({ tasks, users, currentUserId, currentUserRole }: Task
         currentUserId={currentUserId}
         onCreated={(taskId) => {
           setCreateOpen(false)
-          setSelectedId(taskId)
+          if (isAppMode) {
+            router.push(`/tasks/${taskId}`)
+          } else {
+            setSelectedId(taskId)
+          }
         }}
       />
-      <EditStepModal
-        isOpen={!!editingStep}
-        onClose={() => setEditingStep(null)}
-        step={editingStep}
-      />
-      {selectedTask && (
-        <AddStepModal
-          isOpen={addStepOpen}
-          onClose={() => setAddStepOpen(false)}
-          taskId={selectedTask.id}
-          nextStepNumber={selectedTask.steps.length + 1}
-        />
-      )}
-      {selectedTask && (
-        <AddParticipantModal
-          isOpen={addParticipantOpen}
-          onClose={() => setAddParticipantOpen(false)}
-          taskId={selectedTask.id}
-          candidateUsers={participantCandidateUsers}
-        />
-      )}
     </div>
   )
 }

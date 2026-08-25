@@ -1,14 +1,17 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Plus } from "lucide-react"
+import { Plus, Calendar } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getUsers } from "@/lib/data/users"
 import { canAccess, canEditUserPerm, canManageUserPermissions, ALL_PERMISSIONS, PERMISSION_TREE } from "@/lib/permissions"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
 import { Badge, RoleBadge } from "@/components/ui/badge"
 import { UserActions } from "@/components/users/UserActions"
+import { AppCard } from "@/components/app-ui/AppCard"
+import { AppListMeta } from "@/components/app-ui/AppListMeta"
 import { T } from "@/components/ui/T"
 import { format } from "date-fns"
 import type { Role } from "@/types"
@@ -64,6 +67,63 @@ export default async function UsersPage() {
   const viewerCanManagePermissions = canManageUserPermissions(role, modulePermissions)
 
   const users = await getUsers(companyId)
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">
+          {users.length} <T k="users" /> <T k="inYourCompany" />
+        </p>
+
+        <Link href="/users/new">
+          <Button icon={<Plus className="h-4 w-4" />} size="sm" className="w-full">
+            <T k="newUser" />
+          </Button>
+        </Link>
+
+        <div className="space-y-2">
+          {users.map((u) => (
+            <AppCard
+              key={u.id}
+              trailing={
+                <UserActions
+                  variant="menu"
+                  userId={u.id}
+                  role={u.role}
+                  isActive={u.isActive}
+                  isSelf={u.id === currentUserId}
+                  modulePermissions={u.modulePermissions}
+                  isLocked={!!(u.lockedUntil && u.lockedUntil > new Date())}
+                  name={u.name}
+                  phone={u.phone}
+                  department={u.department}
+                  position={u.position}
+                  canEditUsers={viewerCanEditUsers}
+                  canManagePermissions={viewerCanManagePermissions}
+                />
+              }
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-slate-900">
+                  {u.name}
+                  {u.id === currentUserId && <span className="ml-1.5 text-xs font-normal text-slate-400">(<T k="you" />)</span>}
+                </p>
+                <RoleBadge role={u.role} />
+              </div>
+              {(u.department || u.position) && (
+                <p className="truncate text-xs text-slate-500">{[u.department, u.position].filter(Boolean).join(" · ")}</p>
+              )}
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <AppListMeta icon={<Calendar />}>{format(new Date(u.createdAt), "dd MMM yyyy")}</AppListMeta>
+                <StatusBadge isActive={u.isActive} lockedUntil={u.lockedUntil} />
+              </div>
+            </AppCard>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>

@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { useAppMode } from "@/components/platform/AppModeProvider"
+import { AppActionMenu } from "@/components/app-ui/AppActionMenu"
 import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, CUSTOMER_DOCUMENT_TYPES, CUSTOMER_STANDARD_DOCUMENT_TYPES } from "@/lib/constants"
 import type { TranslationKey } from "@/lib/i18n/translations"
 import type { CustomerDocumentListItem } from "@/lib/data/customerDocuments"
@@ -86,6 +88,7 @@ interface StandardDocumentSlotProps {
 function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onChanged }: StandardDocumentSlotProps) {
   const toast = useToast()
   const { t } = useLanguage()
+  const isAppMode = useAppMode()
   const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -109,12 +112,8 @@ function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onC
     }
   }
 
-  async function handleDelete() {
+  async function performDelete() {
     if (!doc) return
-    if (!confirmingDelete) {
-      setConfirmingDelete(true)
-      return
-    }
     setBusy(true)
     try {
       await deleteCustomerDocument(customerId, doc.id)
@@ -126,6 +125,19 @@ function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onC
       setBusy(false)
       setConfirmingDelete(false)
     }
+  }
+
+  // Desktop's inline confirm bar is a two-tap affordance built into the same
+  // button (tap "Delete" to arm it, tap again to confirm) — handleDelete is
+  // that toggle. App-mode instead opens a real confirm Modal from the ⋮ menu
+  // (see the AppActionMenu item below), which calls performDelete directly.
+  function handleDelete() {
+    if (!doc) return
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+    performDelete()
   }
 
   return (
@@ -159,50 +171,92 @@ function StandardDocumentSlot({ customerId, type, doc, canUpload, canDelete, onC
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        {doc && (
-          <a href={doc.url} target="_blank" rel="noopener noreferrer">
-            <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
-              {t("download")}
-            </Button>
-          </a>
-        )}
-        {canUpload && (
-          <FileDropzone
-            onFilesSelected={(files) => handleFileChosen(files[0], doc ? doc.id : null)}
-            allowedTypes={ALLOWED_DOCUMENT_TYPES}
-            maxSize={MAX_DOCUMENT_SIZE}
-            loading={busy && !confirmingDelete}
-            compact
-            label={doc ? t("replace") : t("uploadFile")}
-            className="w-44"
-          />
-        )}
-        {canDelete && doc && (
-          confirmingDelete ? (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-500">{t("confirmDeleteDocument")}</span>
-              <button type="button" className="font-medium text-red-600 underline" onClick={handleDelete}>
+      {isAppMode ? (
+        <div className="flex shrink-0 items-center gap-1.5">
+          {doc && (
+            <a href={doc.url} target="_blank" rel="noopener noreferrer">
+              <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />} />
+            </a>
+          )}
+          {canUpload && (
+            <FileDropzone
+              onFilesSelected={(files) => handleFileChosen(files[0], doc ? doc.id : null)}
+              allowedTypes={ALLOWED_DOCUMENT_TYPES}
+              maxSize={MAX_DOCUMENT_SIZE}
+              loading={busy}
+              compact
+              dense
+              label={doc ? t("replace") : t("uploadFile")}
+              className="max-w-[140px]"
+            />
+          )}
+          {canDelete && doc && (
+            <AppActionMenu
+              ariaLabel={t("actions")}
+              items={[{ label: t("delete"), icon: <Trash2 />, onClick: () => setConfirmingDelete(true), destructive: true }]}
+            />
+          )}
+          <Modal
+            isOpen={confirmingDelete}
+            onClose={() => setConfirmingDelete(false)}
+            title={t("delete")}
+            description={t("confirmDeleteDocument")}
+            footer={
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setConfirmingDelete(false)} disabled={busy}>{t("cancel")}</Button>
+                <Button type="button" loading={busy} onClick={performDelete}>{t("delete")}</Button>
+              </div>
+            }
+          >
+            <div />
+          </Modal>
+        </div>
+      ) : (
+        <div className="flex shrink-0 items-center gap-2">
+          {doc && (
+            <a href={doc.url} target="_blank" rel="noopener noreferrer">
+              <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
+                {t("download")}
+              </Button>
+            </a>
+          )}
+          {canUpload && (
+            <FileDropzone
+              onFilesSelected={(files) => handleFileChosen(files[0], doc ? doc.id : null)}
+              allowedTypes={ALLOWED_DOCUMENT_TYPES}
+              maxSize={MAX_DOCUMENT_SIZE}
+              loading={busy && !confirmingDelete}
+              compact
+              label={doc ? t("replace") : t("uploadFile")}
+              className="w-44"
+            />
+          )}
+          {canDelete && doc && (
+            confirmingDelete ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500">{t("confirmDeleteDocument")}</span>
+                <button type="button" className="font-medium text-red-600 underline" onClick={handleDelete}>
+                  {t("delete")}
+                </button>
+                <button type="button" className="text-slate-500" onClick={() => setConfirmingDelete(false)}>
+                  {t("cancel")}
+                </button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                icon={<Trash2 className="h-3.5 w-3.5" />}
+                loading={busy && confirmingDelete}
+                onClick={handleDelete}
+              >
                 {t("delete")}
-              </button>
-              <button type="button" className="text-slate-500" onClick={() => setConfirmingDelete(false)}>
-                {t("cancel")}
-              </button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              icon={<Trash2 className="h-3.5 w-3.5" />}
-              loading={busy && confirmingDelete}
-              onClick={handleDelete}
-            >
-              {t("delete")}
-            </Button>
-          )
-        )}
-      </div>
+              </Button>
+            )
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -211,6 +265,7 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
+  const isAppMode = useAppMode()
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   // Uploads go to Dropbox under this customer's Short Name — without one there's
@@ -263,11 +318,7 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
     }
   }
 
-  async function handleDelete(id: string) {
-    if (confirmingDeleteId !== id) {
-      setConfirmingDeleteId(id)
-      return
-    }
+  async function performDelete(id: string) {
     setDeletingId(id)
     try {
       await deleteCustomerDocument(customerId, id)
@@ -279,6 +330,14 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
       setDeletingId(null)
       setConfirmingDeleteId(null)
     }
+  }
+
+  function handleDelete(id: string) {
+    if (confirmingDeleteId !== id) {
+      setConfirmingDeleteId(id)
+      return
+    }
+    performDelete(id)
   }
 
   return (
@@ -344,44 +403,84 @@ export function CustomerDocuments({ customerId, documents, projects, canManage, 
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                  <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
-                    {t("download")}
-                  </Button>
-                </a>
-                {canManage && (
-                  confirmingDeleteId === doc.id ? (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-500">{t("confirmDeleteDocument")}</span>
-                      <button
+              {isAppMode ? (
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                    <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />} />
+                  </a>
+                  {canManage && (
+                    <AppActionMenu
+                      ariaLabel={t("actions")}
+                      items={[{ label: t("delete"), icon: <Trash2 />, onClick: () => setConfirmingDeleteId(doc.id), destructive: true }]}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="flex shrink-0 items-center gap-2">
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                    <Button type="button" variant="outline" size="sm" icon={<Download className="h-3.5 w-3.5" />}>
+                      {t("download")}
+                    </Button>
+                  </a>
+                  {canManage && (
+                    confirmingDeleteId === doc.id ? (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500">{t("confirmDeleteDocument")}</span>
+                        <button
+                          type="button"
+                          className="font-medium text-red-600 underline"
+                          onClick={() => handleDelete(doc.id)}
+                        >
+                          {t("delete")}
+                        </button>
+                        <button type="button" className="text-slate-500" onClick={() => setConfirmingDeleteId(null)}>
+                          {t("cancel")}
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
                         type="button"
-                        className="font-medium text-red-600 underline"
+                        variant="outline"
+                        size="sm"
+                        icon={<Trash2 className="h-3.5 w-3.5" />}
+                        loading={deletingId === doc.id}
                         onClick={() => handleDelete(doc.id)}
                       >
                         {t("delete")}
-                      </button>
-                      <button type="button" className="text-slate-500" onClick={() => setConfirmingDeleteId(null)}>
-                        {t("cancel")}
-                      </button>
-                    </div>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      icon={<Trash2 className="h-3.5 w-3.5" />}
-                      loading={deletingId === doc.id}
-                      onClick={() => handleDelete(doc.id)}
-                    >
-                      {t("delete")}
-                    </Button>
-                  )
-                )}
-              </div>
+                      </Button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {/* Shared confirm-delete modal for generic docs in app-mode — the ⋮ menu
+          item above just arms confirmingDeleteId; the actual delete call goes
+          through the same performDelete used by desktop's inline confirm. */}
+      {isAppMode && (
+        <Modal
+          isOpen={genericDocs.some((d) => d.id === confirmingDeleteId)}
+          onClose={() => setConfirmingDeleteId(null)}
+          title={t("delete")}
+          description={t("confirmDeleteDocument")}
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setConfirmingDeleteId(null)} disabled={!!deletingId}>{t("cancel")}</Button>
+              <Button
+                type="button"
+                loading={!!deletingId}
+                onClick={() => confirmingDeleteId && performDelete(confirmingDeleteId)}
+              >
+                {t("delete")}
+              </Button>
+            </div>
+          }
+        >
+          <div />
+        </Modal>
       )}
 
       <Modal

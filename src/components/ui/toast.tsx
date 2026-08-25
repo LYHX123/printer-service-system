@@ -8,6 +8,7 @@ import {
 } from "react"
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAppMode } from "@/components/platform/AppModeProvider"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ const ToastContext = createContext<ToastAPI>({
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const isAppMode = useAppMode()
 
   function add(type: ToastType, message: string) {
     const id = Math.random().toString(36).slice(2)
@@ -65,7 +67,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="fixed right-4 top-4 z-50 flex flex-col gap-2"
+        className={cn(
+          "fixed right-4 z-50 flex flex-col gap-2",
+          // Clears the fixed app-mode top bar + status bar safe area.
+          isAppMode ? "top-[calc(4.25rem+env(safe-area-inset-top))]" : "top-4"
+        )}
       >
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />

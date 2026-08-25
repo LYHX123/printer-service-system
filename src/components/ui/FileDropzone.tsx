@@ -28,6 +28,8 @@ export interface FileDropzoneProps {
   error?: string
   label?: string
   compact?: boolean
+  /** Even tighter than `compact` — drops the "click to browse" subtext and shrinks padding further. Opt-in only; existing `compact` callers are unaffected. */
+  dense?: boolean
   className?: string
 }
 
@@ -52,6 +54,7 @@ export function FileDropzone({
   error,
   label,
   compact,
+  dense,
   className,
 }: FileDropzoneProps) {
   const { t } = useLanguage()
@@ -142,19 +145,19 @@ export function FileDropzone({
         }}
         className={cn(
           "flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed text-center transition-colors cursor-pointer",
-          compact ? "p-4" : "p-6",
+          dense ? "p-2.5" : compact ? "p-4" : "p-6",
           dragOver ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-slate-300",
           displayError && !dragOver && "border-red-300",
           busy && "pointer-events-none opacity-60"
         )}
       >
         {loading ? (
-          <Loader2 className={cn("animate-spin text-slate-400", compact ? "h-5 w-5" : "h-6 w-6")} />
+          <Loader2 className={cn("animate-spin text-slate-400", dense ? "h-4 w-4" : compact ? "h-5 w-5" : "h-6 w-6")} />
         ) : (
-          <UploadCloud className={cn("text-slate-400", compact ? "h-5 w-5" : "h-6 w-6")} />
+          <UploadCloud className={cn("text-slate-400", dense ? "h-4 w-4" : compact ? "h-5 w-5" : "h-6 w-6")} />
         )}
         <p className="text-xs font-medium text-slate-600">{label ?? t("dragDropFiles")}</p>
-        <p className="text-xs text-slate-400">{t("clickToBrowse")}</p>
+        {!dense && <p className="text-xs text-slate-400">{t("clickToBrowse")}</p>}
         {helperText && (
           <p id={`${inputId}-helper`} className="text-xs text-slate-400">
             {helperText}

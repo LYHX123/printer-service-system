@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next"
 import { Geist } from "next/font/google"
 import { LanguageProvider } from "@/lib/i18n/LanguageContext"
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister"
+import { AppModeProvider } from "@/components/platform/AppModeProvider"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -38,15 +40,34 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const isAppMode = await isCapacitorAppRequest()
+
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} h-full antialiased`}
+      data-app-mode={isAppMode ? "true" : undefined}
+      // Capacitor 8's built-in SystemBars plugin (bundled in @capacitor/core,
+      // default `insetsHandling: "css"`) injects --safe-area-inset-* custom
+      // properties onto this exact element natively, as a documented
+      // workaround for a real Chromium WebView bug where env(safe-area-inset-*)
+      // misreports on WebView < 140 (https://issues.chromium.org/issues/40699457).
+      // That injection happens outside React/SSR entirely — the server can
+      // never know a specific device's real inset pixel values — so this is
+      // the canonical "third-party script modifies the DOM before React"
+      // case suppressHydrationWarning exists for. Scoped to this one node
+      // only; every other attribute here still hydrates strictly.
+      suppressHydrationWarning
+    >
       <body className="min-h-full flex flex-col">
-        <LanguageProvider>{children}</LanguageProvider>
+        <AppModeProvider isAppMode={isAppMode}>
+          <LanguageProvider>{children}</LanguageProvider>
+        </AppModeProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

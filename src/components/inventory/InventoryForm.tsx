@@ -16,6 +16,7 @@ import { FileDropzone } from "@/components/ui/FileDropzone"
 import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { useAppMode } from "@/components/platform/AppModeProvider"
 import { T } from "@/components/ui/T"
 import { STOCK_TYPE_TRANSLATION_KEYS } from "@/lib/stock-types"
 import type { StockType } from "@/lib/stock-types"
@@ -48,6 +49,7 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
+  const isAppMode = useAppMode()
   const isEdit = Boolean(partId)
   const [image, setImage] = useState(imageUrl ?? null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -149,7 +151,11 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
       <input type="hidden" {...register("category")} />
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-slate-900"><T k={STOCK_TYPE_TRANSLATION_KEYS[stockType]} /></h2>
+        {/* Redundant in App mode: AppTopBar/back-link already show the stock
+            type (Equipment/Consumption/Parts/Common Product) on this page. */}
+        {!isAppMode && (
+          <h2 className="text-sm font-semibold text-slate-900"><T k={STOCK_TYPE_TRANSLATION_KEYS[stockType]} /></h2>
+        )}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("brand")} htmlFor="brand" required error={errors.brand?.message}>
@@ -238,11 +244,11 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
         </p>
       )}
 
-      <div className="flex justify-end gap-3 mt-4">
-        <Button type="button" variant="outline" onClick={() => history.back()}>
+      <div className={isAppMode ? "mt-4 flex flex-col-reverse gap-2" : "flex justify-end gap-3 mt-4"}>
+        <Button type="button" variant="outline" onClick={() => history.back()} className={isAppMode ? "w-full" : undefined}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={isSubmitting}>
+        <Button type="submit" loading={isSubmitting} className={isAppMode ? "w-full" : undefined}>
           {isEdit ? t("save") : t("create")}
         </Button>
       </div>

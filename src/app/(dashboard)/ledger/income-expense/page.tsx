@@ -1,10 +1,11 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ChevronLeft, TrendingUp, TrendingDown, Scale, Download } from "lucide-react"
+import { ChevronLeft, TrendingUp, TrendingDown, Scale, Download, Wallet, Calendar } from "lucide-react"
 import { format } from "date-fns"
 import { auth } from "@/lib/auth"
 import { hasAnyPermission, canAllocateReceipt } from "@/lib/permissions"
 import { getLedgerEntries, getLedgerCategories, getLedgerMonthStats } from "@/lib/data/ledger"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { MetricCard } from "@/components/ui/metric-card"
 import { Table } from "@/components/ui/table"
@@ -15,6 +16,11 @@ import { LedgerEntryTypeBadge, PaymentMethodLabel } from "@/components/ui/badge"
 import { T } from "@/components/ui/T"
 import { LedgerAddButtons } from "@/components/ledger/LedgerAddButtons"
 import { LedgerEntryActions } from "@/components/ledger/LedgerEntryActions"
+import { AppStatCard } from "@/components/app-ui/AppStatCard"
+import { AppCard } from "@/components/app-ui/AppCard"
+import { AppEmptyState } from "@/components/app-ui/AppEmptyState"
+import { AppListMeta } from "@/components/app-ui/AppListMeta"
+import { AppMoneyValue } from "@/components/app-ui/AppMoneyValue"
 import { formatCurrency } from "@/lib/utils"
 import type { LedgerEntryType, Role } from "@/types"
 
@@ -56,6 +62,76 @@ export default async function IncomeExpenseBookPage({
 
   const paymentMethodColumnLabel =
     validType === "INCOME" ? <T k="receivingMethod" /> : validType === "EXPENSE" ? <T k="paymentMethod" /> : <T k="paymentOrReceivingMethod" />
+
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-4">
+        <Link href="/ledger" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 active:text-slate-800">
+          <ChevronLeft className="h-4 w-4" />
+          <T k="ledger" />
+        </Link>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <AppStatCard label={<T k="totalIncome" />} value={formatCurrency(monthStats.income)} valueClassName="text-sm" icon={<TrendingUp className="h-4 w-4 text-green-600" />} iconBg="bg-green-50" />
+          <AppStatCard label={<T k="totalExpense" />} value={formatCurrency(monthStats.expense)} valueClassName="text-sm" icon={<TrendingDown className="h-4 w-4 text-red-600" />} iconBg="bg-red-50" />
+        </div>
+        <AppStatCard label={<T k="balance" />} value={formatCurrency(monthStats.income - monthStats.expense)} valueClassName="text-sm" icon={<Scale className="h-4 w-4 text-blue-600" />} />
+
+        <LedgerAddButtons categories={categories} canAllocate={canAllocate} />
+
+        <form method="GET" className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Input name="from" type="date" defaultValue={from ?? ""} className="h-11" />
+            <Input name="to" type="date" defaultValue={to ?? ""} className="h-11" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Select name="type" defaultValue={validType ?? ""} className="h-11">
+              <option value=""><T k="allTypes" /></option>
+              <option value="INCOME"><T k="income" /></option>
+              <option value="EXPENSE"><T k="expense" /></option>
+            </Select>
+            <Select name="categoryId" defaultValue={categoryId ?? ""} className="h-11">
+              <option value=""><T k="allCategories" /></option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary" size="sm" className="flex-1"><T k="filter" /></Button>
+            {hasFilters && (
+              <Link href="/ledger/income-expense" className="flex-1">
+                <Button variant="ghost" size="sm" className="w-full"><T k="clear" /></Button>
+              </Link>
+            )}
+          </div>
+        </form>
+
+        {entries.length === 0 ? (
+          <AppEmptyState icon={<Wallet className="h-8 w-8" />} title={<T k="noLedgerEntriesFound" />} description={<T k="noLedgerEntriesDesc" />} />
+        ) : (
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <AppCard
+                key={entry.id}
+                trailing={<LedgerEntryActions entry={entry} categories={categories} canAllocate={canAllocate} variant="menu" />}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <AppListMeta icon={<Calendar />}>{format(new Date(entry.date), "dd MMM yyyy")}</AppListMeta>
+                  <LedgerEntryTypeBadge type={entry.type} />
+                </div>
+                <p className="mt-1 truncate text-[14px] font-semibold text-slate-900">{entry.category.name}</p>
+                {entry.remark && <p className="truncate text-xs text-slate-500">{entry.remark}</p>}
+                <AppMoneyValue amount={entry.amount} sign={entry.type === "INCOME" ? "+" : "-"} className="mt-0.5 text-sm" />
+              </AppCard>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>

@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { deleteShopAccountEntry } from "@/lib/actions/shopAccount"
 import { ShopAccountEntryModal } from "./ShopAccountEntryModal"
+import { AppActionMenu } from "@/components/app-ui/AppActionMenu"
 import type { ShopAccountCategory } from "@/types"
 import type { ShopAccountEntryWithRelations } from "@/lib/data/shopAccount"
 
@@ -17,9 +18,11 @@ interface ShopAccountEntryActionsProps {
   categories: ShopAccountCategory[]
   canEdit: boolean
   canDelete: boolean
+  /** "menu" renders a compact ⋮ overflow menu instead of the button row — same edit/delete modals either way. */
+  variant?: "buttons" | "menu"
 }
 
-export function ShopAccountEntryActions({ entry, categories, canEdit, canDelete }: ShopAccountEntryActionsProps) {
+export function ShopAccountEntryActions({ entry, categories, canEdit, canDelete, variant = "buttons" }: ShopAccountEntryActionsProps) {
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
@@ -41,6 +44,47 @@ export function ShopAccountEntryActions({ entry, categories, canEdit, canDelete 
   }
 
   if (!canEdit && !canDelete) return null
+
+  if (variant === "menu") {
+    return (
+      <>
+        <AppActionMenu
+          ariaLabel={t("actions")}
+          items={[
+            ...(canEdit ? [{ label: t("edit"), icon: <Pencil />, onClick: () => setEditOpen(true) }] : []),
+            ...(canDelete ? [{ label: t("delete"), icon: <Trash2 />, onClick: () => setConfirmOpen(true), destructive: true }] : []),
+          ]}
+        />
+        {canEdit && (
+          <ShopAccountEntryModal
+            isOpen={editOpen}
+            onClose={() => setEditOpen(false)}
+            categories={categories}
+            defaultType={entry.type}
+            entry={entry}
+          />
+        )}
+        <Modal
+          isOpen={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          title={t("delete")}
+          description={t("deleteEntryConfirm")}
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={isPending}>
+                {t("cancel")}
+              </Button>
+              <Button type="button" variant="destructive" loading={isPending} onClick={handleDelete}>
+                {t("delete")}
+              </Button>
+            </div>
+          }
+        >
+          <div />
+        </Modal>
+      </>
+    )
+  }
 
   return (
     <>

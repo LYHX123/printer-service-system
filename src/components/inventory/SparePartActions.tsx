@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { setSparePartActive } from "@/lib/actions/inventory"
 import { AddMovementModal } from "./AddMovementModal"
+import { AppActionMenu } from "@/components/app-ui/AppActionMenu"
 
 interface SparePartActionsProps {
   partId: string
@@ -16,6 +17,13 @@ interface SparePartActionsProps {
   currentQuantity: number
   isActive: boolean
   canEdit: boolean
+  /**
+   * "menu" renders a compact ⋮ overflow menu (Add Movement / Archive only —
+   * Edit is omitted since the App-mode mobile card's own tap target already
+   * goes to the edit page) instead of the row of icon buttons. Same actions,
+   * same permission gate, same server action — presentation only.
+   */
+  variant?: "buttons" | "menu"
 }
 
 export function SparePartActions({
@@ -25,6 +33,7 @@ export function SparePartActions({
   currentQuantity,
   isActive,
   canEdit,
+  variant = "buttons",
 }: SparePartActionsProps) {
   const router = useRouter()
   const toast = useToast()
@@ -43,6 +52,33 @@ export function SparePartActions({
       toast.success(isActive ? "Part archived" : "Part reactivated")
       router.refresh()
     })
+  }
+
+  if (variant === "menu") {
+    return (
+      <>
+        <AppActionMenu
+          ariaLabel="Item actions"
+          items={[
+            { label: "Add Movement", icon: <ArrowLeftRight />, onClick: () => setMovementOpen(true) },
+            {
+              label: isActive ? "Archive" : "Reactivate",
+              icon: isActive ? <Archive /> : <ArchiveRestore />,
+              onClick: toggleActive,
+              disabled: isPending,
+            },
+          ]}
+        />
+        <AddMovementModal
+          partId={partId}
+          partName={partName}
+          unit={unit}
+          currentQuantity={currentQuantity}
+          isOpen={movementOpen}
+          onClose={() => setMovementOpen(false)}
+        />
+      </>
+    )
   }
 
   return (

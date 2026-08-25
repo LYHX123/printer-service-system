@@ -9,15 +9,18 @@ import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { deleteLedgerEntry } from "@/lib/actions/ledger"
 import { LedgerEntryModal } from "./LedgerEntryModal"
+import { AppActionMenu } from "@/components/app-ui/AppActionMenu"
 import type { LedgerCategory, LedgerEntryWithRelations } from "@/types"
 
 interface LedgerEntryActionsProps {
   entry: LedgerEntryWithRelations
   categories: LedgerCategory[]
   canAllocate: boolean
+  /** "menu" renders a compact ⋮ overflow menu instead of the button row — same edit/delete modals either way. */
+  variant?: "buttons" | "menu"
 }
 
-export function LedgerEntryActions({ entry, categories, canAllocate }: LedgerEntryActionsProps) {
+export function LedgerEntryActions({ entry, categories, canAllocate, variant = "buttons" }: LedgerEntryActionsProps) {
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
@@ -36,6 +39,46 @@ export function LedgerEntryActions({ entry, categories, canAllocate }: LedgerEnt
       setConfirmOpen(false)
       router.refresh()
     })
+  }
+
+  if (variant === "menu") {
+    return (
+      <>
+        <AppActionMenu
+          ariaLabel={t("actions")}
+          items={[
+            { label: t("edit"), icon: <Pencil />, onClick: () => setEditOpen(true) },
+            { label: t("delete"), icon: <Trash2 />, onClick: () => setConfirmOpen(true), destructive: true },
+          ]}
+        />
+        <LedgerEntryModal
+          isOpen={editOpen}
+          onClose={() => setEditOpen(false)}
+          categories={categories}
+          defaultType={entry.type}
+          entry={entry}
+          canAllocate={canAllocate}
+        />
+        <Modal
+          isOpen={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          title={t("delete")}
+          description={t("deleteEntryConfirm")}
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={isPending}>
+                {t("cancel")}
+              </Button>
+              <Button type="button" variant="destructive" loading={isPending} onClick={handleDelete}>
+                {t("delete")}
+              </Button>
+            </div>
+          }
+        >
+          <div />
+        </Modal>
+      </>
+    )
   }
 
   return (

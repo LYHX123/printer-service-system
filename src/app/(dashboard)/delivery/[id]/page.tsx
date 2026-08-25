@@ -12,11 +12,15 @@ import {
   canViewQuotations,
   canViewInvoice,
 } from "@/lib/permissions"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { DeliveryInvoiceStatusBadge, InvoiceStatusBadge } from "@/components/ui/badge"
 import { DeliveryActions } from "@/components/delivery/DeliveryActions"
 import { T } from "@/components/ui/T"
+import { AppDetailSection } from "@/components/app-ui/AppDetailSection"
+import { AppDetailRow } from "@/components/app-ui/AppDetailRow"
+import { AppMoneyValue } from "@/components/app-ui/AppMoneyValue"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import type { Role } from "@/types"
@@ -41,6 +45,121 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
 
   const canViewQuotationModule = canViewQuotations(role, permissions)
   const canViewInvoiceModule = canViewInvoice(role, permissions)
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-4">
+        <Link href="/delivery" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 active:text-slate-800">
+          <ChevronLeft className="h-4 w-4" />
+          <T k="delivery" />
+        </Link>
+
+        <AppDetailSection>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-sm font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+              {delivery.deliveryNumber}
+            </span>
+            <DeliveryInvoiceStatusBadge invoiced={Boolean(delivery.invoice)} />
+          </div>
+          <div className="mt-3 space-y-0.5">
+            <AppDetailRow label={<T k="customer" />} value={delivery.customer.companyName} />
+            {delivery.customer.name && <AppDetailRow label={<T k="mainContactName" />} value={delivery.customer.name} />}
+            {delivery.customerBranch && <AppDetailRow label={<T k="projectLabel" />} value={delivery.customerBranch.name} />}
+            <AppDetailRow label={<T k="date" />} value={format(new Date(delivery.deliveryDate), "dd MMM yyyy")} />
+            <AppDetailRow label={<T k="createdBy" />} value={delivery.createdBy.name} />
+            {delivery.reference && <AppDetailRow label={<T k="reference" />} value={delivery.reference} />}
+            {canViewQuotationModule && (
+              <AppDetailRow
+                label={<T k="sourceQuotationLabel" />}
+                value={
+                  delivery.quotation ? (
+                    <Link href={`/quotations/${delivery.quotation.id}`} className="font-mono text-xs font-semibold text-blue-600">
+                      {delivery.quotation.quotationNumber}
+                    </Link>
+                  ) : (
+                    <span className="text-xs italic text-slate-400"><T k="manualDeliveryNoQuotation" /></span>
+                  )
+                }
+              />
+            )}
+          </div>
+        </AppDetailSection>
+
+        <AppDetailSection title={<T k="deliveryItemsHeading" />}>
+          <div className="divide-y divide-slate-100">
+            {delivery.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <span className="min-w-0 truncate text-sm text-slate-800">{item.description}</span>
+                <span className="shrink-0 text-xs text-slate-500">
+                  {item.quantity} {item.unitSnapshot ?? item.part?.unit ?? ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </AppDetailSection>
+
+        {canViewInvoiceModule && (
+          <AppDetailSection title={<T k="linkedInvoiceHeading" />}>
+            {delivery.invoice ? (
+              <>
+                <AppDetailRow
+                  label={<T k="invoiceNoLabel" />}
+                  value={
+                    <Link href={`/quotations/invoices/${delivery.invoice.id}`} className="font-mono text-xs font-semibold text-blue-600">
+                      {delivery.invoice.invoiceNumber}
+                    </Link>
+                  }
+                />
+                <AppDetailRow label={<T k="total" />} value={<AppMoneyValue amount={Number(delivery.invoice.totalAmount)} />} />
+                <AppDetailRow label={<T k="status" />} value={<InvoiceStatusBadge status={delivery.invoice.status} />} />
+              </>
+            ) : (
+              <p className="text-sm italic text-slate-400"><T k="notYetInvoiced" /></p>
+            )}
+          </AppDetailSection>
+        )}
+
+        <AppDetailSection title={<T k="dropboxFiles" />}>
+          {!pdfDoc && !xlsxDoc ? (
+            <p className="text-sm italic text-slate-400">
+              <T k={delivery.customer.shortName?.trim() ? "notYetSyncedToDropbox" : "customerShortNameRequiredForDeliverySync"} />
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {[pdfDoc, xlsxDoc].filter((d): d is NonNullable<typeof d> => Boolean(d)).map((doc) => (
+                <div key={doc.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                  <p className="text-[11px] font-medium text-slate-500">{doc.fileType}</p>
+                  <p className="truncate text-xs font-medium text-slate-900">{doc.dropboxFileName ?? "—"}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </AppDetailSection>
+
+        <AppDetailSection title={<T k="documents" />}>
+          <div className="flex gap-2">
+            <a href={pdfDownloadUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+              <Button size="sm" icon={<Download className="h-3.5 w-3.5" />} className="w-full"><T k="downloadPdf" /></Button>
+            </a>
+            <a href={excelDownloadUrl} className="flex-1">
+              <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />} className="w-full"><T k="downloadExcel" /></Button>
+            </a>
+          </div>
+        </AppDetailSection>
+
+        <DeliveryActions
+          deliveryId={delivery.id}
+          invoice={delivery.invoice ? { id: delivery.invoice.id, invoiceNumber: delivery.invoice.invoiceNumber } : null}
+          canEdit={canEditDelivery(role, permissions)}
+          canDelete={canDeleteDelivery(role, permissions)}
+          canConvertToInvoice={canConvertDeliveryToInvoice(role, permissions)}
+          needsDropboxSync={needsDropboxSync}
+          canSyncDropbox={canSyncDelivery(role, permissions)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div>

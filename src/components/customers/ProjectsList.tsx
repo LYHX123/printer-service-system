@@ -55,17 +55,17 @@ export function ProjectsList({ customerId, projects, canManage }: ProjectsListPr
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900">{t("projectsAndContacts")}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="min-w-0 truncate text-sm font-semibold text-slate-900">{t("projectsAndContacts")}</h2>
         {canManage && (
-          <Button type="button" variant="outline" size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>
+          <Button type="button" variant="outline" size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd} className="shrink-0">
             {t("addProject")}
           </Button>
         )}
       </div>
 
       {projects.length === 0 ? (
-        <p className="text-sm text-slate-400 italic">{t("noProjectsYet")}</p>
+        <p className="text-sm text-slate-400 italic break-words">{t("noProjectsYet")}</p>
       ) : (
         <div className="space-y-3">
           {projects.map((p) => (

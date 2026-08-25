@@ -6,12 +6,16 @@ import { auth } from "@/lib/auth"
 import { canAccess, canViewStock, canCreateStock, canEditStock, canAdjustStock, canDeleteStock } from "@/lib/permissions"
 import { getSpareParts, getStockTypeCounts, getEffectiveStockLevel } from "@/lib/data/inventory"
 import { stockTypeToBucket } from "@/lib/stock-types"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { T, TInput } from "@/components/ui/T"
 import { Table } from "@/components/ui/table"
 import { StockLevelBadge } from "@/components/ui/badge"
 import { SparePartActions } from "@/components/inventory/SparePartActions"
+import { AppCard } from "@/components/app-ui/AppCard"
+import { AppEmptyState } from "@/components/app-ui/AppEmptyState"
+import { AppSearchField } from "@/components/app-ui/AppSearchField"
 import {
   STOCK_TYPES,
   CATEGORIES_FOR_STOCK_TYPE,
@@ -51,6 +55,44 @@ export default async function StockPage({
     const viewableTypes = STOCK_TYPES.filter((st) => canViewStock(role, permissions, stockTypeToBucket(st)))
     if (viewableTypes.length === 0) redirect("/dashboard")
     const counts = await getStockTypeCounts(companyId)
+    const isAppMode = await isCapacitorAppRequest()
+
+    if (isAppMode) {
+      return (
+        <div className="space-y-4">
+          <Link
+            href="/stock/movements"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 active:text-slate-800"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            Movement History
+          </Link>
+          <div className="space-y-2">
+            {viewableTypes.map((st) => {
+              const Icon = STOCK_TYPE_ICONS[st]
+              return (
+                <AppCard key={st} href={`/stock?type=${st}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50">
+                      <Icon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-semibold text-slate-900">
+                        <T k={STOCK_TYPE_TRANSLATION_KEYS[st]} />
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {counts[st]} <T k={stockCountTranslationKey(st, counts[st])} />
+                      </p>
+                    </div>
+                  </div>
+                </AppCard>
+              )
+            })}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div>
         <PageHeader
@@ -104,6 +146,100 @@ export default async function StockPage({
     search: search || undefined,
     categories: CATEGORIES_FOR_STOCK_TYPE[stockType],
   })
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-4">
+        <Link href="/stock" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 active:text-slate-800">
+          <ChevronLeft className="h-4 w-4" />
+          <T k="inventory" />
+        </Link>
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-500">
+            {parts.length} <T k={stockCountTranslationKey(stockType, parts.length)} />
+          </p>
+        </div>
+
+        {canAddNew && (
+          <Link href={`/stock/new?type=${stockType}`}>
+            <Button icon={<Plus className="h-4 w-4" />} size="sm" className="w-full">
+              <T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} />
+            </Button>
+          </Link>
+        )}
+
+        <form method="GET" className="flex gap-2">
+          <input type="hidden" name="type" value={stockType} />
+          <div className="flex-1">
+            <AppSearchField name="search" placeholderKey="searchPartsPlaceholder" defaultValue={search} />
+          </div>
+          <button
+            type="submit"
+            aria-label="Search"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors active:bg-slate-50"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        </form>
+
+        {parts.length === 0 ? (
+          <AppEmptyState
+            icon={<Package className="h-8 w-8" />}
+            title={<T k={EMPTY_STATE_TRANSLATION_KEYS[stockType].title} />}
+            description={search ? <T k="tryAdjustingFilters" /> : <T k={EMPTY_STATE_TRANSLATION_KEYS[stockType].description} />}
+          />
+        ) : (
+          <div className="space-y-2">
+            {parts.map((part) => (
+              <AppCard
+                key={part.id}
+                href={`/stock/${part.id}/edit`}
+                trailing={
+                  canEdit ? (
+                    <SparePartActions
+                      variant="menu"
+                      partId={part.id}
+                      partName={part.name}
+                      unit={part.unit}
+                      currentQuantity={part.stock?.quantity ?? 0}
+                      isActive={part.isActive}
+                      canEdit={canEdit}
+                    />
+                  ) : undefined
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                    {part.imageUrl ? (
+                      <Image src={part.imageUrl} alt={part.name} width={40} height={40} className="h-full w-full object-cover" unoptimized />
+                    ) : (
+                      <ImageOff className="h-4 w-4 text-slate-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-slate-900">
+                      {part.brand ? `${part.brand} ` : ""}
+                      {part.name}
+                    </p>
+                    {part.model && <p className="truncate text-xs text-slate-500">Model: {part.model}</p>}
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <span className="text-xs text-slate-500">
+                        Stock: <span className="font-mono font-semibold text-slate-700">{part.stock?.quantity ?? 0}</span>
+                        {part.unit ? ` ${part.unit}` : ""}
+                      </span>
+                      <StockLevelBadge level={getEffectiveStockLevel(part.category, part.stock?.quantity ?? 0)} />
+                    </div>
+                  </div>
+                </div>
+              </AppCard>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>

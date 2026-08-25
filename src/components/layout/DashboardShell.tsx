@@ -4,7 +4,10 @@ import { useState, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
+import { AppTopBar } from "./mobile/AppTopBar"
+import { MobileBottomNav } from "./mobile/MobileBottomNav"
 import { ToastProvider } from "@/components/ui/toast"
+import { useAppMode } from "@/components/platform/AppModeProvider"
 import { cn } from "@/lib/utils"
 import type { Role } from "@/types"
 
@@ -12,6 +15,10 @@ import type { Role } from "@/types"
 // tight two-column layouts) and don't need the large pb-96 most other pages
 // rely on for scroll clearance above the fixed low-stock/toast notifications.
 const COMPACT_BOTTOM_PADDING_ROUTES = ["/tasks"]
+
+// Extra bottom clearance so page content never sits under the fixed app-mode
+// bottom nav bar (its own height plus the device's safe-area-bottom).
+const APP_MODE_NAV_CLEARANCE = "pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
 
 interface ShellUser {
   id: string
@@ -32,7 +39,33 @@ interface DashboardShellProps {
 export function DashboardShell({ children, user, taskCount = null, taskUnread = false }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const isAppMode = useAppMode()
   const useCompactBottomPadding = COMPACT_BOTTOM_PADDING_ROUTES.some((route) => pathname === route)
+
+  if (isAppMode) {
+    return (
+      <ToastProvider>
+        <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
+          <AppTopBar />
+          <main
+            className={cn(
+              "flex-1 overflow-x-hidden overflow-y-auto p-4",
+              useCompactBottomPadding ? "pb-6" : "pb-24",
+              APP_MODE_NAV_CLEARANCE
+            )}
+          >
+            {children}
+          </main>
+          <MobileBottomNav
+            role={user.role}
+            modulePermissions={user.modulePermissions}
+            taskCount={taskCount}
+            taskUnread={taskUnread}
+          />
+        </div>
+      </ToastProvider>
+    )
+  }
 
   return (
     <ToastProvider>

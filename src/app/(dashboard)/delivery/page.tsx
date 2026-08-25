@@ -1,15 +1,20 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Plus, Truck } from "lucide-react"
+import { Plus, Truck, Calendar } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { getDeliveries } from "@/lib/data/deliveries"
 import { canAccess, canCreateDelivery, canEditDelivery, canDeleteDelivery } from "@/lib/permissions"
+import { isCapacitorAppRequest } from "@/lib/platform/app-mode"
 import { PageHeader } from "@/components/ui/page-header"
 import { Table } from "@/components/ui/table"
 import { DeliveryInvoiceStatusBadge } from "@/components/ui/badge"
 import { DeliveryListActions } from "@/components/delivery/DeliveryListActions"
 import { T, TInput } from "@/components/ui/T"
 import { Button } from "@/components/ui/button"
+import { AppCard } from "@/components/app-ui/AppCard"
+import { AppEmptyState } from "@/components/app-ui/AppEmptyState"
+import { AppSearchField } from "@/components/app-ui/AppSearchField"
+import { AppListMeta } from "@/components/app-ui/AppListMeta"
 import { format } from "date-fns"
 import type { Role } from "@/types"
 
@@ -26,6 +31,71 @@ export default async function DeliveryPage({
   const companyId = session!.user.companyId as string
 
   const deliveries = await getDeliveries(companyId, { search: search || undefined })
+  const isAppMode = await isCapacitorAppRequest()
+
+  if (isAppMode) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">
+          {deliveries.length} <T k="delivery" />
+        </p>
+
+        {canCreateDelivery(role, permissions) && (
+          <Link href="/delivery/new">
+            <Button icon={<Plus className="h-4 w-4" />} size="sm" className="w-full">
+              <T k="createDelivery" />
+            </Button>
+          </Link>
+        )}
+
+        <form method="get" className="flex gap-2">
+          <div className="flex-1">
+            <AppSearchField name="search" placeholderKey="searchDeliveriesPlaceholder" defaultValue={search} />
+          </div>
+          <button
+            type="submit"
+            aria-label="Search"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors active:bg-slate-50"
+          >
+            <Truck className="h-4 w-4" />
+          </button>
+        </form>
+
+        {deliveries.length === 0 ? (
+          <AppEmptyState
+            icon={<Truck className="h-8 w-8" />}
+            title={<T k="noDeliveriesFound" />}
+            description={<T k="createDeliveryManuallyDesc" />}
+          />
+        ) : (
+          <div className="space-y-2">
+            {deliveries.map((d) => (
+              <AppCard key={d.id} href={`/delivery/${d.id}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                    {d.deliveryNumber}
+                  </span>
+                  <DeliveryInvoiceStatusBadge invoiced={Boolean(d.invoice)} />
+                </div>
+                <p className="mt-1 truncate text-[14px] font-semibold text-slate-900">{d.customer.companyName}</p>
+                {d.customerBranch && <p className="truncate text-xs text-slate-500">{d.customerBranch.name}</p>}
+                <div className="mt-0.5 flex items-center justify-between gap-2">
+                  <AppListMeta icon={<Calendar />}>{format(new Date(d.deliveryDate), "dd MMM yyyy")}</AppListMeta>
+                  {d.quotation ? (
+                    <span className="shrink-0 text-xs font-mono text-blue-600">{d.quotation.quotationNumber}</span>
+                  ) : (
+                    <span className="shrink-0 text-xs italic text-slate-400">
+                      <T k="manual" />
+                    </span>
+                  )}
+                </div>
+              </AppCard>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>

@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button"
 import { FileDropzone } from "@/components/ui/FileDropzone"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { useAppMode } from "@/components/platform/AppModeProvider"
+import { cn } from "@/lib/utils"
 
 const CURRENCIES = ["KES", "USD", "EUR", "GBP", "TZS", "UGX"]
 
@@ -36,6 +38,7 @@ interface CompanySettingsFormProps {
 export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsFormProps) {
   const toast = useToast()
   const { t } = useLanguage()
+  const isAppMode = useAppMode()
   const [logo, setLogo] = useState(logoUrl)
   const [uploading, setUploading] = useState(false)
 
@@ -77,14 +80,19 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
+      <div className={cn("rounded-xl border border-slate-200 bg-white p-6", isAppMode ? "space-y-3.5" : "space-y-5")}>
         {/* Logo */}
         <div className="flex items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+          <div
+            className={cn(
+              "flex items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50",
+              isAppMode ? "h-14 w-14" : "h-20 w-20"
+            )}
+          >
             {logo ? (
               <Image src={logo} alt="Company logo" width={80} height={80} className="h-full w-full object-contain" unoptimized />
             ) : (
-              <Building2 className="h-8 w-8 text-slate-300" />
+              <Building2 className={cn("text-slate-300", isAppMode ? "h-6 w-6" : "h-8 w-8")} />
             )}
           </div>
           <div className="max-w-xs flex-1">
@@ -92,13 +100,14 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
               onFilesSelected={(files) => handleLogoUpload(files[0])}
               loading={uploading}
               compact
+              dense={isAppMode}
               label={t("uploadLogo")}
-              helperText={t("logoFormatHint")}
+              helperText={isAppMode ? undefined : t("logoFormatHint")}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("companyName")} htmlFor="name" required error={errors.name?.message}>
             <Input id="name" placeholder="e.g. TechFix Services" {...register("name")} error={errors.name?.message} />
           </FormField>
@@ -107,7 +116,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
           </FormField>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("email")} htmlFor="email" error={errors.email?.message}>
             <Input id="email" type="email" placeholder="e.g. info@company.com" {...register("email")} />
           </FormField>
@@ -120,7 +129,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
           <Textarea id="address" placeholder={t("fullCompanyAddress")} rows={3} {...register("address")} />
         </FormField>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("kraPin")} htmlFor="kraPin" error={errors.kraPin?.message}>
             <Input id="kraPin" placeholder="e.g. P000000000A" {...register("kraPin")} />
           </FormField>
@@ -129,7 +138,7 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
           </FormField>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("currency")} htmlFor="currency" required error={errors.currency?.message}>
             <Select id="currency" {...register("currency")}>
               {CURRENCIES.map((c) => (

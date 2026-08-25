@@ -15,10 +15,12 @@ import {
   TrendingDown,
   Store,
   Clock,
-  BookOpen,
   Package,
 } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { useAppMode } from "@/components/platform/AppModeProvider"
+import { AppModeDashboardHome } from "./AppModeDashboardHome"
+import { DashboardAlertsList, DashboardRecentActivityList, type CombinedDashboardAlert } from "./DashboardAlertsAndActivity"
 import { MetricCard } from "@/components/ui/metric-card"
 import { formatCurrency, cn } from "@/lib/utils"
 import type { LowStockAlert } from "@/lib/stock-types"
@@ -28,9 +30,7 @@ import type {
   QuotationDashboardMetrics,
   InvoiceDashboardMetrics,
   DashboardActivityItem,
-  DashboardActivityKind,
 } from "@/lib/data/dashboard"
-import type { TranslationKey } from "@/lib/i18n/translations"
 
 interface DashboardHomeProps {
   firstName: string
@@ -99,16 +99,13 @@ function SectionHeading({ children, action }: { children: React.ReactNode; actio
   )
 }
 
-const ACTIVITY_KIND_CONFIG: Record<DashboardActivityKind, { icon: React.ComponentType<{ className?: string }>; labelKey: TranslationKey; color: string }> = {
-  quotation: { icon: FileText, labelKey: "quotations", color: "text-indigo-600" },
-  invoice: { icon: Receipt, labelKey: "invoice", color: "text-purple-600" },
-  task: { icon: CheckSquare, labelKey: "tasks", color: "text-teal-600" },
-  ledger: { icon: BookOpen, labelKey: "ledger", color: "text-green-700" },
-  shopAccount: { icon: Store, labelKey: "shopAccount", color: "text-pink-600" },
-  stock: { icon: Package, labelKey: "inventory", color: "text-slate-600" },
+export function DashboardHome(props: DashboardHomeProps) {
+  const isAppMode = useAppMode()
+  if (isAppMode) return <AppModeDashboardHome {...props} />
+  return <DesktopDashboardHome {...props} />
 }
 
-export function DashboardHome({
+function DesktopDashboardHome({
   firstName,
   permissions: perm,
   customerMetrics,
@@ -144,7 +141,7 @@ export function DashboardHome({
   // Low stock first, then overdue tasks (already most-overdue-first from the data layer);
   // capped so the dashboard never grows tall from a long alert list — the rest is one
   // click away via "View all".
-  const combinedAlerts = [
+  const combinedAlerts: CombinedDashboardAlert[] = [
     ...(perm.stock ? lowStockAlerts.map((data) => ({ kind: "stock" as const, data })) : []),
     ...(perm.tasks ? overdueTaskAlerts.map((data) => ({ kind: "task" as const, data })) : []),
   ].slice(0, MAX_DASHBOARD_ALERTS)
@@ -266,43 +263,7 @@ export function DashboardHome({
             {t("alertsLabel")}
           </SectionHeading>
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-            {combinedAlerts.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-slate-400">{t("noAlertsLabel")}</p>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {combinedAlerts.map((alert) =>
-                  alert.kind === "stock" ? (
-                    <Link
-                      key={`stock-${alert.data.id}`}
-                      href={`/stock/${alert.data.id}/edit`}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors"
-                    >
-                      <span className="flex min-w-0 items-center gap-2 text-sm text-amber-700">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{alert.data.brand ? `${alert.data.brand} — ` : ""}{alert.data.name}</span>
-                      </span>
-                      <span className="shrink-0 text-xs font-medium text-amber-600">
-                        {alert.data.isOutOfStock ? t("outOfStock") : t("lowStock")} ({alert.data.quantity})
-                      </span>
-                    </Link>
-                  ) : (
-                    <Link
-                      key={`task-${alert.data.id}`}
-                      href={`/tasks?taskId=${alert.data.id}`}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors"
-                    >
-                      <span className="flex min-w-0 items-center gap-2 text-sm text-red-700">
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{alert.data.title}</span>
-                      </span>
-                      <span className="shrink-0 text-xs font-medium text-red-600">
-                        {alert.data.daysInactive}d
-                      </span>
-                    </Link>
-                  )
-                )}
-              </div>
-            )}
+            <DashboardAlertsList alerts={combinedAlerts} />
           </div>
         </section>
       )}
@@ -311,39 +272,8 @@ export function DashboardHome({
       {hasRecentGroup && (
         <section>
           <SectionHeading>{t("recentActivitySection")}</SectionHeading>
-          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden divide-y divide-slate-50">
-            {recentActivity.map((item) => {
-              const config = ACTIVITY_KIND_CONFIG[item.kind]
-              const Icon = config.icon
-              return (
-                <Link
-                  key={`${item.kind}-${item.id}`}
-                  href={item.href}
-                  className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <Icon className={cn("h-4 w-4 shrink-0", config.color)} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
-                      <p className="truncate text-xs text-slate-400">
-                        {t(config.labelKey)} · {item.subtitle}
-                      </p>
-                    </div>
-                  </div>
-                  {item.amount !== null && (
-                    <span
-                      className={cn(
-                        "shrink-0 text-xs font-medium",
-                        item.amountSign === "+" ? "text-green-700" : item.amountSign === "-" ? "text-red-700" : "text-slate-600"
-                      )}
-                    >
-                      {item.amountSign ?? ""}
-                      {item.amountIsCurrency ? formatCurrency(item.amount) : item.amount}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <DashboardRecentActivityList items={recentActivity} />
           </div>
         </section>
       )}

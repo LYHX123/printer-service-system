@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react"
 import { PERMISSION_TREE, ALL_PERMISSIONS, isSelfProtectedPermission } from "@/lib/permissions"
 import { Collapsible } from "@/components/ui/collapsible"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { useAppMode } from "@/components/platform/AppModeProvider"
+import { cn } from "@/lib/utils"
 
 interface PermTreeNode {
   key: string
@@ -38,6 +40,7 @@ function TriCheckbox({
   onChange: () => void
 }) {
   const ref = useRef<HTMLInputElement>(null)
+  const isAppMode = useAppMode()
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = indeterminate && !checked
   }, [indeterminate, checked])
@@ -49,13 +52,17 @@ function TriCheckbox({
       checked={checked}
       disabled={disabled}
       onChange={onChange}
-      className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60"
+      className={cn(
+        "shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60",
+        isAppMode ? "h-5 w-5" : "h-3.5 w-3.5"
+      )}
     />
   )
 }
 
 export function PermissionsEditor({ permissions, userRole, isSelf, onChange }: PermissionsEditorProps) {
   const { t, language } = useLanguage()
+  const isAppMode = useAppMode()
   const isAdmin = userRole === "ADMIN"
   // Admin always has full access regardless of stored permissions; for everyone
   // else an empty array now means zero access (not "full access" back-compat —
@@ -83,10 +90,11 @@ export function PermissionsEditor({ permissions, userRole, isSelf, onChange }: P
     return (
       <label
         key={leaf.key}
-        className={[
-          "flex items-center gap-2 rounded px-2 py-1 text-sm select-none",
-          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-slate-50",
-        ].join(" ")}
+        className={cn(
+          "flex items-center gap-2 rounded px-2 text-sm select-none",
+          isAppMode ? "min-h-11 py-2" : "py-1",
+          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-slate-50"
+        )}
       >
         <TriCheckbox checked={checked} indeterminate={false} disabled={disabled} onChange={() => setLeaves([leaf.key], !checked)} />
         <span>

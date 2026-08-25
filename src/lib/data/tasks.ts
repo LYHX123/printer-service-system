@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@/generated/prisma/client"
+import { OVERDUE_DAYS } from "@/lib/task-constants"
 import type { Role } from "@/types"
 
 export type OverdueTaskAlert = {
@@ -122,8 +123,6 @@ export async function getVisibleTasks(
 
   return [...activeTasks.map(withUnread), ...completedTasks.map(withUnread)] as unknown as TaskWithDetails[]
 }
-
-const OVERDUE_DAYS = 2
 
 /**
  * Last Activity Date = latest of: task creation, latest status change
