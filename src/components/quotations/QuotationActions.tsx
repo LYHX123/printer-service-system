@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Pencil, CheckCircle, XCircle, Download, FileSpreadsheet, Receipt, ArrowRight, CloudUpload, History, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useAppMode } from "@/components/platform/AppModeProvider"
 import { QuotationStatusModal } from "./QuotationStatusModal"
 import { GenerateInvoiceModal } from "./GenerateInvoiceModal"
 import { ConvertToDeliveryModal } from "./ConvertToDeliveryModal"
@@ -62,6 +63,14 @@ export function QuotationActions({
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
+  const isAppMode = useAppMode()
+  // Only app mode needs target="_blank" — that's the sole reason DownloadGuard
+  // (app-mode-only) can find and intercept this anchor at all. On desktop this
+  // component is genuinely rendered in both the app-mode and desktop branches
+  // of quotations/[id]/page.tsx (unlike the list-view Delivery/Invoice actions,
+  // which are desktop-only), so the platform check has to happen here at
+  // runtime rather than by simply deleting the attribute.
+  const newTabProps = isAppMode ? { target: "_blank" as const, rel: "noopener noreferrer" } : {}
   const [statusModal, setStatusModal] = useState<ModalTargetStatus | null>(null)
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
@@ -108,7 +117,7 @@ export function QuotationActions({
           </Button>
         )}
         {excelDownloadUrl ? (
-          <a href={excelDownloadUrl}>
+          <a href={excelDownloadUrl} {...newTabProps}>
             <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}>
               {t("downloadExcel")}
             </Button>

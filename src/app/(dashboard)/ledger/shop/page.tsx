@@ -98,7 +98,7 @@ export default async function ShopAccountPage({
 
         <div className="flex flex-wrap gap-2">
           {canCreate && <ShopAccountAddButtons categories={categories} />}
-          <a href={exportUrl}>
+          <a href={exportUrl} target="_blank" rel="noopener noreferrer">
             <Button type="button" variant="outline" size="sm" icon={<Download className="h-4 w-4" />}>
               <T k="exportExcel" />
             </Button>
@@ -184,6 +184,9 @@ export default async function ShopAccountPage({
         subtitle={<T k="shopAccountDesc" />}
         actions={
           <div className="flex items-center gap-2">
+            {/* Desktop only (this branch runs after the isAppMode early-return above) —
+                no target="_blank" needed: DownloadGuard, which is what actually needs
+                it, never mounts on desktop. */}
             <a href={exportUrl}>
               <Button type="button" variant="outline" icon={<Download className="h-4 w-4" />}>
                 <T k="exportExcel" />

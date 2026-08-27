@@ -1,12 +1,16 @@
 "use client"
 
+import { useEffect } from "react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { X, LogOut } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher"
 import { cn } from "@/lib/utils"
+import { registerBackHandler, unregisterBackHandler } from "@/lib/platform/back-handler-stack"
 import type { NavItem } from "@/lib/nav-items"
+
+const BACK_HANDLER_ID = "more-sheet"
 
 interface MoreSheetProps {
   items: NavItem[]
@@ -23,6 +27,15 @@ interface MoreSheetProps {
 // longer carries a logout icon.
 export function MoreSheet({ items, activeHref, onClose, open }: MoreSheetProps) {
   const { t } = useLanguage()
+
+  // Priority 1 (highest) in the Android back-button stack — see
+  // AndroidBackHandler. Registered only while open, so an Android back press
+  // closes the sheet instead of navigating the page underneath it.
+  useEffect(() => {
+    if (!open) return
+    registerBackHandler(BACK_HANDLER_ID, 1, onClose)
+    return () => unregisterBackHandler(BACK_HANDLER_ID)
+  }, [open, onClose])
 
   if (!open) return null
 

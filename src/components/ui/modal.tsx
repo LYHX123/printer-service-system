@@ -1,9 +1,10 @@
 "use client"
 
-import { type ReactNode, useEffect } from "react"
+import { type ReactNode, useEffect, useId } from "react"
 import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { registerBackHandler, unregisterBackHandler } from "@/lib/platform/back-handler-stack"
 
 type ModalSize = "sm" | "md" | "lg" | "xl"
 
@@ -45,6 +46,16 @@ export function Modal({
       document.body.style.overflow = ""
     }
   }, [isOpen, onClose])
+
+  // Priority 2 in the Android back-button stack (below MoreSheet) — see
+  // AndroidBackHandler. No-ops on desktop (nothing ever calls handleBack()
+  // there), so the existing Escape-key close above stays the desktop path.
+  const backHandlerId = useId()
+  useEffect(() => {
+    if (!isOpen) return
+    registerBackHandler(backHandlerId, 2, onClose)
+    return () => unregisterBackHandler(backHandlerId)
+  }, [isOpen, onClose, backHandlerId])
 
   if (!isOpen || typeof document === "undefined") return null
 

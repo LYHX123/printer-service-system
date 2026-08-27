@@ -5,6 +5,11 @@ import type { DropboxTokenResponse } from "./types"
 const AUTHORIZE_URL = "https://www.dropbox.com/oauth2/authorize"
 const TOKEN_URL = "https://api.dropboxapi.com/oauth2/token"
 
+// See the matching comment in ./client.ts — this fetch had no timeout either,
+// so a stalled connection here (minting/refreshing an access token, which
+// every Dropbox operation needs first) would hang just as indefinitely.
+const DROPBOX_OAUTH_TIMEOUT_MS = 20_000
+
 /**
  * Builds the Dropbox OAuth authorize URL. redirect_uri always comes from
  * DROPBOX_REDIRECT_URI — never derived from the incoming request's host,
@@ -30,6 +35,7 @@ async function postForm(body: URLSearchParams): Promise<DropboxTokenResponse> {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
+      signal: AbortSignal.timeout(DROPBOX_OAUTH_TIMEOUT_MS),
     })
   } catch {
     throw new DropboxAuthenticationError("Could not reach Dropbox to exchange the token — check network connectivity.")

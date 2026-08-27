@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { AlertTriangle, ChevronRight, Clock, X } from "lucide-react"
 import { format } from "date-fns"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { useAppMode } from "@/components/platform/AppModeProvider"
 import { cn } from "@/lib/utils"
+import { registerBackHandler, unregisterBackHandler } from "@/lib/platform/back-handler-stack"
 import { STOCK_TYPE_LABELS } from "@/lib/stock-types"
 import type { LowStockAlert } from "@/lib/stock-types"
 import type { OverdueTaskAlert } from "@/lib/data/tasks"
@@ -122,6 +123,17 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
   const hasLowStock = lowStockAlerts.length > 0
   const hasOverdue = overdueTaskAlerts.length > 0
   const total = lowStockAlerts.length + overdueTaskAlerts.length
+  const isOpen = isAppMode && !dismissed && total > 0
+
+  // Same priority tier as a Modal in the Android back-button stack (see
+  // AndroidBackHandler) — this is a full-screen overlay too, just not built
+  // on the shared Modal component (it also renders on desktop, where Modal
+  // semantics/sizing don't apply).
+  useEffect(() => {
+    if (!isOpen) return
+    registerBackHandler("alerts-notification", 2, () => setDismissed(true))
+    return () => unregisterBackHandler("alerts-notification")
+  }, [isOpen])
 
   if (dismissed || total === 0) return null
 

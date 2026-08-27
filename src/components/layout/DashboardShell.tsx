@@ -8,6 +8,8 @@ import { AppTopBar } from "./mobile/AppTopBar"
 import { MobileBottomNav } from "./mobile/MobileBottomNav"
 import { ToastProvider } from "@/components/ui/toast"
 import { useAppMode } from "@/components/platform/AppModeProvider"
+import { AndroidBackHandler } from "@/components/platform/AndroidBackHandler"
+import { DownloadGuard } from "@/components/platform/DownloadGuard"
 import { cn } from "@/lib/utils"
 import type { Role } from "@/types"
 
@@ -45,6 +47,8 @@ export function DashboardShell({ children, user, taskCount = null, taskUnread = 
   if (isAppMode) {
     return (
       <ToastProvider>
+        <AndroidBackHandler />
+        <DownloadGuard />
         <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
           <AppTopBar />
           <main

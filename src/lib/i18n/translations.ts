@@ -497,6 +497,8 @@ export type TranslationKey =
   // User security / lockout
   | "locked"
   | "accountLockedDesc"
+  | "invalidCredentials"
+  | "networkErrorTryAgain"
   | "unlock"
   | "unlockUser"
   | "unlockUserDesc"
@@ -1456,6 +1458,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // User security / lockout
     locked: "Locked",
     accountLockedDesc: "Your account has been locked due to too many failed login attempts. Please wait 30 minutes or ask an administrator to unlock your account.",
+    invalidCredentials: "Invalid name or password. Please try again.",
+    networkErrorTryAgain: "Can't reach the server. Check your connection and try again.",
     unlock: "Unlock",
     unlockUser: "Unlock User",
     unlockUserDesc: "This will immediately clear the login lockout and reset the failed attempt counter.",
@@ -2247,6 +2251,8 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     // User security / lockout
     locked: "已锁定",
     accountLockedDesc: "您的账号因多次登录失败已被锁定，请等待30分钟后重试，或联系管理员解锁。",
+    invalidCredentials: "姓名或密码错误，请重试。",
+    networkErrorTryAgain: "无法连接服务器，请检查网络后重试。",
     unlock: "解锁",
     unlockUser: "解锁用户",
     unlockUserDesc: "将立即清除登录锁定并重置失败次数。",

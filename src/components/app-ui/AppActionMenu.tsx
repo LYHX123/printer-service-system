@@ -32,7 +32,7 @@ export function AppActionMenu({ items, ariaLabel = "Actions" }: AppActionMenuPro
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={ariaLabel}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors active:bg-slate-100"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-slate-400 transition-colors active:bg-slate-100"
       >
         <MoreVertical className="h-4 w-4" />
       </button>

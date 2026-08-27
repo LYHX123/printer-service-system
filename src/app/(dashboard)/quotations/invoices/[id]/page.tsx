@@ -111,7 +111,7 @@ export default async function InvoiceDetailPage({
             <a href={pdfDownloadUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm" icon={<Download className="h-3.5 w-3.5" />}><T k="downloadPdf" /></Button>
             </a>
-            <a href={excelDownloadUrl}>
+            <a href={excelDownloadUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}><T k="downloadExcel" /></Button>
             </a>
           </div>
@@ -222,6 +222,9 @@ export default async function InvoiceDetailPage({
                 <T k="downloadPdf" />
               </Button>
             </a>
+            {/* Desktop only (this branch runs after the isAppMode early-return above) — no
+                target="_blank" here, unlike the app-mode Excel link above: DownloadGuard,
+                which is what actually needs it, never mounts on desktop. */}
             <a href={excelDownloadUrl}>
               <Button variant="outline" size="sm" icon={<FileSpreadsheet className="h-3.5 w-3.5" />}>
                 <T k="downloadExcel" />

@@ -3,12 +3,14 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from "react"
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAppMode } from "@/components/platform/AppModeProvider"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,7 @@ const ToastContext = createContext<ToastAPI>({
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const isAppMode = useAppMode()
+  const { language } = useLanguage()
 
   function add(type: ToastType, message: string) {
     const id = Math.random().toString(36).slice(2)
@@ -61,6 +64,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   function dismiss(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }
+
+  // Safety net for actions that fail before they ever reach their own
+  // try/catch + toast.error (a genuine network drop mid-fetch, e.g.) — a
+  // truly unhandled rejection today leaves the submit button correctly
+  // un-stuck (react-hook-form resets isSubmitting either way) but the user
+  // gets no explanation at all. Anything already caught elsewhere never
+  // reaches this listener, so it can't double up with an existing message.
+  useEffect(() => {
+    function handleUnhandledRejection() {
+      add("error", language === "zh" ? "网络错误，请重试" : "Network error, please try again")
+    }
+    window.addEventListener("unhandledrejection", handleUnhandledRejection)
+    return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection)
+  }, [language])
 
   return (
     <ToastContext.Provider value={api}>
@@ -123,7 +140,11 @@ function ToastItem({
     <div
       role="alert"
       className={cn(
-        "flex w-80 items-start gap-3 rounded-lg border p-4 shadow-lg",
+        // max-w-80 (not a fixed w-80): the container only pins the right
+        // edge (`right-4`, no matching `left`), so a fixed width could run
+        // past the left edge on narrow phones. w-[calc(100vw-2rem)] caps it
+        // to the viewport with the same 1rem margin on both sides instead.
+        "flex w-[calc(100vw-2rem)] max-w-80 items-start gap-3 rounded-lg border p-4 shadow-lg",
         TOAST_STYLES[toast.type]
       )}
     >

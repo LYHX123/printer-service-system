@@ -64,7 +64,7 @@ function LoginPageInner() {
         if (code === "ACCOUNT_LOCKED") {
           setError(t("accountLockedDesc"))
         } else {
-          setError("Invalid name or password. Please try again.")
+          setError(t("invalidCredentials"))
         }
         return
       }
@@ -76,8 +76,14 @@ function LoginPageInner() {
       const code = (err as { code?: string })?.code
       if (code === "ACCOUNT_LOCKED") {
         setError(t("accountLockedDesc"))
+      } else if (err instanceof TypeError) {
+        // signIn()'s own fetch failing outright (offline, DNS, server
+        // unreachable) throws a plain TypeError, not an Auth.js
+        // CredentialsSignin — telling the user "wrong password" here would
+        // be actively misleading when the real problem is connectivity.
+        setError(t("networkErrorTryAgain"))
       } else {
-        setError("Invalid name or password. Please try again.")
+        setError(t("invalidCredentials"))
       }
     }
   }

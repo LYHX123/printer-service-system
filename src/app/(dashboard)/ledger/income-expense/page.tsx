@@ -204,6 +204,9 @@ export default async function IncomeExpenseBookPage({
             <Button variant="ghost"><T k="clear" /></Button>
           </Link>
         )}
+        {/* Desktop only (this branch runs after the isAppMode early-return above,
+            which has no export link at all) — no target="_blank" needed: nothing
+            here ever runs in app mode for DownloadGuard to protect. */}
         <a href={exportUrl}>
           <Button type="button" variant="outline" icon={<Download className="h-4 w-4" />}>
             Export Excel

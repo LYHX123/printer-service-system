@@ -61,6 +61,9 @@ export function InvoiceListActions({ invoiceId, status, hasSalesLedgerEntry, can
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
+        {/* Desktop-only component (see quotations/invoices/page.tsx — only rendered
+            in the non-app-mode table view) — no target="_blank" needed: DownloadGuard,
+            which is what actually needs it, never mounts on desktop. */}
         <a href={`/api/quotations/invoices/${invoiceId}/excel`} title={t("downloadExcel")}>
           <Button variant="outline" size="sm" className="h-8 w-8 px-0" aria-label={t("downloadExcel")}>
             <FileSpreadsheet className="h-3.5 w-3.5" />

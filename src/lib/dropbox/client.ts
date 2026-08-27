@@ -6,6 +6,15 @@ import type { DropboxAccountInfo, DropboxRootInfo } from "./types"
 const API_ROOT = "https://api.dropboxapi.com/2"
 const CONTENT_API_ROOT = "https://content.dropboxapi.com/2"
 
+// None of this file's fetch() calls previously had any timeout — a stalled
+// connection to Dropbox (as opposed to a fast HTTP error response, already
+// handled below) hung forever with no user-facing feedback, since nothing
+// here ever settled the promise. Observed once in practice: a Quotation PDF
+// download hung indefinitely with no toast, no error, no file — the
+// document's get_temporary_link call itself neither resolved nor rejected.
+const DROPBOX_API_TIMEOUT_MS = 20_000
+const DROPBOX_UPLOAD_TIMEOUT_MS = 30_000
+
 /**
  * Mints a fresh short-lived access token from the company's stored refresh
  * token. Called on demand for every Dropbox API operation — access tokens
@@ -52,6 +61,7 @@ export async function dropboxApiFetch<T>(
       method: "POST",
       headers,
       body: JSON.stringify(body ?? {}),
+      signal: AbortSignal.timeout(DROPBOX_API_TIMEOUT_MS),
     })
   } catch {
     throw new DropboxApiError(`Could not reach Dropbox for ${endpoint}.`)
@@ -107,6 +117,7 @@ export async function dropboxContentUpload(
       method: "POST",
       headers,
       body: new Uint8Array(content),
+      signal: AbortSignal.timeout(DROPBOX_UPLOAD_TIMEOUT_MS),
     })
   } catch {
     throw new DropboxApiError(`Could not reach Dropbox to upload "${path}".`)

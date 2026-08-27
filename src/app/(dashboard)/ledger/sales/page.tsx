@@ -154,7 +154,7 @@ export default async function SalesLedgerPage({
 
         <div className="flex gap-2">
           <SalesLedgerAddButton />
-          <a href={exportUrl}>
+          <a href={exportUrl} target="_blank" rel="noopener noreferrer">
             <Button type="button" variant="outline" size="sm" icon={<Download className="h-4 w-4" />}>
               <T k="exportExcel" />
             </Button>
@@ -233,6 +233,9 @@ export default async function SalesLedgerPage({
         subtitle={<T k="salesLedgerDesc" />}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Desktop only (this branch runs after the isAppMode early-return above) —
+                no target="_blank" needed: DownloadGuard, which is what actually needs
+                it, never mounts on desktop. */}
             <a href={exportUrl}>
               <Button type="button" variant="outline" icon={<Download className="h-4 w-4" />}>
                 Export Excel
