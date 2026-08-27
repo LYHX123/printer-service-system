@@ -1,7 +1,9 @@
 "use client"
 
 import { usePathname, useSearchParams } from "next/navigation"
+import { Bell } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
+import { useAlertsPanel } from "@/components/platform/AlertsPanelProvider"
 import { getPageTitle } from "@/lib/page-title"
 import { isStockType, STOCK_TYPE_TRANSLATION_KEYS } from "@/lib/stock-types"
 import type { TranslationKey } from "@/lib/i18n/translations"
@@ -18,15 +20,17 @@ const DETAIL_TITLE_ROUTES: { pattern: RegExp; key: TranslationKey }[] = [
   { pattern: /^\/delivery\/[0-9a-f-]{20,}$/i, key: "deliveryDetailTitle" },
 ]
 
-// Lightweight App-mode top bar: page title only. No breadcrumb trail (the
-// bottom nav + More sheet are the primary navigation surface on phone) and
-// no logout icon — logout lives in MoreSheet's account section instead, so
-// this bar stays page-focused. Respects the Android status bar safe area via
-// env(safe-area-inset-top) — same convention the desktop Topbar already uses.
+// Lightweight App-mode top bar: page title plus a notification bell. No
+// breadcrumb trail (the bottom nav + More sheet are the primary navigation
+// surface on phone) and no logout icon — logout lives in MoreSheet's account
+// section instead, so this bar stays page-focused. Respects the Android
+// status bar safe area via env(safe-area-inset-top) — same convention the
+// desktop Topbar already uses.
 export function AppTopBar() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { t } = useLanguage()
+  const { alertCount, openPanel } = useAlertsPanel()
 
   // Stock's four categories (Equipment/Consumption/Parts/Common Product) all
   // share the single /stock route, distinguished only by a ?type= query
@@ -54,6 +58,23 @@ export function AppTopBar() {
       className="flex min-h-12 shrink-0 items-center gap-3 border-b border-slate-200 bg-[#F1F5FB] px-4 pb-1.5 pt-[calc(env(safe-area-inset-top)+7px)]"
     >
       <p className="flex-1 truncate text-[21px] font-bold text-slate-900">{title}</p>
+      <button
+        type="button"
+        onClick={openPanel}
+        aria-label={t("notifications")}
+        title={t("notifications")}
+        // h-11 w-11 (44px) touch target around a visually smaller 20px icon —
+        // badge is absolutely positioned so it never pushes the button's own
+        // size/layout around, whatever the count's digit width ends up being.
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors active:bg-slate-200"
+      >
+        <Bell className="h-5 w-5" />
+        {alertCount > 0 && (
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+            {alertCount > 9 ? "9+" : alertCount}
+          </span>
+        )}
+      </button>
     </header>
   )
 }

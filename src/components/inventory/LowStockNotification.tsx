@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { AlertTriangle, ChevronRight, Clock, X } from "lucide-react"
 import { format } from "date-fns"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { useAppMode } from "@/components/platform/AppModeProvider"
+import { useAlertsPanel } from "@/components/platform/AlertsPanelProvider"
 import { cn } from "@/lib/utils"
 import { registerBackHandler, unregisterBackHandler } from "@/lib/platform/back-handler-stack"
 import { STOCK_TYPE_LABELS } from "@/lib/stock-types"
@@ -22,7 +23,19 @@ interface AlertsNotificationProps {
 // the business logic behind it (thresholds, out-of-stock/overdue detection,
 // links) is identical either way.
 
-function LowStockAlertRow({ alert, compact }: { alert: LowStockAlert; compact?: boolean }) {
+function LowStockAlertRow({
+  alert,
+  compact,
+  onNavigate,
+}: {
+  alert: LowStockAlert
+  compact?: boolean
+  /** Closes the panel first (app-mode only — see AlertsNotification) so the
+   * full-screen bottom sheet doesn't linger on top of the page just
+   * navigated to. Undefined on desktop, where this floating card doesn't
+   * cover the destination page the same way. */
+  onNavigate?: () => void
+}) {
   return (
     <li className={compact ? "px-3.5 py-2" : "px-4 py-3"}>
       <div className="flex items-center gap-1.5">
@@ -54,6 +67,7 @@ function LowStockAlertRow({ alert, compact }: { alert: LowStockAlert; compact?: 
       </p>
       <Link
         href={`/stock?type=${alert.stockType}`}
+        onClick={onNavigate}
         className={cn(
           "inline-flex items-center gap-0.5 font-medium text-blue-600 hover:text-blue-700",
           compact ? "mt-0.5 text-[11px]" : "mt-1 text-xs"
@@ -69,10 +83,12 @@ function OverdueTaskAlertRow({
   task,
   compact,
   t,
+  onNavigate,
 }: {
   task: OverdueTaskAlert
   compact?: boolean
   t: (key: "taskOverdueNotice" | "lastActivityLabel" | "daysInactiveLabel" | "viewTask") => string
+  onNavigate?: () => void
 }) {
   return (
     <li className={compact ? "px-3.5 py-2" : "px-4 py-3"}>
@@ -104,6 +120,7 @@ function OverdueTaskAlertRow({
       )}
       <Link
         href="/tasks"
+        onClick={onNavigate}
         className={cn(
           "inline-flex items-center gap-0.5 font-medium text-blue-600 hover:text-blue-700",
           compact ? "mt-0.5 text-[11px]" : "mt-1 text-xs"
@@ -116,32 +133,36 @@ function OverdueTaskAlertRow({
 }
 
 export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: AlertsNotificationProps) {
-  const [dismissed, setDismissed] = useState(false)
   const { t, language } = useLanguage()
   const isAppMode = useAppMode()
+  const { isOpen, closePanel } = useAlertsPanel()
 
   const hasLowStock = lowStockAlerts.length > 0
   const hasOverdue = overdueTaskAlerts.length > 0
   const total = lowStockAlerts.length + overdueTaskAlerts.length
-  const isOpen = isAppMode && !dismissed && total > 0
 
   // Same priority tier as a Modal in the Android back-button stack (see
   // AndroidBackHandler) — this is a full-screen overlay too, just not built
   // on the shared Modal component (it also renders on desktop, where Modal
-  // semantics/sizing don't apply).
+  // semantics/sizing don't apply). Desktop never opens this with isOpen=true
+  // unless there are actual alerts (nothing on desktop calls the bell's
+  // openPanel), so gating on isAppMode here keeps desktop's registration
+  // behavior exactly as it was before the shared panel state existed.
   useEffect(() => {
-    if (!isOpen) return
-    registerBackHandler("alerts-notification", 2, () => setDismissed(true))
+    if (!isAppMode || !isOpen) return
+    registerBackHandler("alerts-notification", 2, closePanel)
     return () => unregisterBackHandler("alerts-notification")
-  }, [isOpen])
+  }, [isAppMode, isOpen, closePanel])
 
-  if (dismissed || total === 0) return null
+  if (!isOpen) return null
 
   const alertsTitle = language === "zh"
     ? `提醒 (${total})`
     : `Alerts (${total})`
   const titleSingle = hasLowStock ? t("lowStockAlertsLabel") : t("overdueTaskAlertsLabel")
-  const title = hasLowStock && hasOverdue ? alertsTitle : titleSingle
+  // total === 0 is only reachable via the bell's "open anyway" (forceOpenEmpty)
+  // — desktop has no bell, so it can never hit this branch.
+  const title = total === 0 ? t("notifications") : hasLowStock && hasOverdue ? alertsTitle : titleSingle
 
   const showBothSectionHeaders = hasLowStock && hasOverdue
 
@@ -152,7 +173,7 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
     // ~48dvh; beyond that only the alert list itself scrolls, not the page.
     return (
       <>
-        <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setDismissed(true)} aria-hidden />
+        <div className="fixed inset-0 z-40 bg-black/50" onClick={closePanel} aria-hidden />
         <div
           role="alert"
           className="fixed inset-x-0 bottom-0 z-50 flex max-h-[48dvh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-lg pb-[env(safe-area-inset-bottom)]"
@@ -163,7 +184,7 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
               <h3 className="text-sm font-semibold text-amber-900">{title}</h3>
             </div>
             <button
-              onClick={() => setDismissed(true)}
+              onClick={closePanel}
               aria-label="Dismiss"
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-amber-500 transition-colors active:bg-amber-100"
             >
@@ -171,7 +192,14 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          {/* min-h-0: without it a flex-1 child keeps its content's intrinsic
+           * min-height, so a long alert list overflows the sheet's
+           * overflow-hidden box (clipping the last row's link) instead of
+           * scrolling inside it. */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {total === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-slate-400">{t("noAlertsLabel")}</p>
+            )}
             {hasLowStock && (
               <>
                 {showBothSectionHeaders && (
@@ -183,7 +211,7 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
                 )}
                 <ul className="divide-y divide-slate-100">
                   {lowStockAlerts.map((alert) => (
-                    <LowStockAlertRow key={alert.id} alert={alert} compact />
+                    <LowStockAlertRow key={alert.id} alert={alert} compact onNavigate={closePanel} />
                   ))}
                 </ul>
               </>
@@ -200,7 +228,7 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
                 )}
                 <ul className="divide-y divide-slate-100">
                   {overdueTaskAlerts.map((task) => (
-                    <OverdueTaskAlertRow key={task.id} task={task} t={t} compact />
+                    <OverdueTaskAlertRow key={task.id} task={task} t={t} compact onNavigate={closePanel} />
                   ))}
                 </ul>
               </>
@@ -223,7 +251,7 @@ export function AlertsNotification({ lowStockAlerts, overdueTaskAlerts }: Alerts
           <h3 className="text-sm font-semibold text-amber-900">{title}</h3>
         </div>
         <button
-          onClick={() => setDismissed(true)}
+          onClick={closePanel}
           aria-label="Dismiss"
           className="text-amber-500 transition-colors hover:text-amber-700"
         >

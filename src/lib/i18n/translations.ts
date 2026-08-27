@@ -672,6 +672,7 @@ export type TranslationKey =
   | "lowStockAlertsLabel"
   | "overdueTaskAlertsLabel"
   | "noAlertsLabel"
+  | "notifications"
   | "noDashboardInformationForPermissions"
   // Dashboard homepage
   | "welcomeBack"
@@ -1238,6 +1239,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     lowStockAlertsLabel: "Low Stock Alerts",
     overdueTaskAlertsLabel: "Overdue Task Alerts",
     noAlertsLabel: "No alerts",
+    notifications: "Notifications",
     noDashboardInformationForPermissions: "No dashboard information available for your permissions.",
     // Ledger
     ledger: "Ledger",
@@ -2033,6 +2035,7 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     lowStockAlertsLabel: "低库存提醒",
     overdueTaskAlertsLabel: "任务超期提醒",
     noAlertsLabel: "暂无提醒",
+    notifications: "提醒",
     noDashboardInformationForPermissions: "您当前的权限下暂无可显示的仪表盘信息。",
     // Ledger
     ledger: "台账",

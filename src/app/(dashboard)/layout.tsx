@@ -5,6 +5,7 @@ import { canAccess } from "@/lib/permissions"
 import { getLowStockAlerts } from "@/lib/data/inventory"
 import { getOverdueTasks, getActiveTaskCount, hasUnreadTasks } from "@/lib/data/tasks"
 import { AlertsNotification } from "@/components/inventory/LowStockNotification"
+import { AlertsPanelProvider } from "@/components/platform/AlertsPanelProvider"
 import type { Role } from "@/types"
 
 export default async function DashboardLayout({
@@ -42,12 +43,12 @@ export default async function DashboardLayout({
   ])
 
   return (
-    <>
+    <AlertsPanelProvider alertCount={lowStockAlerts.length + overdueTaskAlerts.length}>
       <DashboardShell user={user} taskCount={activeTaskCount} taskUnread={taskUnread}>{children}</DashboardShell>
       <AlertsNotification
         lowStockAlerts={lowStockAlerts}
         overdueTaskAlerts={overdueTaskAlerts}
       />
-    </>
+    </AlertsPanelProvider>
   )
 }
