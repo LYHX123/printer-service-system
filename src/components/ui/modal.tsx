@@ -70,7 +70,11 @@ export function Modal({
         aria-labelledby="modal-title"
         className={cn(
           "relative w-full rounded-xl bg-white shadow-2xl",
-          "flex flex-col max-h-[90vh]",
+          // dvh (not vh): on Android WebView, 100vh doesn't shrink when the
+          // on-screen keyboard opens, so a vh-capped modal could extend
+          // behind the keyboard with its footer (Save/Cancel) unreachable.
+          // dvh tracks the actual visible viewport instead.
+          "flex flex-col max-h-[90dvh]",
           SIZE_CLASSES[size]
         )}
       >

@@ -156,8 +156,8 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 mt-4">
-        <Button type="submit" loading={isSubmitting}>
+      <div className={cn("mt-4", isAppMode ? "flex" : "flex justify-end gap-3")}>
+        <Button type="submit" loading={isSubmitting} className={isAppMode ? "w-full" : undefined}>
           {t("saveChanges")}
         </Button>
       </div>

@@ -13,6 +13,10 @@ export type TranslationKey =
   | "more"
   | "language"
   | "taskDetailTitle"
+  | "customerDetailTitle"
+  | "quotationDetailTitle"
+  | "deliveryDetailTitle"
+  | "invoiceDetailTitle"
   | "customers"
   | "equipment"
   | "jobs"
@@ -805,6 +809,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     more: "More",
     language: "Language",
     taskDetailTitle: "Task Detail",
+    customerDetailTitle: "Customer Detail",
+    quotationDetailTitle: "Quotation Detail",
+    deliveryDetailTitle: "Delivery Detail",
+    invoiceDetailTitle: "Invoice Detail",
     customers: "Customers",
     equipment: "Equipment",
     jobs: "Jobs",
@@ -1594,6 +1602,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     more: "更多",
     language: "语言",
     taskDetailTitle: "任务详情",
+    customerDetailTitle: "客户详情",
+    quotationDetailTitle: "报价单详情",
+    deliveryDetailTitle: "送货单详情",
+    invoiceDetailTitle: "发票详情",
     customers: "客户",
     equipment: "设备",
     jobs: "工单",

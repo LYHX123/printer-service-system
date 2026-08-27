@@ -4,8 +4,19 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { getPageTitle } from "@/lib/page-title"
 import { isStockType, STOCK_TYPE_TRANSLATION_KEYS } from "@/lib/stock-types"
+import type { TranslationKey } from "@/lib/i18n/translations"
 
-const TASK_DETAIL_PATH = /^\/tasks\/[0-9a-f-]{20,}$/i
+// Dynamic detail routes (`/module/[id]`) — getPageTitle can't tell these
+// apart by pathname alone (every UUID-like last segment falls through to a
+// generic "Detail"), so each module that has its own dedicated app-mode
+// detail screen gets an explicit, translated title here instead.
+const DETAIL_TITLE_ROUTES: { pattern: RegExp; key: TranslationKey }[] = [
+  { pattern: /^\/tasks\/[0-9a-f-]{20,}$/i, key: "taskDetailTitle" },
+  { pattern: /^\/customers\/[0-9a-f-]{20,}$/i, key: "customerDetailTitle" },
+  { pattern: /^\/quotations\/invoices\/[0-9a-f-]{20,}$/i, key: "invoiceDetailTitle" },
+  { pattern: /^\/quotations\/[0-9a-f-]{20,}$/i, key: "quotationDetailTitle" },
+  { pattern: /^\/delivery\/[0-9a-f-]{20,}$/i, key: "deliveryDetailTitle" },
+]
 
 // Lightweight App-mode top bar: page title only. No breadcrumb trail (the
 // bottom nav + More sheet are the primary navigation surface on phone) and
@@ -23,10 +34,12 @@ export function AppTopBar() {
   // bar would just say "Stock" for every category instead of the specific one.
   const stockType = pathname === "/stock" ? searchParams.get("type") ?? undefined : undefined
 
+  const detailRoute = DETAIL_TITLE_ROUTES.find((r) => r.pattern.test(pathname))
+
   const title = isStockType(stockType)
     ? t(STOCK_TYPE_TRANSLATION_KEYS[stockType])
-    : TASK_DETAIL_PATH.test(pathname)
-      ? t("taskDetailTitle")
+    : detailRoute
+      ? t(detailRoute.key)
       : getPageTitle(pathname, t)
 
   return (

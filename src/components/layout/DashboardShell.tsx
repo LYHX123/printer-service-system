@@ -49,7 +49,17 @@ export function DashboardShell({ children, user, taskCount = null, taskUnread = 
           <AppTopBar />
           <main
             className={cn(
-              "flex-1 overflow-x-hidden overflow-y-auto p-4",
+              // overscroll-contain: main's content naturally extends well
+              // beyond its own clipped box (that's just how overflow-y-auto
+              // scrolling works), and that unclipped extent leaks into
+              // document.documentElement.scrollHeight, giving the outer
+              // page phantom scroll room that's never visible in normal use.
+              // Without this, dragging past main's own scroll end chains the
+              // gesture onto that phantom outer scroll — the page then
+              // scrolls into genuinely empty space before the fixed bottom
+              // nav. This stops the chain at main; its own scrolling is
+              // unaffected either way.
+              "flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4",
               useCompactBottomPadding ? "pb-6" : "pb-24",
               APP_MODE_NAV_CLEARANCE
             )}
