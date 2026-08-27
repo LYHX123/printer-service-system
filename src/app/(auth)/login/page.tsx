@@ -9,6 +9,7 @@ import { z } from "zod"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { useAppMode } from "@/components/platform/AppModeProvider"
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher"
+import { BrandingIntro } from "@/components/app-ui/BrandingIntro"
 
 const loginSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -33,6 +34,10 @@ function LoginPageInner() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard"
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Same value on server and client (isAppMode is server-determined, see
+  // AppModeProvider), so this never causes a hydration mismatch. Desktop
+  // browser and PWA always start `false` here and never render the intro.
+  const [showIntro, setShowIntro] = useState(isAppMode)
 
   const {
     register,
@@ -94,6 +99,10 @@ function LoginPageInner() {
       />
     </svg>
   )
+
+  if (showIntro) {
+    return <BrandingIntro onFinish={() => setShowIntro(false)} />
+  }
 
   if (isAppMode) {
     return (

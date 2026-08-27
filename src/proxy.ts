@@ -9,7 +9,7 @@ export const config = {
     // flow below (no login-page redirect, no MODULE_PATHS check) — file
     // requests get their own dedicated handling instead, see the next entry
     // and src/auth.config.ts's authorized() callback.
-    "/((?!api|_next/static|_next/image|favicon.ico|uploads|protected-uploads|manifest.json|sw.js|offline.html|icons/).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|uploads|protected-uploads|manifest.json|sw.js|offline.html|icons/|branding/).*)",
     // Runs this same middleware for /uploads/* too, but ONLY to rewrite it to
     // /protected-uploads/* before Next's static file server can intercept
     // it (public/uploads/** is otherwise served directly, unauthenticated,
