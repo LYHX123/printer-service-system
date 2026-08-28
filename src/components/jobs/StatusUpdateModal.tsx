@@ -101,7 +101,6 @@ export function StatusUpdateModal({ jobId, currentStatus, open, onClose }: Statu
                 type="number"
                 min="1"
                 step="1"
-                placeholder="e.g. 90"
                 {...register("warrantyPeriod")}
               />
             </FormField>
@@ -116,11 +115,6 @@ export function StatusUpdateModal({ jobId, currentStatus, open, onClose }: Statu
             <Textarea
               id="note"
               rows={3}
-              placeholder={
-                toStatus === "CANCELLED"
-                  ? "e.g. Customer requested cancellation — device collected without repair"
-                  : "e.g. Awaiting HP toner cartridge, ETA 3 days"
-              }
               {...register("note")}
             />
           </FormField>

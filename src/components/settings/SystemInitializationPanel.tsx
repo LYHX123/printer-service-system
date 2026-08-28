@@ -241,7 +241,6 @@ export function SystemInitializationPanel({ isProduction }: SystemInitialization
                   <Input
                     value={confirmText}
                     onChange={(e) => setConfirmText(e.target.value)}
-                    placeholder={CONFIRMATION_TEXT}
                     disabled={executing}
                     autoComplete="off"
                     spellCheck={false}

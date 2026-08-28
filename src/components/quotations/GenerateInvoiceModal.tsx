@@ -90,7 +90,7 @@ export function GenerateInvoiceModal({
           required
           error={errors.invoiceNumber?.message}
         >
-          <Input id="invoiceNumber" placeholder="e.g. CN00455" {...register("invoiceNumber")} />
+          <Input id="invoiceNumber" {...register("invoiceNumber")} />
         </FormField>
         <FormField
           label={t("invoiceDateLabel")}

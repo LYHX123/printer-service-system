@@ -164,7 +164,7 @@ export default async function SalesLedgerPage({
         <form method="GET" className="space-y-2">
           {salesYear && <input type="hidden" name="salesYear" value={salesYear} />}
           {salesMonth && <input type="hidden" name="salesMonth" value={salesMonth} />}
-          <TInput name="customer" type="search" placeholderKey="searchSalesLedgerPlaceholder" defaultValue={customer ?? ""} className="h-11" />
+          <TInput name="customer" type="search" defaultValue={customer ?? ""} className="h-11" />
           <div className="grid grid-cols-2 gap-2">
             <Input name="from" type="date" defaultValue={from ?? ""} className="h-11" />
             <Input name="to" type="date" defaultValue={to ?? ""} className="h-11" />
@@ -323,7 +323,7 @@ export default async function SalesLedgerPage({
       <form method="GET" className="filter-bar flex flex-wrap items-center gap-2 mb-4">
         {salesYear && <input type="hidden" name="salesYear" value={salesYear} />}
         {salesMonth && <input type="hidden" name="salesMonth" value={salesMonth} />}
-        <TInput name="customer" type="search" placeholderKey="searchSalesLedgerPlaceholder" defaultValue={customer ?? ""} className="w-56" />
+        <TInput name="customer" type="search" defaultValue={customer ?? ""} className="w-56" />
         <label className="text-xs text-slate-500"><T k="fromDate" /></label>
         <Input name="from" type="date" defaultValue={from ?? ""} className="w-40" />
         <label className="text-xs text-slate-500"><T k="toDate" /></label>

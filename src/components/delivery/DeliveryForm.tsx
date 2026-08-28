@@ -123,7 +123,6 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
                       field.onChange(customerId)
                       handleCustomerChange()
                     }}
-                    placeholder={t("searchCustomerByNamePlaceholder")}
                     error={errors.customerId?.message}
                   />
                 )}
@@ -145,7 +144,7 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
           )}
 
           <FormField label={t("referenceOptionalLabel")} htmlFor="reference" error={errors.reference?.message}>
-            <Input id="reference" placeholder={t("referencePlaceholder")} {...register("reference")} />
+            <Input id="reference" {...register("reference")} />
           </FormField>
         </div>
 
@@ -207,7 +206,6 @@ export function DeliveryForm({ customers, spareParts, defaultValues, deliveryId 
                         <Input
                           type="number"
                           min="1"
-                          placeholder={t("qtyPlaceholder")}
                           onFocus={selectOnFocus}
                           {...register(`items.${index}.quantity`)}
                           error={errors.items?.[index]?.quantity?.message}

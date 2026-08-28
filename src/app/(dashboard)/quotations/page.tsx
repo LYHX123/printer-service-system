@@ -69,7 +69,7 @@ export default async function QuotationsPage({
         <form method="get" className="space-y-2">
           <div className="flex gap-2">
             <div className="flex-1">
-              <AppSearchField name="search" placeholderKey="searchQuotationsPlaceholder" defaultValue={search} />
+              <AppSearchField name="search" defaultValue={search} />
             </div>
             <button
               type="submit"
@@ -146,7 +146,6 @@ export default async function QuotationsPage({
             name="search"
             type="search"
             defaultValue={search}
-            placeholderKey="searchQuotationsPlaceholder"
             className="h-9 w-56"
           />
           <select

@@ -106,7 +106,7 @@ export default async function ShopAccountPage({
         </div>
 
         <form method="GET" className="space-y-2">
-          <Input name="search" type="text" defaultValue={search ?? ""} placeholder="Search…" className="h-11" />
+          <Input name="search" type="text" defaultValue={search ?? ""} className="h-11" />
           <div className="grid grid-cols-2 gap-2">
             <Input name="from" type="date" defaultValue={from ?? ""} className="h-11" />
             <Input name="to" type="date" defaultValue={to ?? ""} className="h-11" />
@@ -231,7 +231,7 @@ export default async function ShopAccountPage({
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </Select>
-        <Input name="search" type="text" defaultValue={search ?? ""} placeholder="Search…" className="w-36" />
+        <Input name="search" type="text" defaultValue={search ?? ""} className="w-36" />
         <Button type="submit" variant="secondary"><T k="filter" /></Button>
         {hasFilters && (
           <Link href="/ledger/shop">

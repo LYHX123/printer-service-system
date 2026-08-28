@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { redirect } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, Package, ImageOff, ArrowLeftRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Search, Laptop, Droplet, Wrench, Package, ImageOff, ArrowLeftRight, Download } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { canAccess, canViewStock, canCreateStock, canEditStock, canAdjustStock, canDeleteStock } from "@/lib/permissions"
 import { getSpareParts, getStockTypeCounts, getEffectiveStockLevel } from "@/lib/data/inventory"
@@ -170,10 +170,16 @@ export default async function StockPage({
           </Link>
         )}
 
+        <a href={`/api/stock/export?type=${stockType}`} className="block">
+          <Button variant="outline" icon={<Download className="h-4 w-4" />} size="sm" className="w-full">
+            <T k="exportExcel" />
+          </Button>
+        </a>
+
         <form method="GET" className="flex gap-2">
           <input type="hidden" name="type" value={stockType} />
           <div className="flex-1">
-            <AppSearchField name="search" placeholderKey="searchPartsPlaceholder" defaultValue={search} />
+            <AppSearchField name="search" defaultValue={search} />
           </div>
           <button
             type="submit"
@@ -252,11 +258,16 @@ export default async function StockPage({
         title={<T k={STOCK_TYPE_TRANSLATION_KEYS[stockType]} />}
         subtitle={<>{parts.length} <T k={stockCountTranslationKey(stockType, parts.length)} /></>}
         actions={
-          canAddNew && (
-            <Link href={`/stock/new?type=${stockType}`}>
-              <Button icon={<Plus className="h-4 w-4" />}><T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} /></Button>
-            </Link>
-          )
+          <div className="flex flex-wrap gap-2">
+            <a href={`/api/stock/export?type=${stockType}`}>
+              <Button variant="outline" icon={<Download className="h-4 w-4" />}><T k="exportExcel" /></Button>
+            </a>
+            {canAddNew && (
+              <Link href={`/stock/new?type=${stockType}`}>
+                <Button icon={<Plus className="h-4 w-4" />}><T k={ADD_ITEM_TRANSLATION_KEYS[stockType]} /></Button>
+              </Link>
+            )}
+          </div>
         }
       />
 
@@ -267,7 +278,6 @@ export default async function StockPage({
           <TInput
             name="search"
             type="search"
-            placeholderKey="searchPartsPlaceholder"
             defaultValue={search}
             className="pl-9"
           />

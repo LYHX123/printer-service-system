@@ -50,7 +50,7 @@ export default async function DeliveryPage({
 
         <form method="get" className="flex gap-2">
           <div className="flex-1">
-            <AppSearchField name="search" placeholderKey="searchDeliveriesPlaceholder" defaultValue={search} />
+            <AppSearchField name="search" defaultValue={search} />
           </div>
           <button
             type="submit"
@@ -116,7 +116,6 @@ export default async function DeliveryPage({
           name="search"
           type="search"
           defaultValue={search}
-          placeholderKey="searchDeliveriesPlaceholder"
           className="h-9 w-64"
         />
         <Button type="submit" variant="secondary" size="sm"><T k="filter" /></Button>

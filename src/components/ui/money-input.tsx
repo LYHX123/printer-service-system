@@ -56,7 +56,6 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
         min={0}
         step="0.01"
         inputMode="decimal"
-        placeholder="0.00"
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onMouseUp={handleMouseUp}

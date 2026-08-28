@@ -81,7 +81,6 @@ export function PhotoSection({ jobId, photoType, title, photos, canDelete }: Pho
       {photos.length < 10 && (
         <div className="mb-4 space-y-2">
           <Input
-            placeholder="Caption (optional)"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
           />

@@ -129,7 +129,8 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
         {/* Customer + Branch */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label="Customer" htmlFor="customerId" required error={errors.customerId?.message}>
-            <Select id="customerId" placeholder="Select customer…" {...register("customerId")} error={errors.customerId?.message}>
+            <Select id="customerId" {...register("customerId")} error={errors.customerId?.message}>
+              <option value="" />
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.companyName}{c.name ? ` — ${c.name}` : ""} ({c.code})
@@ -140,10 +141,10 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
           <FormField label="Branch / Site" htmlFor="branchId" error={errors.branchId?.message}>
             <Select
               id="branchId"
-              placeholder="None (main location)"
               {...register("branchId")}
               disabled={!selectedCustomerId || branches.length === 0}
             >
+              <option value="" />
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -155,11 +156,11 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
         <FormField label="Equipment" htmlFor="equipmentId" required error={errors.equipmentId?.message}>
           <Select
             id="equipmentId"
-            placeholder={selectedCustomerId ? "Select equipment…" : "Select a customer first"}
             {...register("equipmentId")}
             disabled={!selectedCustomerId || customerEquipment.length === 0}
             error={errors.equipmentId?.message}
           >
+            <option value="" />
             {customerEquipment.map((e) => (
               <option key={e.id} value={e.id}>
                 {EQUIPMENT_TYPE_LABELS[e.type]} — {e.brand} {e.model} ({e.serialNumber})
@@ -191,7 +192,8 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
 
         {/* Assigned engineer */}
         <FormField label={t("engineer")} htmlFor="assignedToId" required error={errors.assignedToId?.message}>
-          <Select id="assignedToId" placeholder="Select engineer…" {...register("assignedToId")} error={errors.assignedToId?.message}>
+          <Select id="assignedToId" {...register("assignedToId")} error={errors.assignedToId?.message}>
+            <option value="" />
             {engineers.map((e) => (
               <option key={e.id} value={e.id}>{e.name} ({e.role})</option>
             ))}
@@ -203,7 +205,6 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
           <Textarea
             id="problemDesc"
             rows={3}
-            placeholder="Describe the fault or service required…"
             {...register("problemDesc")}
             error={errors.problemDesc?.message}
           />
@@ -217,10 +218,10 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
             </p>
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Black Pages" htmlFor="meterBlack" error={errors.meterBlack?.message}>
-                <Input id="meterBlack" type="number" min="0" placeholder="0" {...register("meterBlack")} />
+                <Input id="meterBlack" type="number" min="0" {...register("meterBlack")} />
               </FormField>
               <FormField label="Colour Pages" htmlFor="meterColor" error={errors.meterColor?.message}>
-                <Input id="meterColor" type="number" min="0" placeholder="0" {...register("meterColor")} />
+                <Input id="meterColor" type="number" min="0" {...register("meterColor")} />
               </FormField>
             </div>
           </div>
@@ -237,7 +238,6 @@ export function JobForm({ customers, allEquipment, engineers, defaultValues }: J
           <Textarea
             id="internalNotes"
             rows={2}
-            placeholder="Internal notes visible to staff only…"
             {...register("internalNotes")}
           />
         </FormField>

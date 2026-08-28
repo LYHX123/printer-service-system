@@ -160,7 +160,7 @@ export function QuotationForm({
           <h2 className="text-sm font-semibold text-slate-900">Customer</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FormField label={t("quotationNumber")} htmlFor="quotationNumber" required error={errors.quotationNumber?.message}>
-              <Input id="quotationNumber" placeholder="e.g. QT00455" {...register("quotationNumber")} error={errors.quotationNumber?.message} />
+              <Input id="quotationNumber" {...register("quotationNumber")} error={errors.quotationNumber?.message} />
             </FormField>
             <FormField label="Customer" htmlFor="customerId" required error={errors.customerId?.message}>
               <Controller
@@ -175,7 +175,6 @@ export function QuotationForm({
                       field.onChange(customerId)
                       handleCustomerChange(customerId)
                     }}
-                    placeholder="Search customer by name…"
                     error={errors.customerId?.message}
                   />
                 )}
@@ -308,7 +307,6 @@ export function QuotationForm({
                         <Input
                           type="number"
                           min="1"
-                          placeholder="Qty"
                           onFocus={selectOnFocus}
                           {...register(`items.${index}.quantity`)}
                           error={errors.items?.[index]?.quantity?.message}
@@ -346,7 +344,7 @@ export function QuotationForm({
           <h2 className="text-sm font-semibold text-slate-900 mb-5">Cost Summary</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField label={`${t("vat")} (%)`} htmlFor="vatPercent" error={errors.vatPercent?.message}>
-              <Input id="vatPercent" type="number" min="0" max="100" step="0.01" placeholder="0.00" className="no-spinner" {...register("vatPercent")} />
+              <Input id="vatPercent" type="number" min="0" max="100" step="0.01" className="no-spinner" {...register("vatPercent")} />
             </FormField>
           </div>
 
@@ -378,7 +376,6 @@ export function QuotationForm({
             <Textarea
               id="remarks"
               rows={2}
-              placeholder="e.g. Quotation valid for 15 days. Price excludes site visit charges."
               {...register("remarks")}
             />
           </FormField>
@@ -386,7 +383,6 @@ export function QuotationForm({
             <Textarea
               id="internalNotes"
               rows={2}
-              placeholder="Internal notes not shown to the customer…"
               {...register("internalNotes")}
             />
           </FormField>

@@ -56,13 +56,13 @@ export function UserForm() {
 
         {/* Identity */}
         <FormField label={t("fullName")} htmlFor="name" required error={errors.name?.message} hint={t("nameIsLoginId")}>
-          <Input id="name" placeholder="e.g. Jane Doe" autoComplete="off" {...register("name")} error={errors.name?.message} />
+          <Input id="name" autoComplete="off" {...register("name")} error={errors.name?.message} />
         </FormField>
 
         {/* Credentials + role */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("password")} htmlFor="password" required error={errors.password?.message} hint={t("minimum8Characters")}>
-            <Input id="password" type="password" placeholder="••••••••" {...register("password")} error={errors.password?.message} />
+            <Input id="password" type="password" {...register("password")} error={errors.password?.message} />
           </FormField>
           <FormField label={t("role")} htmlFor="role" required error={errors.role?.message}>
             <Select id="role" {...register("role")}>
@@ -81,22 +81,21 @@ export function UserForm() {
             <Input
               id="email"
               type="email"
-              placeholder="e.g. user@gmail.com (optional)"
               {...register("email")}
               error={errors.email?.message}
             />
           </FormField>
           <FormField label={t("phone")} htmlFor="phone" error={errors.phone?.message}>
-            <Input id="phone" placeholder="e.g. +254700000000" {...register("phone")} error={errors.phone?.message} />
+            <Input id="phone" {...register("phone")} error={errors.phone?.message} />
           </FormField>
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("department")} htmlFor="department" error={errors.department?.message}>
-            <Input id="department" placeholder="e.g. IT" {...register("department")} error={errors.department?.message} />
+            <Input id="department" {...register("department")} error={errors.department?.message} />
           </FormField>
           <FormField label={t("position")} htmlFor="position" error={errors.position?.message}>
-            <Input id="position" placeholder="e.g. Engineer" {...register("position")} error={errors.position?.message} />
+            <Input id="position" {...register("position")} error={errors.position?.message} />
           </FormField>
         </div>
 

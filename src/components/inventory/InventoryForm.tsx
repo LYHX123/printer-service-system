@@ -159,7 +159,7 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("brand")} htmlFor="brand" required error={errors.brand?.message}>
-            <Input id="brand" placeholder="e.g. HP, Canon, Ricoh" {...register("brand")} error={errors.brand?.message} />
+            <Input id="brand" {...register("brand")} error={errors.brand?.message} />
           </FormField>
           <FormField label={t("name")} htmlFor="name" required error={errors.name?.message}>
             <Input id="name" {...register("name")} error={errors.name?.message} />
@@ -168,10 +168,10 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t("model")} htmlFor="model" error={errors.model?.message}>
-            <Input id="model" placeholder="e.g. M428fdw" {...register("model")} error={errors.model?.message} />
+            <Input id="model" {...register("model")} error={errors.model?.message} />
           </FormField>
           <FormField label={t("unit")} htmlFor="unit" error={errors.unit?.message}>
-            <Input id="unit" placeholder="e.g. PCS, SET, BOX" {...register("unit")} error={errors.unit?.message} />
+            <Input id="unit" {...register("unit")} error={errors.unit?.message} />
           </FormField>
         </div>
 
@@ -179,7 +179,6 @@ export function InventoryForm({ stockType, defaultValues, partId, imageUrl }: In
           <Textarea
             id="specification"
             rows={3}
-            placeholder="e.g. Compatible with HP LaserJet Pro / additional notes"
             {...register("specification")}
           />
         </FormField>

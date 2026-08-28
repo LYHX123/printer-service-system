@@ -147,7 +147,7 @@ export function CustomerSearchSelect({
         }}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? "Search customer…"}
+        placeholder={placeholder}
         error={error}
         disabled={disabled}
         autoComplete="off"

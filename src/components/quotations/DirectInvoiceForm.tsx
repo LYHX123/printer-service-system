@@ -115,7 +115,7 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
           <h2 className="text-sm font-semibold text-slate-900">{t("customer")}</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FormField label={t("invoiceNumberLabel")} htmlFor="invoiceNumber" required error={errors.invoiceNumber?.message}>
-              <Input id="invoiceNumber" placeholder="e.g. CN00456" {...register("invoiceNumber")} error={errors.invoiceNumber?.message} />
+              <Input id="invoiceNumber" {...register("invoiceNumber")} error={errors.invoiceNumber?.message} />
             </FormField>
             <FormField label={t("customer")} htmlFor="customerId" required error={errors.customerId?.message}>
               <Controller
@@ -130,7 +130,6 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
                       field.onChange(customerId)
                       handleCustomerChange(customerId)
                     }}
-                    placeholder={t("searchCustomersPlaceholder")}
                     error={errors.customerId?.message}
                   />
                 )}
@@ -225,7 +224,6 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
                         <Input
                           type="number"
                           min="1"
-                          placeholder="Qty"
                           onFocus={selectOnFocus}
                           {...register(`items.${index}.quantity`)}
                           error={errors.items?.[index]?.quantity?.message}
@@ -263,7 +261,7 @@ export function DirectInvoiceForm({ customers, spareParts, defaultValues, invoic
           <h2 className="text-sm font-semibold text-slate-900 mb-5">{t("costSummary")}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField label={`${t("vat")} (%)`} htmlFor="vatPercent" error={errors.vatPercent?.message}>
-              <Input id="vatPercent" type="number" min="0" max="100" step="0.01" placeholder="0.00" className="no-spinner" {...register("vatPercent")} />
+              <Input id="vatPercent" type="number" min="0" max="100" step="0.01" className="no-spinner" {...register("vatPercent")} />
             </FormField>
           </div>
 

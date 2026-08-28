@@ -112,11 +112,11 @@ export function AddMovementModal({
         </FormField>
 
         <FormField label="Reference No" htmlFor="movementReference" error={errors.reference?.message}>
-          <Input id="movementReference" placeholder="e.g. PO-0001, JOB-20260001…" {...register("reference")} />
+          <Input id="movementReference" {...register("reference")} />
         </FormField>
 
         <FormField label="Remark" htmlFor="movementRemark" error={errors.remark?.message}>
-          <Textarea id="movementRemark" rows={3} placeholder="Optional note…" {...register("remark")} />
+          <Textarea id="movementRemark" rows={3} {...register("remark")} />
         </FormField>
       </form>
     </Modal>

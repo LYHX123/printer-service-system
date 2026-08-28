@@ -143,7 +143,6 @@ export function CreateTaskModal({
         >
           <Input
             id="taskTitle"
-            placeholder={language === "zh" ? "例如：在总部安装打印机" : "e.g. Install Printer at HQ"}
             {...register("title")}
           />
         </FormField>
@@ -161,7 +160,6 @@ export function CreateTaskModal({
             >
               <Input
                 id="stepTitle"
-                placeholder={language === "zh" ? "例如：安装打印机" : "e.g. Install Printer"}
                 {...register("initialStepTitle")}
               />
             </FormField>
@@ -173,7 +171,6 @@ export function CreateTaskModal({
               <Textarea
                 id="stepDesc"
                 rows={3}
-                placeholder={language === "zh" ? "描述需要完成的事项..." : "Describe what needs to happen…"}
                 {...register("initialStepDescription")}
               />
             </FormField>
@@ -191,7 +188,6 @@ export function CreateTaskModal({
             <p className="text-xs text-red-600 mb-2">{t("taskParticipantRequired")}</p>
           )}
           <Input
-            placeholder={t("taskSearchStaff")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="mb-2"

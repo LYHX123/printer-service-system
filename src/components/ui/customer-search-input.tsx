@@ -72,7 +72,7 @@ export function CustomerSearchInput({ value, onChange, error, placeholder }: Cus
       <Input
         value={value}
         onChange={handleChange}
-        placeholder={placeholder ?? "Type to search customers or enter name…"}
+        placeholder={placeholder}
         className={error ? "border-red-400" : ""}
         autoComplete="off"
       />

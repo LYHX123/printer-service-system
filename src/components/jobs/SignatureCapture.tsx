@@ -73,7 +73,6 @@ export function SignatureCapture({ jobId }: SignatureCaptureProps) {
           <div className="space-y-2">
             <Textarea
               rows={2}
-              placeholder="Reason for declining to sign"
               value={declineNote}
               onChange={(e) => setDeclineNote(e.target.value)}
             />

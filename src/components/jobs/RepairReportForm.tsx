@@ -71,7 +71,6 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
         <Textarea
           id="diagnosis"
           rows={3}
-          placeholder="What was found to be the cause of the fault…"
           {...register("diagnosis")}
           error={errors.diagnosis?.message}
         />
@@ -81,7 +80,6 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
         <Textarea
           id="workDone"
           rows={3}
-          placeholder="What was done to resolve the issue…"
           {...register("workDone")}
           error={errors.workDone?.message}
         />
@@ -91,7 +89,6 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
         <Textarea
           id="recommendations"
           rows={2}
-          placeholder="Recommendations for the customer (optional)…"
           {...register("recommendations")}
         />
       </FormField>
@@ -150,7 +147,6 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
                       </Select>
                     )}
                     <Input
-                      placeholder="Part name"
                       {...register(`parts.${index}.partName`)}
                       error={errors.parts?.[index]?.partName?.message}
                     />
@@ -164,7 +160,6 @@ export function RepairReportForm({ jobId, spareParts, defaultValues }: RepairRep
                     <Input
                       type="number"
                       min="1"
-                      placeholder="Qty"
                       {...register(`parts.${index}.quantity`)}
                       error={errors.parts?.[index]?.quantity?.message}
                     />

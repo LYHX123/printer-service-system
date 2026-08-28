@@ -22,7 +22,7 @@ interface EditStepModalProps {
 export function EditStepModal({ isOpen, onClose, step }: EditStepModalProps) {
   const router = useRouter()
   const toast = useToast()
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
 
   const {
     register,
@@ -77,7 +77,6 @@ export function EditStepModal({ isOpen, onClose, step }: EditStepModalProps) {
         >
           <Input
             id="editStepTitle"
-            placeholder={language === "zh" ? "例如：已安排、已完成、已送达" : "e.g. Arranged, Completed, Delivered"}
             {...register("title")}
           />
         </FormField>

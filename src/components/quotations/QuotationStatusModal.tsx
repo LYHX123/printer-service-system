@@ -90,7 +90,6 @@ export function QuotationStatusModal({
       <form id="quotation-status-form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Textarea
           rows={3}
-          placeholder="Optional note (e.g. reason for rejection, additional context)…"
           {...register("note")}
         />
       </form>

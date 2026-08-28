@@ -109,29 +109,29 @@ export function CompanySettingsForm({ defaultValues, logoUrl }: CompanySettingsF
 
         <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("companyName")} htmlFor="name" required error={errors.name?.message}>
-            <Input id="name" placeholder="e.g. TechFix Services" {...register("name")} error={errors.name?.message} />
+            <Input id="name" {...register("name")} error={errors.name?.message} />
           </FormField>
           <FormField label={t("phoneNumber")} htmlFor="phone" error={errors.phone?.message}>
-            <Input id="phone" type="tel" placeholder="e.g. +254 700 000000" {...register("phone")} />
+            <Input id="phone" type="tel" {...register("phone")} />
           </FormField>
         </div>
 
         <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("email")} htmlFor="email" error={errors.email?.message}>
-            <Input id="email" type="email" placeholder="e.g. info@company.com" {...register("email")} />
+            <Input id="email" type="email" {...register("email")} />
           </FormField>
           <FormField label={t("website")} htmlFor="website" error={errors.website?.message}>
-            <Input id="website" placeholder="e.g. https://www.company.com" {...register("website")} />
+            <Input id="website" {...register("website")} />
           </FormField>
         </div>
 
         <FormField label={t("address")} htmlFor="address" error={errors.address?.message}>
-          <Textarea id="address" placeholder={t("fullCompanyAddress")} rows={3} {...register("address")} />
+          <Textarea id="address" rows={3} {...register("address")} />
         </FormField>
 
         <div className={cn("grid grid-cols-1 sm:grid-cols-2", isAppMode ? "gap-3.5" : "gap-5")}>
           <FormField label={t("kraPin")} htmlFor="kraPin" error={errors.kraPin?.message}>
-            <Input id="kraPin" placeholder="e.g. P000000000A" {...register("kraPin")} />
+            <Input id="kraPin" {...register("kraPin")} />
           </FormField>
           <FormField label={t("vatPercentage")} htmlFor="vatPercent" required error={errors.vatPercent?.message}>
             <Input id="vatPercent" type="number" step="0.01" min={0} max={100} className="no-spinner" {...register("vatPercent")} error={errors.vatPercent?.message} />

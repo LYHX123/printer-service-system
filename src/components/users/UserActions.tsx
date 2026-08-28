@@ -241,21 +241,21 @@ export function UserActions({
       >
         <form id="edit-profile-form" onSubmit={handleSubmit(handleSaveProfile)} noValidate className="space-y-4">
           <FormField label={t("fullName")} htmlFor="edit-name" required error={errors.name?.message}>
-            <Input id="edit-name" placeholder="e.g. Jane Doe" {...register("name")} error={errors.name?.message} />
+            <Input id="edit-name" {...register("name")} error={errors.name?.message} />
           </FormField>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FormField label={t("phone")} htmlFor="edit-phone" error={errors.phone?.message}>
-              <Input id="edit-phone" placeholder="+254700000000" {...register("phone")} error={errors.phone?.message} />
+              <Input id="edit-phone" {...register("phone")} error={errors.phone?.message} />
             </FormField>
             <FormField label={t("department")} htmlFor="edit-dept" error={errors.department?.message}>
-              <Input id="edit-dept" placeholder="IT" {...register("department")} error={errors.department?.message} />
+              <Input id="edit-dept" {...register("department")} error={errors.department?.message} />
             </FormField>
             <FormField label={t("position")} htmlFor="edit-pos" error={errors.position?.message}>
-              <Input id="edit-pos" placeholder="Engineer" {...register("position")} error={errors.position?.message} />
+              <Input id="edit-pos" {...register("position")} error={errors.position?.message} />
             </FormField>
           </div>
           <FormField label="New Password" htmlFor="edit-pwd" error={errors.newPassword?.message} hint="Leave blank to keep current password">
-            <Input id="edit-pwd" type="password" placeholder="••••••••" autoComplete="new-password" {...register("newPassword")} error={errors.newPassword?.message} />
+            <Input id="edit-pwd" type="password" autoComplete="new-password" {...register("newPassword")} error={errors.newPassword?.message} />
           </FormField>
         </form>
       </Modal>

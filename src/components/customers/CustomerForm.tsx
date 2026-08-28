@@ -107,33 +107,33 @@ export function CustomerForm({ defaultValues, customerId }: CustomerFormProps) {
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FormField label={t("companyName")} htmlFor="companyName" required error={errors.companyName?.message}>
-              <Input id="companyName" placeholder="e.g. ABC Sdn Bhd" {...register("companyName")} error={errors.companyName?.message} />
+              <Input id="companyName" {...register("companyName")} error={errors.companyName?.message} />
             </FormField>
             <FormField label={t("shortName")} htmlFor="shortName" required error={errors.shortName?.message}>
-              <Input id="shortName" placeholder="e.g. CSCEC" {...register("shortName")} error={errors.shortName?.message} />
+              <Input id="shortName" {...register("shortName")} error={errors.shortName?.message} />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FormField label={t("pinNumber")} htmlFor="pinNumber" error={errors.pinNumber?.message}>
-              <Input id="pinNumber" placeholder="e.g. P000000000A" {...register("pinNumber")} />
+              <Input id="pinNumber" {...register("pinNumber")} />
             </FormField>
             <FormField label={t("mainContactName")} htmlFor="name" error={errors.name?.message}>
-              <Input id="name" placeholder="e.g. Ahmad bin Abdullah" {...register("name")} />
+              <Input id="name" {...register("name")} />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FormField label={t("mainContactPhone")} htmlFor="phone" error={errors.phone?.message}>
-              <Input id="phone" type="tel" placeholder="e.g. 012-3456789" {...register("phone")} error={errors.phone?.message} />
+              <Input id="phone" type="tel" {...register("phone")} error={errors.phone?.message} />
             </FormField>
             <FormField label={t("mainContactEmail")} htmlFor="email" error={errors.email?.message}>
-              <Input id="email" type="email" placeholder="e.g. hq@company.com" {...register("email")} error={errors.email?.message} />
+              <Input id="email" type="email" {...register("email")} error={errors.email?.message} />
             </FormField>
           </div>
 
           <FormField label={t("mainAddress")} htmlFor="location" error={errors.location?.message}>
-            <Input id="location" placeholder="e.g. Nairobi, Kenya" {...register("location")} />
+            <Input id="location" {...register("location")} />
           </FormField>
 
           <FormField label={t("notes")} htmlFor="notes" error={errors.notes?.message}>

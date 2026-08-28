@@ -82,7 +82,7 @@ export default async function AuditLogPage({
       <PageHeader title={<T k="auditLog" />} subtitle={<T k="auditLogDesc" />} />
 
       <form method="GET" className="filter-bar flex flex-wrap items-center gap-2 mb-4">
-        <TInput name="search" type="search" placeholderKey="auditLogSearchPlaceholder" defaultValue={search ?? ""} className="w-64" />
+        <TInput name="search" type="search" defaultValue={search ?? ""} className="w-64" />
         <Select name="userId" defaultValue={userId ?? ""} className="w-44">
           <option value=""><T k="auditLogAllUsers" /></option>
           {filterOptions.users.map((u) => (

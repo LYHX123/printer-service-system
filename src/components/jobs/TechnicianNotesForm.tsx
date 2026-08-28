@@ -12,15 +12,15 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import type { EquipmentType } from "@/types"
-import { TECHNICIAN_NOTES_PLACEHOLDER } from "@/types"
 
 interface TechnicianNotesFormProps {
   jobId: string
   currentNotes: string | null
+  /** Retained in the props contract for call-site compatibility; no longer used for a field placeholder. */
   equipmentType: EquipmentType
 }
 
-export function TechnicianNotesForm({ jobId, currentNotes, equipmentType }: TechnicianNotesFormProps) {
+export function TechnicianNotesForm({ jobId, currentNotes }: TechnicianNotesFormProps) {
   const router = useRouter()
   const toast = useToast()
   const { t } = useLanguage()
@@ -70,7 +70,6 @@ export function TechnicianNotesForm({ jobId, currentNotes, equipmentType }: Tech
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <Textarea
         rows={6}
-        placeholder={TECHNICIAN_NOTES_PLACEHOLDER[equipmentType]}
         {...register("technicianNotes")}
         className="w-full"
       />

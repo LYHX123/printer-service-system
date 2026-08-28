@@ -21,9 +21,10 @@ export function GenerateInvoiceFromDeliveryTitle({ number }: { number: string })
 }
 
 export function TInput({
-  placeholderKey,
+  // Accepted for backwards compatibility with existing call sites, but no
+  // longer rendered — input fields across the system show no placeholder.
+  placeholderKey: _placeholderKey,
   ...props
-}: { placeholderKey: TranslationKey } & InputHTMLAttributes<HTMLInputElement>) {
-  const { t } = useLanguage()
-  return <Input placeholder={t(placeholderKey)} {...props} />
+}: { placeholderKey?: TranslationKey } & InputHTMLAttributes<HTMLInputElement>) {
+  return <Input {...props} />
 }

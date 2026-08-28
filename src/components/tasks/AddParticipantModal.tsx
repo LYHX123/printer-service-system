@@ -85,7 +85,6 @@ export function AddParticipantModal({ isOpen, onClose, taskId, candidateUsers }:
       }
     >
       <Input
-        placeholder={t("taskSearchStaff")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="mb-2"

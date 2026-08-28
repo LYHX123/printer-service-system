@@ -230,7 +230,7 @@ export function ShopAccountEntryModal({ isOpen, onClose, categories, defaultType
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField label={t("category")} htmlFor="saCategory" required error={errors.categoryId?.message}>
             <Select id="saCategory" {...register("categoryId")}>
-              <option value="" disabled>{t("category")}</option>
+              <option value="" disabled></option>
               {categoriesForType.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -249,7 +249,7 @@ export function ShopAccountEntryModal({ isOpen, onClose, categories, defaultType
         )}
 
         <FormField label={t("description")} htmlFor="saDescription" required error={errors.description?.message}>
-          <Input id="saDescription" placeholder="e.g. Toner purchase for HP printers" {...register("description")} />
+          <Input id="saDescription" {...register("description")} />
         </FormField>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

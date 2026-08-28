@@ -81,7 +81,7 @@ export function ConvertToDeliveryModal({ isOpen, onClose, quotationId }: Convert
           <Input id="deliveryDate" type="date" {...register("deliveryDate")} />
         </FormField>
         <FormField label={t("referenceOptionalLabel")} htmlFor="reference" error={errors.reference?.message}>
-          <Input id="reference" placeholder={t("referencePlaceholder")} {...register("reference")} />
+          <Input id="reference" {...register("reference")} />
         </FormField>
       </form>
     </Modal>

@@ -90,7 +90,6 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
         >
           <Input
             id="stepTitle"
-            placeholder={language === "zh" ? "例如：已安排、已完成、已送达" : "e.g. Arranged, Completed, Delivered"}
             {...register("title")}
           />
         </FormField>
@@ -102,7 +101,6 @@ export function AddStepModal({ isOpen, onClose, taskId, nextStepNumber }: AddSte
           <Textarea
             id="stepDesc"
             rows={4}
-            placeholder={language === "zh" ? "添加此步骤的详细信息..." : "Add details about this step…"}
             {...register("description")}
           />
         </FormField>

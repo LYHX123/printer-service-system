@@ -56,7 +56,7 @@ export default async function CustomersPage({
 
         <form method="GET" className="flex gap-2">
           <div className="flex-1">
-            <AppSearchField name="search" placeholderKey="searchCustomersPlaceholder" defaultValue={search} />
+            <AppSearchField name="search" defaultValue={search} />
           </div>
           <button
             type="submit"
@@ -132,7 +132,6 @@ export default async function CustomersPage({
           <TInput
             name="search"
             type="search"
-            placeholderKey="searchCustomersPlaceholder"
             defaultValue={search}
             className="pl-9"
           />

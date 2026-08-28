@@ -39,8 +39,8 @@ export default async function StockMovementsPage({
   const requestedType = isStockType(category) ? category : undefined
   const stockType = requestedType && viewableTypes.includes(requestedType) ? requestedType : undefined
   const validType = TRANSACTION_TYPES.includes(type as TransactionType) ? (type as TransactionType) : undefined
-  // Plain text field (not a native date input) so the placeholder can be translated — validate the
-  // expected YYYY-MM-DD shape before using it as a filter; anything else is treated as no filter.
+  // Plain text field (not a native date input) — validate the expected YYYY-MM-DD
+  // shape before using it as a filter; anything else is treated as no filter.
   const validDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined
 
   const movements = await getStockMovements(companyId, {
@@ -75,7 +75,7 @@ export default async function StockMovementsPage({
       />
 
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
-        <Input name="search" type="search" placeholder="Search item name or part number…" defaultValue={search} className="w-56" />
+        <Input name="search" type="search" defaultValue={search} className="w-56" />
         <Select name="category" defaultValue={stockType ?? ""} className="w-44">
           <option value="">All Stock Categories</option>
           {viewableTypes.map((st) => (
@@ -92,7 +92,6 @@ export default async function StockMovementsPage({
           name="date"
           type="text"
           inputMode="numeric"
-          placeholderKey="selectDate"
           defaultValue={date ?? ""}
           maxLength={10}
           className="w-44"

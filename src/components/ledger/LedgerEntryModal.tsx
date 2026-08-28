@@ -242,9 +242,7 @@ export function LedgerEntryModal({ isOpen, onClose, categories, defaultType, ent
 
         <FormField label={t("category")} htmlFor="entryCategory" required error={errors.categoryId?.message}>
           <Select id="entryCategory" {...register("categoryId")}>
-            <option value="" disabled>
-              {t("category")}
-            </option>
+            <option value="" disabled></option>
             {categoriesForType.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}

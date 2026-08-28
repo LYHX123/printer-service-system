@@ -195,7 +195,6 @@ export default async function IncomeExpenseBookPage({
           name="search"
           type="text"
           defaultValue={search ?? ""}
-          placeholder="Search income or expense..."
           className="w-56"
         />
         <Button type="submit" variant="secondary"><T k="filter" /></Button>

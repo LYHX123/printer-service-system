@@ -41,7 +41,6 @@ export function StockItemSearch({ spareParts, onSelect }: StockItemSearchProps) 
       <Input
         type="search"
         icon={<Search className="h-4 w-4" />}
-        placeholder="Search stock items by brand, name or part number…"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)
