@@ -1100,6 +1100,14 @@ model LedgerEntry {
   customer    Customer?           @relation(fields: [customerId], references: [id])
   createdBy   User                @relation(fields: [createdById], references: [id])
   allocations ReceiptAllocation[]
+
+  // Supports the Income & Expense Book list query (WHERE companyId = ? ORDER BY date DESC)
+  // and the current-month stats aggregate (WHERE companyId = ? AND date BETWEEN ...).
+  @@index([companyId, date])
+  // Supports filtering the list by type (INCOME/EXPENSE).
+  @@index([companyId, type])
+  // Supports filtering the list by category.
+  @@index([companyId, categoryId])
 }
 
 // ─── Shop Account Module ───────────────────────────────────────────────────────

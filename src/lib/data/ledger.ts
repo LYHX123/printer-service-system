@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { extractTrailingNumber } from "@/lib/numbering"
 import { resolveSalesLedgerInvoiceNo } from "@/lib/ledger-utils"
-import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } from "@/types"
+import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES, LEDGER_ENTRY_TYPE_LABELS, LEDGER_PAYMENT_METHOD_LABELS } from "@/types"
+import type { Prisma } from "@/generated/prisma/client"
 import type {
   LedgerCategory,
   LedgerEntryWithRelations,
@@ -13,24 +14,38 @@ import type {
 
 // ─── Categories ─────────────────────────────────────────────────────────────────
 
-/** Ensures default categories exist for a company (seeded independently per type), then returns all active categories (optionally filtered by type). */
+/**
+ * Ensures default categories exist for a company (seeded independently per type), then returns
+ * all active categories (optionally filtered by type).
+ *
+ * Steady-state cost is a single query: the "has this company ever had a category of this type"
+ * check (which must ignore isActive, so a company whose categories were all deactivated doesn't
+ * get re-seeded) is derived from the same findMany used to build the returned list, instead of
+ * two separate COUNT queries run on every call. The only extra round trips (createMany + a
+ * refetch) happen once per company, the first time it ever needs a given type's defaults.
+ */
 export async function getLedgerCategories(
   companyId: string,
   type?: LedgerEntryType
 ): Promise<LedgerCategory[]> {
-  const [incomeCount, expenseCount] = await Promise.all([
-    prisma.ledgerCategory.count({ where: { companyId, type: "INCOME" } }),
-    prisma.ledgerCategory.count({ where: { companyId, type: "EXPENSE" } }),
-  ])
+  const all = await prisma.ledgerCategory.findMany({
+    where: { companyId },
+    orderBy: { name: "asc" },
+  })
+
+  const hasIncome = all.some((c) => c.type === "INCOME")
+  const hasExpense = all.some((c) => c.type === "EXPENSE")
 
   const seedData = [
-    ...(incomeCount === 0 ? DEFAULT_INCOME_CATEGORIES.map((name) => ({ companyId, type: "INCOME" as const, name })) : []),
-    ...(expenseCount === 0 ? DEFAULT_EXPENSE_CATEGORIES.map((name) => ({ companyId, type: "EXPENSE" as const, name })) : []),
+    ...(!hasIncome ? DEFAULT_INCOME_CATEGORIES.map((name) => ({ companyId, type: "INCOME" as const, name })) : []),
+    ...(!hasExpense ? DEFAULT_EXPENSE_CATEGORIES.map((name) => ({ companyId, type: "EXPENSE" as const, name })) : []),
   ]
-  if (seedData.length > 0) {
-    await prisma.ledgerCategory.createMany({ data: seedData, skipDuplicates: true })
+
+  if (seedData.length === 0) {
+    return all.filter((c) => c.isActive && (!type || c.type === type))
   }
 
+  await prisma.ledgerCategory.createMany({ data: seedData, skipDuplicates: true })
   return prisma.ledgerCategory.findMany({
     where: { companyId, isActive: true, ...(type ? { type } : {}) },
     orderBy: { name: "asc" },
@@ -63,6 +78,14 @@ export interface LedgerEntryFilters {
   search?: string
 }
 
+export interface LedgerEntryPage {
+  entries: LedgerEntryWithRelations[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
 function dateRangeWhere(from?: string, to?: string) {
   if (!from && !to) return undefined
   return {
@@ -71,77 +94,147 @@ function dateRangeWhere(from?: string, to?: string) {
   }
 }
 
-export async function getLedgerEntries(
-  companyId: string,
-  filters: LedgerEntryFilters = {}
-): Promise<LedgerEntryWithRelations[]> {
-  const { from, to, type, categoryId, paymentMethod, search } = filters
-  const dateRange = dateRangeWhere(from, to)
-
-  const rows = await prisma.ledgerEntry.findMany({
-    where: {
-      companyId,
-      ...(type ? { type } : {}),
-      ...(categoryId ? { categoryId } : {}),
-      ...(paymentMethod ? { paymentMethod } : {}),
-      ...(dateRange ? { date: dateRange } : {}),
-    },
-    include: {
-      category: { select: { id: true, name: true, type: true } },
-      createdBy: { select: { id: true, name: true } },
-      customer: { select: { id: true, companyName: true } },
-      allocations: {
-        select: {
-          salesLedgerEntryId: true,
-          allocatedAmount: true,
-          salesLedgerEntry: { select: { orderNo: true } },
-        },
-      },
-    },
-    orderBy: { date: "desc" },
-  })
-
-  const entries: LedgerEntryWithRelations[] = rows.map((e) => ({
-    ...e,
-    amount: Number(e.amount),
-    allocations: e.allocations.map((a) => ({
-      salesLedgerEntryId: a.salesLedgerEntryId,
-      amount: Number(a.allocatedAmount),
-      orderNo: a.salesLedgerEntry.orderNo,
-    })),
-  }))
-
-  if (!search?.trim()) return entries
-
-  const term = search.trim().toLowerCase()
-  return entries.filter(
-    (e) =>
-      e.category.name.toLowerCase().includes(term) ||
-      (e.remark ?? "").toLowerCase().includes(term) ||
-      e.createdBy.name.toLowerCase().includes(term) ||
-      e.paymentMethod.toLowerCase().includes(term) ||
-      e.type.toLowerCase().includes(term)
-  )
+/** Every enum key (not label) whose own text contains `term` — e.g. term "cas" matches "CASH". Enum lists are fixed and tiny, so this never touches a data row. */
+function matchingEnumKeys<T extends string>(labels: Record<T, string>, term: string): T[] {
+  return (Object.keys(labels) as T[]).filter((key) => key.toLowerCase().includes(term))
 }
 
+/**
+ * Builds the shared Prisma `where` for both the paginated list and the unpaginated Excel
+ * export — every filter (including `search`) is pushed down to the database, never applied by
+ * re-reading all rows into memory. `search` matches the same fields the old in-memory filter
+ * did (category name, remark, creator name, payment method, type), just expressed as DB-level
+ * conditions: a plain `contains` for the real string columns, and an `in` over whichever enum
+ * keys contain the term for the two enum columns (payment method, type).
+ */
+function buildLedgerEntryWhere(companyId: string, filters: LedgerEntryFilters): Prisma.LedgerEntryWhereInput {
+  const { from, to, type, categoryId, paymentMethod, search } = filters
+  const dateRange = dateRangeWhere(from, to)
+  const term = search?.trim().toLowerCase()
+
+  const where: Prisma.LedgerEntryWhereInput = {
+    companyId,
+    ...(type ? { type } : {}),
+    ...(categoryId ? { categoryId } : {}),
+    ...(paymentMethod ? { paymentMethod } : {}),
+    ...(dateRange ? { date: dateRange } : {}),
+  }
+
+  if (term) {
+    const matchingTypes = matchingEnumKeys(LEDGER_ENTRY_TYPE_LABELS, term)
+    const matchingPaymentMethods = matchingEnumKeys(LEDGER_PAYMENT_METHOD_LABELS, term)
+    where.OR = [
+      { category: { name: { contains: term, mode: "insensitive" } } },
+      { remark: { contains: term, mode: "insensitive" } },
+      { createdBy: { name: { contains: term, mode: "insensitive" } } },
+      ...(matchingPaymentMethods.length > 0 ? [{ paymentMethod: { in: matchingPaymentMethods } }] : []),
+      ...(matchingTypes.length > 0 ? [{ type: { in: matchingTypes } }] : []),
+    ]
+  }
+
+  return where
+}
+
+const LEDGER_ENTRY_INCLUDE = {
+  category: { select: { id: true, name: true, type: true } },
+  createdBy: { select: { id: true, name: true } },
+  customer: { select: { id: true, companyName: true } },
+  allocations: {
+    select: {
+      salesLedgerEntryId: true,
+      allocatedAmount: true,
+      salesLedgerEntry: { select: { orderNo: true } },
+    },
+  },
+} satisfies Prisma.LedgerEntryInclude
+
+// Secondary `id` key makes the sort stable across equal `date` values, so paging forward never
+// re-shows or skips a row just because several entries share the same date.
+const LEDGER_ENTRY_ORDER_BY: Prisma.LedgerEntryOrderByWithRelationInput[] = [{ date: "desc" }, { id: "desc" }]
+
+/** All matching entries, unpaginated — used only by the Excel export, which must always cover every filtered record regardless of the list page's current page. */
+export async function getLedgerEntries(companyId: string, filters?: LedgerEntryFilters): Promise<LedgerEntryWithRelations[]>
+/** One page of matching entries plus the total count — used by the Income & Expense Book list. */
+export async function getLedgerEntries(
+  companyId: string,
+  filters: LedgerEntryFilters,
+  pagination: { page: number; pageSize: number }
+): Promise<LedgerEntryPage>
+export async function getLedgerEntries(
+  companyId: string,
+  filters: LedgerEntryFilters = {},
+  pagination?: { page: number; pageSize: number }
+): Promise<LedgerEntryWithRelations[] | LedgerEntryPage> {
+  const where = buildLedgerEntryWhere(companyId, filters)
+
+  if (!pagination) {
+    const rows = await prisma.ledgerEntry.findMany({
+      where,
+      include: LEDGER_ENTRY_INCLUDE,
+      orderBy: LEDGER_ENTRY_ORDER_BY,
+    })
+    return rows.map((e) => ({
+      ...e,
+      amount: Number(e.amount),
+      allocations: e.allocations.map((a) => ({
+        salesLedgerEntryId: a.salesLedgerEntryId,
+        amount: Number(a.allocatedAmount),
+        orderNo: a.salesLedgerEntry.orderNo,
+      })),
+    }))
+  }
+
+  const page = pagination.page > 0 ? Math.floor(pagination.page) : 1
+  const pageSize = pagination.pageSize > 0 ? Math.floor(pagination.pageSize) : 50
+
+  const [rows, total] = await Promise.all([
+    prisma.ledgerEntry.findMany({
+      where,
+      include: LEDGER_ENTRY_INCLUDE,
+      orderBy: LEDGER_ENTRY_ORDER_BY,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.ledgerEntry.count({ where }),
+  ])
+
+  return {
+    entries: rows.map((e) => ({
+      ...e,
+      amount: Number(e.amount),
+      allocations: e.allocations.map((a) => ({
+        salesLedgerEntryId: a.salesLedgerEntryId,
+        amount: Number(a.allocatedAmount),
+        orderNo: a.salesLedgerEntry.orderNo,
+      })),
+    })),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  }
+}
+
+/**
+ * Current calendar month's income/expense totals — summed in the database (one `groupBy`,
+ * using the companyId+date index) instead of pulling every matching row into Node and reducing
+ * there. Same two numbers, same rounding (Postgres `numeric` SUM is exact; the final `Number()`
+ * conversion happens at the same point as before), just computed where the data already lives.
+ */
 export async function getLedgerMonthStats(companyId: string): Promise<{ income: number; expense: number }> {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
-  const rows = await prisma.ledgerEntry.findMany({
+  const sums = await prisma.ledgerEntry.groupBy({
+    by: ["type"],
     where: { companyId, date: { gte: monthStart, lte: monthEnd } },
-    select: { type: true, amount: true },
+    _sum: { amount: true },
   })
 
-  let income = 0
-  let expense = 0
-  for (const r of rows) {
-    const a = Number(r.amount)
-    if (r.type === "INCOME") income += a
-    else expense += a
-  }
-  return { income, expense }
+  const income = sums.find((s) => s.type === "INCOME")?._sum.amount
+  const expense = sums.find((s) => s.type === "EXPENSE")?._sum.amount
+  return { income: Number(income ?? 0), expense: Number(expense ?? 0) }
 }
 
 // ─── Sales Ledger ────────────────────────────────────────────────────────────────

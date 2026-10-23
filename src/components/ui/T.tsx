@@ -20,6 +20,16 @@ export function GenerateInvoiceFromDeliveryTitle({ number }: { number: string })
   return <>{t("generateInvoiceFromDeliveryTitle").replace("{number}", number)}</>
 }
 
+export function LedgerPageInfo({ page, totalPages }: { page: number; totalPages: number }) {
+  const { t } = useLanguage()
+  return <>{t("ledgerPageInfo").replace("{page}", String(page)).replace("{totalPages}", String(totalPages))}</>
+}
+
+export function LedgerTotalResults({ count }: { count: number }) {
+  const { t } = useLanguage()
+  return <>{t("ledgerTotalResults").replace("{count}", String(count))}</>
+}
+
 export function TInput({
   // Accepted for backwards compatibility with existing call sites, but no
   // longer rendered — input fields across the system show no placeholder.

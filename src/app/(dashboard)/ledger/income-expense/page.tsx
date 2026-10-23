@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { LedgerEntryTypeBadge, PaymentMethodLabel } from "@/components/ui/badge"
-import { T } from "@/components/ui/T"
+import { T, LedgerPageInfo, LedgerTotalResults } from "@/components/ui/T"
 import { LedgerAddButtons } from "@/components/ledger/LedgerAddButtons"
 import { LedgerEntryActions } from "@/components/ledger/LedgerEntryActions"
 import { AppStatCard } from "@/components/app-ui/AppStatCard"
@@ -25,11 +25,12 @@ import { formatCurrency } from "@/lib/utils"
 import type { LedgerEntryType, Role } from "@/types"
 
 const TYPES: LedgerEntryType[] = ["INCOME", "EXPENSE"]
+const PAGE_SIZE = 50
 
 export default async function IncomeExpenseBookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string; search?: string }>
+  searchParams: Promise<{ from?: string; to?: string; type?: string; categoryId?: string; search?: string; page?: string }>
 }) {
   const session = await auth()
   const role = session!.user.role as Role
@@ -40,18 +41,22 @@ export default async function IncomeExpenseBookPage({
   const companyId = session!.user.companyId as string
   const canAllocate = canAllocateReceipt(role, permissions)
 
-  const { from, to, type, categoryId, search } = await searchParams
+  const { from, to, type, categoryId, search, page } = await searchParams
   const validType = TYPES.includes(type as LedgerEntryType) ? (type as LedgerEntryType) : undefined
+  const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1
 
-  const [entries, categories, monthStats] = await Promise.all([
-    getLedgerEntries(companyId, { from, to, type: validType, categoryId, search }),
+  const [entryPage, categories, monthStats] = await Promise.all([
+    getLedgerEntries(companyId, { from, to, type: validType, categoryId, search }, { page: pageNum, pageSize: PAGE_SIZE }),
     getLedgerCategories(companyId),
     getLedgerMonthStats(companyId),
   ])
+  const { entries, total, totalPages } = entryPage
+  const currentPage = entryPage.page
 
   const hasFilters = Boolean(from || to || type || categoryId || search)
 
-  // Build export URL with current active filters
+  // Build export URL with current active filters — deliberately excludes `page`: the export
+  // always covers every filtered record, not just the page currently on screen.
   const exportParams = new URLSearchParams()
   if (from) exportParams.set("from", from)
   if (to) exportParams.set("to", to)
@@ -59,6 +64,14 @@ export default async function IncomeExpenseBookPage({
   if (categoryId) exportParams.set("categoryId", categoryId)
   if (search) exportParams.set("search", search)
   const exportUrl = `/api/ledger/export?${exportParams.toString()}`
+
+  // Builds a same-page link that keeps every active filter, only swapping `page` — used by the
+  // pagination controls below so switching pages never drops the current search/filters.
+  function pageHref(targetPage: number): string {
+    const params = new URLSearchParams(exportParams)
+    params.set("page", String(targetPage))
+    return `/ledger/income-expense?${params.toString()}`
+  }
 
   const paymentMethodColumnLabel =
     validType === "INCOME" ? <T k="receivingMethod" /> : validType === "EXPENSE" ? <T k="paymentMethod" /> : <T k="paymentOrReceivingMethod" />
@@ -129,6 +142,25 @@ export default async function IncomeExpenseBookPage({
             ))}
           </div>
         )}
+
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-slate-500"><LedgerTotalResults count={total} /></p>
+          <div className="flex items-center gap-2">
+            <Link href={pageHref(Math.max(1, currentPage - 1))} aria-disabled={currentPage <= 1} tabIndex={currentPage <= 1 ? -1 : undefined}>
+              <Button type="button" variant="outline" size="sm" disabled={currentPage <= 1}>
+                <T k="ledgerPrevious" />
+              </Button>
+            </Link>
+            <span className="text-xs text-slate-500">
+              <LedgerPageInfo page={currentPage} totalPages={totalPages} />
+            </span>
+            <Link href={pageHref(Math.min(totalPages, currentPage + 1))} aria-disabled={currentPage >= totalPages} tabIndex={currentPage >= totalPages ? -1 : undefined}>
+              <Button type="button" variant="outline" size="sm" disabled={currentPage >= totalPages}>
+                <T k="ledgerNext" />
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }
@@ -251,6 +283,25 @@ export default async function IncomeExpenseBookPage({
         emptyTitle={<T k="noLedgerEntriesFound" />}
         emptyDescription={<T k="noLedgerEntriesDesc" />}
       />
+
+      <div className="flex items-center justify-between mt-4">
+        <p className="text-xs text-slate-500"><LedgerTotalResults count={total} /></p>
+        <div className="flex items-center gap-2">
+          <Link href={pageHref(Math.max(1, currentPage - 1))} aria-disabled={currentPage <= 1} tabIndex={currentPage <= 1 ? -1 : undefined}>
+            <Button type="button" variant="outline" size="sm" disabled={currentPage <= 1}>
+              <T k="ledgerPrevious" />
+            </Button>
+          </Link>
+          <span className="text-xs text-slate-500">
+            <LedgerPageInfo page={currentPage} totalPages={totalPages} />
+          </span>
+          <Link href={pageHref(Math.min(totalPages, currentPage + 1))} aria-disabled={currentPage >= totalPages} tabIndex={currentPage >= totalPages ? -1 : undefined}>
+            <Button type="button" variant="outline" size="sm" disabled={currentPage >= totalPages}>
+              <T k="ledgerNext" />
+            </Button>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

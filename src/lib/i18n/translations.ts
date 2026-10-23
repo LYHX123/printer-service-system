@@ -304,6 +304,10 @@ export type TranslationKey =
   | "newCategory"
   | "noLedgerEntriesFound"
   | "noLedgerEntriesDesc"
+  | "ledgerPageInfo"
+  | "ledgerTotalResults"
+  | "ledgerPrevious"
+  | "ledgerNext"
   | "deleteEntryConfirm"
   | "receivingMethod"
   | "paymentOrReceivingMethod"
@@ -1265,6 +1269,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     newCategory: "+ Create new category…",
     noLedgerEntriesFound: "No records found",
     noLedgerEntriesDesc: "Add your first income or expense record to get started.",
+    ledgerPageInfo: "Page {page} of {totalPages}",
+    ledgerTotalResults: "{count} results",
+    ledgerPrevious: "Previous",
+    ledgerNext: "Next",
     deleteEntryConfirm: "Are you sure you want to delete this record? This action cannot be undone.",
     receivingMethod: "Receiving Method",
     paymentOrReceivingMethod: "Payment / Receiving Method",
@@ -2061,6 +2069,10 @@ export const TRANSLATIONS: Record<Language, Record<TranslationKey, string>> = {
     newCategory: "+ 新建分类…",
     noLedgerEntriesFound: "未找到记录",
     noLedgerEntriesDesc: "添加第一笔收入或支出记录以开始使用。",
+    ledgerPageInfo: "第 {page} 页，共 {totalPages} 页",
+    ledgerTotalResults: "共 {count} 条结果",
+    ledgerPrevious: "上一页",
+    ledgerNext: "下一页",
     deleteEntryConfirm: "确定要删除此记录吗？此操作无法撤销。",
     receivingMethod: "收款方式",
     paymentOrReceivingMethod: "收付方式",
